@@ -10,7 +10,7 @@ from celery import Task
 from sqlalchemy.orm import Session
 
 from backend.tasks.celery_app import celery
-from backend.db.database import get_db
+from backend.db.database import get_db, SessionLocal
 from backend.db.models import SocialConnection, ContentSchedule
 from backend.services.publish_runner import get_publish_runner, PublishPayload
 from backend.services.rate_limit import RetryableError, FatalError
@@ -63,7 +63,7 @@ def publish_via_connection(
     Returns:
         Dictionary with publish results
     """
-    db = next(get_db())
+    db = SessionLocal()
     
     try:
         logger.info(
@@ -112,12 +112,17 @@ def publish_via_connection(
         # Run resilient publish
         runner = get_publish_runner()
         # Run async publish pipeline from synchronous Celery task
-        result = asyncio.run(runner.run_publish(
-            connection=connection,
-            payload=payload,
-            db=db,
-            attempt=self.request.retries
-        ))
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            result = loop.run_until_complete(runner.run_publish(
+                connection=connection,
+                payload=payload,
+                db=db,
+                attempt=self.request.retries
+            ))
+        finally:
+            loop.close()
         
         # Handle result
         if result.success:

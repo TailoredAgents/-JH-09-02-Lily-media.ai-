@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Float, Boolean, Text, JSON, ForeignKey, Index
+from sqlalchemy import Column, Integer, String, DateTime, Float, Boolean, Text, JSON, ForeignKey, Index, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import UUID
@@ -169,6 +169,8 @@ class ContentSchedule(Base):
         Index('idx_content_schedules_scheduled', scheduled_for),
         Index('idx_content_schedules_status', status),
         Index('idx_content_schedules_idempotency', idempotency_key),
+        Index('idx_content_schedules_content_hash_connection', content_hash, connection_id),
+        UniqueConstraint('content_hash', 'connection_id', name='uq_content_schedule_hash_connection'),
     )
 
 

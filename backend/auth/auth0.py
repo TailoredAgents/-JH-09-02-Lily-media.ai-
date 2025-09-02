@@ -33,7 +33,7 @@ class Auth0Verifier:
         
         if self._jwks is None:
             try:
-                response = requests.get(f"https://{self.domain}/.well-known/jwks.json")
+                response = requests.get(f"https://{self.domain}/.well-known/jwks.json", timeout=10)
                 response.raise_for_status()
                 self._jwks = response.json()
             except requests.RequestException as e:
@@ -143,7 +143,8 @@ class Auth0UserManager:
             response = requests.post(
                 f"https://{self.domain}/oauth/token",
                 json=payload,
-                headers={"Content-Type": "application/json"}
+                headers={"Content-Type": "application/json"},
+                timeout=10
             )
             response.raise_for_status()
             self._management_token = response.json()["access_token"]
@@ -170,7 +171,8 @@ class Auth0UserManager:
                 headers={
                     "Authorization": f"Bearer {token}",
                     "Content-Type": "application/json"
-                }
+                },
+                timeout=10
             )
             response.raise_for_status()
             return response.json()

@@ -239,9 +239,9 @@ async def _schedule_platform_post(platform: str, content_result: Dict[str, Any],
             )
             return {"status": "published", "platform_id": result.get("id")}
             
-        # Unsupported or not yet integrated platforms
-        
-        return {"status": "unsupported_platform"}
+        else:
+            # Unsupported or not yet integrated platforms
+            return {"status": "unsupported_platform"}
         
     except Exception as e:
         logger.error(f"Failed to schedule {platform} post: {str(e)}")

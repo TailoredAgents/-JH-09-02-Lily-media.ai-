@@ -144,7 +144,8 @@ class InstagramClient:
             response = requests.post(
                 self.FACEBOOK_TOKEN_URL,
                 data=token_data,
-                headers={"Content-Type": "application/x-www-form-urlencoded"}
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                timeout=15
             )
             
             if response.status_code != 200:
@@ -184,7 +185,8 @@ class InstagramClient:
                     "client_id": self.client_id,
                     "client_secret": self.client_secret,
                     "fb_exchange_token": short_lived_token
-                }
+                },
+                timeout=10
             )
             
             if response.status_code == 200:
@@ -352,7 +354,8 @@ class InstagramClient:
                     "access_token": access_token,
                     "image_url": image_url,
                     "caption": caption
-                }
+                },
+                timeout=30
             )
             
             if response.status_code not in [200, 201]:
@@ -393,7 +396,8 @@ class InstagramClient:
                 params={
                     "access_token": access_token,
                     "creation_id": container_id
-                }
+                },
+                timeout=30
             )
             
             self._update_rate_limit("media_publish", response)
