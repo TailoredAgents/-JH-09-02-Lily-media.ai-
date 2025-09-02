@@ -2,17 +2,18 @@ services:
   - type: web
     name: lily-ai-socialmedia-backend
     env: python
-    plan: free
-    runtime: python-3.12.6
-    buildCommand: pip install -r requirements.txt
-    startCommand: bash start_production.sh
+    plan: starter
+    runtime: python-3.11.9
+    buildCommand: pip install -e .
+    startCommand: python render_production.py
+    healthCheckPath: /health
     envVars:
       - key: ENVIRONMENT
         value: production
       - key: SECRET_KEY
-        value: Cc5NOfxEP9KrY0d2k9+tXvZmGpR7sJ8wL3nQ6uA4eF1iH9kN2pS5vY8zA3dG6j
+        fromSecret: SECRET_KEY
       - key: CORS_ORIGINS
-        value: https://www.lily-ai-socialmedia.com,https://lily-ai-socialmedia.com,https://lily-ai-socialmedia-frontend.onrender.com
+        value: https://www.lily-ai-socialmedia.com,https://lily-ai-socialmedia-frontend.onrender.com
       - key: DATABASE_URL
         fromDatabase:
           name: lily-ai-socialmedia-db
@@ -45,15 +46,15 @@ services:
   - type: worker
     name: lily-ai-socialmedia-worker
     env: python
-    plan: free
-    runtime: python-3.12.6
-    buildCommand: pip install -r requirements.txt
+    plan: starter
+    runtime: python-3.11.9
+    buildCommand: pip install -e .
     startCommand: celery -A backend.tasks.celery_app worker --loglevel=info
     envVars:
       - key: ENVIRONMENT
         value: production
       - key: SECRET_KEY
-        value: Cc5NOfxEP9KrY0d2k9+tXvZmGpR7sJ8wL3nQ6uA4eF1iH9kN2pS5vY8zA3dG6j
+        fromSecret: SECRET_KEY
       - key: DATABASE_URL
         fromDatabase:
           name: lily-ai-socialmedia-db

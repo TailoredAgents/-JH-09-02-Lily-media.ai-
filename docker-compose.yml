@@ -5,6 +5,11 @@ services:
   app:
     build: .
     container_name: aisocial-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     ports:
       - "8000:8000"
     environment:
@@ -54,7 +59,7 @@ services:
       - PGDATA=/var/lib/postgresql/data/pgdata
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
       - "5432:5432"
     networks:
@@ -88,6 +93,11 @@ services:
   celery-worker:
     build: .
     container_name: aisocial-celery-worker
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     command: celery -A backend.tasks.celery_app worker --loglevel=info --concurrency=4
     environment:
       - ENVIRONMENT=production

@@ -97,7 +97,7 @@ describe('Analytics Page', () => {
     },
     platforms: {
       twitter: { name: 'Twitter', followers: 5200, engagement: 3200, color: '#1DA1F2' },
-       { name: 'LinkedIn', followers: 3800, engagement: 2800, color: '#0077B5' },
+      linkedin: { name: 'LinkedIn', followers: 3800, engagement: 2800, color: '#0077B5' },
       instagram: { name: 'Instagram', followers: 4200, engagement: 1800, color: '#E4405F' },
       facebook: { name: 'Facebook', followers: 2000, engagement: 700, color: '#1877F2' }
     },
@@ -116,7 +116,7 @@ describe('Analytics Page', () => {
       {
         id: 1,
         title: "5 AI Tools That Will Transform Your Social Media Strategy",
-        platform: ,
+        platform: 'linkedin',
         views: 15200,
         likes: 340,
         engagement_rate: 2.7

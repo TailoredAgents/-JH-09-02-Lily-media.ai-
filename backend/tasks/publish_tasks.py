@@ -3,6 +3,7 @@ Celery tasks for Phase 8 resilient publishing
 Handles connection-based publishing with rate limiting and retries
 """
 import logging
+import asyncio
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional
 from celery import Task
@@ -110,12 +111,13 @@ def publish_via_connection(
         
         # Run resilient publish
         runner = get_publish_runner()
-        result = await runner.run_publish(
+        # Run async publish pipeline from synchronous Celery task
+        result = asyncio.run(runner.run_publish(
             connection=connection,
             payload=payload,
             db=db,
             attempt=self.request.retries
-        )
+        ))
         
         # Handle result
         if result.success:

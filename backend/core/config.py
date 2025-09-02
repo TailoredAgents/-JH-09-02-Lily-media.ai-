@@ -210,8 +210,8 @@ class Settings(BaseSettings):
     host: str = "0.0.0.0"
     
     # CORS & Security
-    allowed_hosts: str = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,socialmedia-api-wxip.onrender.com")
-    cors_origins: str = os.getenv("CORS_ORIGINS", "https://socialmedia-frontend-pycc.onrender.com,https://socialmedia-api-wxip.onrender.com")
+    allowed_hosts: str = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1")
+    cors_origins: str = os.getenv("CORS_ORIGINS", "")
     
     # Feature Flags
     feature_flags: str = ""

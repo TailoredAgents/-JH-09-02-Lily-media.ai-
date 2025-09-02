@@ -114,8 +114,12 @@ dist/
 # Environment variables - NEVER commit these!
 .env
 .env.*
+frontend/.env
 !.env.example
 !.env.production.template
+
+# Ignore all dist folders (not just root)
+**/dist/
 
 # Database
 *.db

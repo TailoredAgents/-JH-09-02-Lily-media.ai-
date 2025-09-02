@@ -11,16 +11,14 @@ PYTHON_VERSION=$(python -c "import sys; print(f'{sys.version_info.major}.{sys.ve
 echo "Detected Python version: $PYTHON_VERSION"
 
 if [[ "$PYTHON_VERSION" == 3.13.* ]]; then
-    echo "❌ ERROR: Python 3.13 detected but we need 3.11.9"
-    echo "❌ This will cause package compatibility issues"
+    echo "❌ ERROR: Python 3.13 detected; pin to Python 3.11.x or update all deploy runtimes"
     exit 1
 fi
 
 # Backend setup
 echo "📦 Setting up backend..."
-cd backend
 python -m pip install --upgrade pip setuptools wheel
-pip install -r requirements.txt
+pip install -e .
 
 echo "✅ Build completed successfully!"
 echo "🌐 Ready for deployment on Render"

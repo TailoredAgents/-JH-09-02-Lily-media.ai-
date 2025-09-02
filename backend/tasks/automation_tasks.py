@@ -239,12 +239,7 @@ async def _schedule_platform_post(platform: str, content_result: Dict[str, Any],
             )
             return {"status": "published", "platform_id": result.get("id")}
             
-        elif platform == :
-            result = await create_post(
-                access_token=await get_user_token(user_id),
-                text=content_result["content"]
-            )
-            return {"status": "published", "platform_id": result.get("id")}
+        # Unsupported or not yet integrated platforms
         
         return {"status": "unsupported_platform"}
         

@@ -1,5 +1,9 @@
 name: Deploy to Production
 
+concurrency:
+  group: prod-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   workflow_dispatch:
     inputs:
