@@ -14,6 +14,12 @@ from backend.db.models import User, UserSetting, Content, Goal, Memory
 from backend.auth.dependencies import get_current_active_user
 from openai import AsyncOpenAI
 from backend.core.config import get_settings
+from backend.core.constants import (
+    DEFAULT_SUGGESTION_LIMIT, MAX_CONTENT_COUNT_DISPLAY, 
+    DEFAULT_PLATFORMS, DEFAULT_BRAND_VOICE, DEFAULT_CREATIVITY_LEVEL
+)
+from sqlalchemy.exc import SQLAlchemyError
+import json
 
 settings = get_settings()
 
@@ -24,7 +30,7 @@ router = APIRouter(prefix="/api/ai", tags=["ai-suggestions"])
 class SuggestionRequest(BaseModel):
     type: str = Field(..., pattern="^(content|goals|inbox|memory|scheduler)$")
     context: Dict[str, Any] = Field(default_factory=dict)
-    limit: int = Field(default=4, ge=1, le=10)
+    limit: int = Field(default=DEFAULT_SUGGESTION_LIMIT, ge=1, le=10)
 
 class AISuggestion(BaseModel):
     id: str
@@ -65,22 +71,22 @@ async def analyze_user_context(user: User, db: Session, suggestion_type: str) ->
         try:
             user_settings = db.query(UserSetting).filter(UserSetting.user_id == user.id).first()
             if user_settings:
-                context["preferred_platforms"] = user_settings.preferred_platforms or ["twitter", "instagram"]
-                context["brand_voice"] = user_settings.brand_voice or "professional"
-                context["creativity_level"] = user_settings.creativity_level or 0.7
-        except Exception as settings_error:
+                context["preferred_platforms"] = user_settings.preferred_platforms or list(DEFAULT_PLATFORMS)
+                context["brand_voice"] = user_settings.brand_voice or DEFAULT_BRAND_VOICE
+                context["creativity_level"] = user_settings.creativity_level or DEFAULT_CREATIVITY_LEVEL
+        except SQLAlchemyError as settings_error:
             # Handle case where user_settings table doesn't exist yet
             logger.warning(f"UserSettings table not accessible, using defaults: {settings_error}")
-            context["preferred_platforms"] = ["twitter", "instagram"]
-            context["brand_voice"] = "professional"
+            context["preferred_platforms"] = list(DEFAULT_PLATFORMS)
+            context["brand_voice"] = DEFAULT_BRAND_VOICE
             context["creativity_level"] = 0.7
         
         # Analyze content history (with limits for performance and error handling)
         try:
             content_count = db.query(Content).filter(Content.user_id == user.id).limit(1000).count()
-            context["content_count"] = min(content_count, 999)  # Cap at 999 for display
+            context["content_count"] = min(content_count, MAX_CONTENT_COUNT_DISPLAY)
             context["has_content"] = content_count > 0
-        except Exception:
+        except SQLAlchemyError:
             context["content_count"] = 0
             context["has_content"] = False
         
@@ -92,7 +98,7 @@ async def analyze_user_context(user: User, db: Session, suggestion_type: str) ->
                 Content.created_at >= week_ago
             ).limit(100).count()
             context["recent_activity"] = recent_content > 0
-        except Exception:
+        except SQLAlchemyError:
             context["recent_activity"] = False
         
         # Analyze goals (limited for performance)
@@ -100,7 +106,7 @@ async def analyze_user_context(user: User, db: Session, suggestion_type: str) ->
             goal_count = db.query(Goal).filter(Goal.user_id == user.id).limit(50).count()
             context["goal_count"] = min(goal_count, 50)
             context["has_goals"] = goal_count > 0
-        except Exception:
+        except SQLAlchemyError:
             context["goal_count"] = 0
             context["has_goals"] = False
         
@@ -109,7 +115,7 @@ async def analyze_user_context(user: User, db: Session, suggestion_type: str) ->
             memory_count = db.query(Memory).filter(Memory.user_id == user.id).limit(100).count()
             context["memory_count"] = min(memory_count, 100)
             context["has_memories"] = memory_count > 0
-        except Exception:
+        except SQLAlchemyError:
             context["memory_count"] = 0
             context["has_memories"] = False
         
@@ -215,7 +221,7 @@ Make suggestions specific to their experience level and current situation. For n
         except json.JSONDecodeError as e:
             logger.warning(f"Failed to parse AI suggestions JSON: {e}. Response: {ai_response[:200]}...")
             return []
-        except Exception as e:
+        except Exception as e:  # final safeguard at boundary
             logger.warning(f"Unexpected error parsing AI response: {e}")
             return []
         

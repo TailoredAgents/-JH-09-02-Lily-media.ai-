@@ -26,6 +26,7 @@ except ImportError:
     get_meta_webhook_service = None
 from backend.core.encryption import encrypt_token
 from backend.auth.social_oauth import SocialOAuthManager
+from backend.integrations.connection_health import compute_connection_health
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
@@ -528,41 +529,9 @@ async def _exchange_code_for_tokens(
 
 def _compute_connection_health(connection: SocialConnection) -> Dict[str, Any]:
     """
-    Compute connection health metrics
-    
-    Args:
-        connection: SocialConnection model instance
-        
-    Returns:
-        Dictionary with health metrics
+    Compute connection health metrics (delegates to a small, testable helper).
     """
-    now = datetime.now(timezone.utc)
-    
-    # Handle expires_at
-    expires_at_iso = None
-    expires_in_hours = None
-    needs_reconnect = False
-    
-    if connection.token_expires_at:
-        expires_at_iso = connection.token_expires_at.isoformat()
-        expires_in_hours = int((connection.token_expires_at - now).total_seconds() / 3600)
-        
-        # Check if expires within 72 hours
-        if connection.token_expires_at <= now + timedelta(hours=72):
-            needs_reconnect = True
-    
-    # Handle last_checked_at
-    last_checked_at_iso = None
-    if connection.updated_at:
-        last_checked_at_iso = connection.updated_at.isoformat()
-    
-    return {
-        "expires_at": expires_at_iso,
-        "expires_in_hours": expires_in_hours,
-        "needs_reconnect": needs_reconnect,
-        "last_checked_at": last_checked_at_iso,
-        "created_at": connection.created_at.isoformat()
-    }
+    return compute_connection_health(connection)
 
 async def _revoke_provider_access(connection: SocialConnection, settings) -> bool:
     """
