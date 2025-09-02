@@ -65,6 +65,14 @@ app = FastAPI(
     redoc_url="/redoc" if environment != "production" else None  # Disable redoc in production
 )
 
+# Respect proxy headers when behind a load balancer (ALB/Render)
+try:
+    from starlette.middleware.proxy_headers import ProxyHeadersMiddleware
+    app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
+    logger.info("Proxy headers middleware enabled")
+except Exception as e:
+    logger.warning("Could not add ProxyHeadersMiddleware: %s", e)
+
 # Setup comprehensive security middleware
 security_middleware_success = False
 try:

@@ -12,6 +12,8 @@ from dataclasses import dataclass
 from enum import Enum
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from requests.auth import HTTPBasicAuth
 from requests_oauthlib import OAuth2Session
 
@@ -82,7 +84,19 @@ class InstagramClient:
             logger.warning("Instagram OAuth credentials not provided. Set INSTAGRAM_CLIENT_ID and INSTAGRAM_CLIENT_SECRET environment variables.")
         
         self.token_manager = get_token_manager()
+        
+        # Enhanced session with retries and timeouts
         self.session = requests.Session()
+        retry_strategy = Retry(
+            total=5,
+            backoff_factor=0.5,
+            status_forcelist=[429, 500, 502, 503, 504],
+            allowed_methods=["GET", "POST", "PUT", "DELETE"]
+        )
+        adapter = HTTPAdapter(max_retries=retry_strategy, pool_connections=100, pool_maxsize=200)
+        self.session.mount("https://", adapter)
+        self.session.mount("http://", adapter)
+        self.default_timeout = float(os.getenv("HTTP_TIMEOUT_SECONDS", "15"))
         
         # Rate limiting tracking
         self.rate_limits = {}
@@ -202,6 +216,12 @@ class InstagramClient:
             logger.error(f"Failed to get long-lived Instagram token: {e}")
             return None
     
+    def _request(self, method: str, url: str, **kwargs):
+        """Make HTTP request with timeout enforcement"""
+        if "timeout" not in kwargs:
+            kwargs["timeout"] = self.default_timeout
+        return self.session.request(method, url, **kwargs)
+    
     def _get_authenticated_session(self, access_token: str) -> requests.Session:
         """Get authenticated requests session"""
         session = requests.Session()
@@ -255,8 +275,12 @@ class InstagramClient:
             Dictionary containing user information
         """
         try:
+            # Check rate limits before making API calls
+            if not self._check_rate_limit("user_info"):
+                raise InstagramAPIError("Rate limit exceeded for user info endpoint")
+                
             # First get user's pages to find Instagram account
-            pages_response = requests.get(
+            pages_response = self._request("GET",
                 "https://graph.facebook.com/v18.0/me/accounts",
                 params={
                     "access_token": access_token,
@@ -276,7 +300,7 @@ class InstagramClient:
             
             for page in pages_data.get("data", []):
                 # Get Instagram account connected to this page
-                ig_response = requests.get(
+                ig_response = self._request("GET",
                     f"https://graph.facebook.com/v18.0/{page['id']}",
                     params={
                         "access_token": page["access_token"],
@@ -295,7 +319,7 @@ class InstagramClient:
                 raise InstagramAPIError("No Instagram Business Account found")
             
             # Get Instagram account details
-            response = requests.get(
+            response = self._request("GET",
                 f"https://graph.facebook.com/v18.0/{instagram_account_id}",
                 params={
                     "access_token": page_access_token,
@@ -519,7 +543,8 @@ class InstagramClient:
                 params={
                     "access_token": access_token,
                     "metric": "impressions,reach,likes,comments,saves,shares"
-                }
+                },
+                timeout=10
             )
             
             self._update_rate_limit("insights", response)

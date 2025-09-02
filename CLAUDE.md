@@ -66,3 +66,4 @@
 - Never write mock code
 - Always test build before commit
 - Always commit to https://github.com/TailoredAgents/-JH-09-02-Lily-media.ai-.git
+- Create a Handoff document for Codex to review all of your fixes after performing them and source the original guiding doc

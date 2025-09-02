@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react'
 import apiService from '../services/api.js'
 import { info as logInfo, error as logError } from '../utils/logger.js'
 
@@ -224,7 +224,14 @@ export const AuthProvider = ({ children }) => {
     return () => clearInterval(refreshInterval)
   }, [isAuthenticated, accessToken])
 
-  const contextValue = {
+  // Memoize callbacks to prevent context re-renders
+  const clearError = useCallback(() => setAuthError(null), [])
+  const loginWithRedirect = useCallback(() => {
+    throw new Error('loginWithRedirect is not supported in production mode. Use login() instead.')
+  }, [])
+  
+  // Memoize context value to prevent unnecessary re-renders
+  const contextValue = useMemo(() => ({
     user,
     isAuthenticated,
     isLoading,
@@ -235,13 +242,23 @@ export const AuthProvider = ({ children }) => {
     logout,
     getAccessTokenSilently,
     updateUserProfile,
-    clearError: () => setAuthError(null),
-    // Legacy support for existing components
-    loginWithRedirect: () => {
-      throw new Error('loginWithRedirect is not supported in production mode. Use login() instead.')
-    },
+    clearError,
+    loginWithRedirect,
     isDemo: false // Production mode
-  }
+  }), [
+    user, 
+    isAuthenticated, 
+    isLoading, 
+    accessToken, 
+    authError,
+    login,
+    register,
+    logout,
+    getAccessTokenSilently,
+    updateUserProfile,
+    clearError,
+    loginWithRedirect
+  ])
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
 }

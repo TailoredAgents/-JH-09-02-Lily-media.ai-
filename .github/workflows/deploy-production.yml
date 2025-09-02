@@ -432,15 +432,10 @@ jobs:
         # Upload to versioned path first
         VERSION_PATH="versions/${{ inputs.version }}"
         aws s3 sync frontend/dist/ "s3://${{ secrets.PRODUCTION_S3_BUCKET }}/$VERSION_PATH/"
-        
-        # Create canary deployment (10% of users)
-        echo "🐤 Creating canary deployment for frontend..."
-        
-        # Use CloudFront behaviors for canary
-        aws cloudfront create-distribution-with-tags \
-          --distribution-config-with-tags file://cloudfront-canary-config.json
-          
-        echo "✅ Frontend canary deployed"
+
+        # Frontend canary: Assume CloudFront distribution/behaviors are pre-provisioned.
+        # Do not create distributions during deploy. Routing is managed outside CI.
+        echo "🐤 Skipping CloudFront distribution creation (pre-provisioned)."
         
     - name: Monitor frontend deployment
       run: |

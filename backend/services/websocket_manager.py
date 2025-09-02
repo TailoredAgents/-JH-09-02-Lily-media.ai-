@@ -118,20 +118,42 @@ class ConnectionManager:
             await self._send_to_websocket(websocket, message)
     
     async def send_to_all_users(self, message: WebSocketMessage, exclude_user: Optional[int] = None):
-        """Send a message to all connected users"""
-        for user_id in list(self.user_connections.keys()):
-            if exclude_user and user_id == exclude_user:
-                continue
-            await self.send_to_user(user_id, message)
+        """Send a message to all connected users with backpressure handling"""
+        user_ids = list(self.user_connections.keys())
+        if exclude_user:
+            user_ids = [uid for uid in user_ids if uid != exclude_user]
+        
+        # Use bounded concurrency to prevent overwhelming the event loop
+        semaphore = asyncio.Semaphore(20)  # Max 20 concurrent sends
+        
+        async def bounded_send(user_id: int):
+            async with semaphore:
+                try:
+                    await self.send_to_user(user_id, message)
+                except Exception as e:
+                    logger.warning(f"Failed to send to user {user_id}: {e}")
+        
+        # Send to all users concurrently with backpressure
+        await asyncio.gather(
+            *[bounded_send(uid) for uid in user_ids],
+            return_exceptions=True
+        )
     
     async def broadcast_to_user_sessions(self, user_id: int, message: WebSocketMessage):
         """Broadcast to all sessions of a specific user"""
         await self.send_to_user(user_id, message)
     
     async def _send_to_websocket(self, websocket: WebSocket, message: WebSocketMessage):
-        """Send a message to a specific WebSocket connection"""
+        """Send a message to a specific WebSocket connection with timeout"""
         try:
-            await websocket.send_text(message.to_json())
+            # Add timeout to prevent hanging on slow clients
+            await asyncio.wait_for(
+                websocket.send_text(message.to_json()),
+                timeout=5.0  # 5 second timeout
+            )
+        except asyncio.TimeoutError:
+            logger.warning("WebSocket send timed out, disconnecting slow client")
+            self.disconnect(websocket)
         except Exception as e:
             logger.warning(f"Failed to send WebSocket message: {e}")
             # Clean up failed connection

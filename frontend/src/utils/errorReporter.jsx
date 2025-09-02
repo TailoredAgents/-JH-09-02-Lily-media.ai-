@@ -146,27 +146,43 @@ class ErrorReporter {
 
     const errors = [...this.errorQueue];
     this.errorQueue = [];
-
-    for (const error of errors) {
-      try {
-        await apiService.request('/api/system/logs/error', {
-          method: 'POST',
-          body: error
-        });
-        this.failureCount = 0; // Reset on success
-      } catch (e) {
-        this.failureCount = (this.failureCount || 0) + 1;
-        
-        // Don't re-queue if we're failing too much (reduced to prevent CORS loops)
-        if (this.failureCount <= 2) {
-          this.errorQueue.push(error);
-        }
-        
-        // Don't log errors about error reporting (prevents loops)
-        if (!e.message.includes('/api/system/logs/error')) {
-          console.error('Failed to report error:', e);
+    
+    // Use bounded concurrency for better performance
+    const maxConcurrent = 5;
+    let i = 0;
+    
+    const worker = async () => {
+      while (i < errors.length) {
+        const idx = i++; // take next
+        try {
+          await apiService.request('/api/system/logs/error', {
+            method: 'POST',
+            body: errors[idx]
+          });
+          this.failureCount = 0; // Reset on success
+        } catch (e) {
+          this.failureCount = (this.failureCount || 0) + 1;
+          
+          // Don't re-queue if we're failing too much
+          if (this.failureCount <= 2) {
+            this.errorQueue.push(errors[idx]);
+          }
+          
+          // Don't log errors about error reporting (prevents loops)
+          if (!e.message.includes('/api/system/logs/error')) {
+            console.error('Failed to report error:', e);
+          }
         }
       }
+    };
+    
+    // Run workers concurrently with bounded parallelism
+    await Promise.allSettled(
+      Array.from({ length: Math.min(maxConcurrent, errors.length) }, worker)
+    );
+    
+    if (this.failureCount > 3) {
+      console.warn('Error reporting disabled - too many failures');
     }
   }
 

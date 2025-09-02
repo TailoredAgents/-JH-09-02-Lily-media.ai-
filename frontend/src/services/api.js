@@ -37,28 +37,42 @@ class ApiService {
     }
 
     try {
-      const response = await fetch(url, config)
+      // Add timeout to prevent hanging requests
+      const controller = new AbortController()
+      const timeoutMs = Number(import.meta.env.VITE_FETCH_TIMEOUT_MS || 15000)
+      const timeout = setTimeout(() => controller.abort(), timeoutMs)
       
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
+      try {
+        const response = await fetch(url, { 
+          ...config, 
+          signal: controller.signal 
+        })
+        clearTimeout(timeout)
         
-        // Report API errors
-        errorReporter.logNetworkError(
-          endpoint,
-          config.method || 'GET',
-          response.status,
-          errorData.detail || `HTTP error! status: ${response.status}`
-        )
-        
-        throw new Error(errorData.detail || `HTTP error! status: ${response.status}`)
-      }
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}))
+          
+          // Report API errors
+          errorReporter.logNetworkError(
+            endpoint,
+            config.method || 'GET',
+            response.status,
+            errorData.detail || `HTTP error! status: ${response.status}`
+          )
+          
+          throw new Error(errorData.detail || `HTTP error! status: ${response.status}`)
+        }
 
-      const contentType = response.headers.get('content-type')
-      if (contentType && contentType.includes('application/json')) {
-        return await response.json()
+        const contentType = response.headers.get('content-type')
+        if (contentType && contentType.includes('application/json')) {
+          return await response.json()
+        }
+        
+        return await response.text()
+      } catch (fetchError) {
+        clearTimeout(timeout)
+        throw fetchError
       }
-      
-      return await response.text()
     } catch (error) {
       logError(`API request failed: ${endpoint}`, error)
       throw error

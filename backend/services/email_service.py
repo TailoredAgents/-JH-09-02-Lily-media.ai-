@@ -264,7 +264,7 @@ class EmailService:
             if message.reply_to:
                 data["reply_to"] = message.reply_to
             
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=15.0) as client:
                 response = await client.post(
                     "https://api.resend.com/emails",
                     headers=headers,

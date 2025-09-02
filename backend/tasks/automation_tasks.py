@@ -140,23 +140,43 @@ def generate_and_schedule_content(user_id: int, content_config: Dict[str, Any]) 
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         
-        # Generate content for each specified platform
+        # Generate content for platforms with bounded concurrency
+        platforms = content_config.get("platforms", ["twitter"])
+        max_concurrent = min(len(platforms), 4)  # Limit concurrent operations
+        
+        async def generate_platform_content(platform):
+            return await content_automation_service.generate_content(
+                topic=content_config["topic"],
+                platform=platform,
+                content_type=content_config.get("content_type", "post"),
+                tone=content_config.get("tone", "professional"),
+                target_audience=content_config.get("target_audience"),
+                include_hashtags=content_config.get("include_hashtags", True),
+                include_cta=content_config.get("include_cta", True),
+                user_id=user_id
+            )
+        
+        # Use semaphore for concurrency control
+        semaphore = asyncio.Semaphore(max_concurrent)
+        
+        async def bounded_generate(platform):
+            async with semaphore:
+                return platform, await generate_platform_content(platform)
+        
+        # Execute all platforms concurrently with bounds
+        platform_results = loop.run_until_complete(
+            asyncio.gather(*[bounded_generate(p) for p in platforms], return_exceptions=True)
+        )
+        
         generated_content = {}
         scheduled_posts = []
         
-        for platform in content_config.get("platforms", ["twitter", ]):
-            content_result = loop.run_until_complete(
-                content_automation_service.generate_content(
-                    topic=content_config["topic"],
-                    platform=platform,
-                    content_type=content_config.get("content_type", "post"),
-                    tone=content_config.get("tone", "professional"),
-                    target_audience=content_config.get("target_audience"),
-                    include_hashtags=content_config.get("include_hashtags", True),
-                    include_cta=content_config.get("include_cta", True),
-                    user_id=user_id
-                )
-            )
+        for result in platform_results:
+            if isinstance(result, Exception):
+                logger.error(f"Platform content generation failed: {result}")
+                continue
+                
+            platform, content_result = result
             
             generated_content[platform] = content_result
             
@@ -397,26 +417,44 @@ def hourly_metrics_sync() -> Dict[str, Any]:
     db = SessionLocal()
     
     try:
-        # Get all active users
-        users = db.query(User).filter(User.is_active == True).all()
-        
+        # Batch over active users to avoid loading all into memory
+        batch_size = 500
+        offset = 0
+        total_processed = 0
         results = {
-            "total_users": len(users),
+            "total_users": None,  # unknown up front
             "successful_syncs": 0,
             "failed_syncs": 0,
             "errors": []
         }
         
-        for user in users:
-            try:
-                # Trigger metrics collection for each user
-                collect_all_platform_metrics.delay(user.id)
-                results["successful_syncs"] += 1
+        while True:
+            batch = (
+                db.query(User)
+                .filter(User.is_active == True)
+                .order_by(User.id)
+                .offset(offset)
+                .limit(batch_size)
+                .all()
+            )
+            if not batch:
+                break
                 
-            except Exception as e:
-                logger.error(f"Failed to trigger metrics sync for user {user.id}: {str(e)}")
-                results["failed_syncs"] += 1
-                results["errors"].append({"user_id": user.id, "error": str(e)})
+            for user in batch:
+                total_processed += 1
+                try:
+                    # Trigger metrics collection for each user
+                    collect_all_platform_metrics.delay(user.id)
+                    results["successful_syncs"] += 1
+                    
+                except Exception as e:
+                    logger.error(f"Failed to trigger metrics sync for user {user.id}: {str(e)}")
+                    results["failed_syncs"] += 1
+                    results["errors"].append({"user_id": user.id, "error": str(e)})
+            
+            offset += batch_size
+        
+        results["total_users"] = total_processed
         
         logger.info(f"Hourly metrics sync triggered for {results['successful_syncs']} users")
         return results
@@ -435,27 +473,45 @@ def daily_workflow_automation() -> Dict[str, Any]:
     db = SessionLocal()
     
     try:
-        # Get users with daily automation enabled
-        users = db.query(User).filter(
-            User.is_active == True,
-            User.automation_enabled == True
-        ).all()
-        
+        # Batch users with automation enabled
+        batch_size = 500
+        offset = 0
+        total_processed = 0
         results = {
-            "total_users": len(users),
+            "total_users": None,  # unknown up front
             "workflows_triggered": 0,
             "errors": []
         }
         
-        for user in users:
-            try:
-                # Trigger daily workflow for each user
-                execute_daily_workflow.delay(user.id)
-                results["workflows_triggered"] += 1
+        while True:
+            users = (
+                db.query(User)
+                .filter(
+                    User.is_active == True,
+                    User.automation_enabled == True
+                )
+                .order_by(User.id)
+                .offset(offset)
+                .limit(batch_size)
+                .all()
+            )
+            if not users:
+                break
                 
-            except Exception as e:
-                logger.error(f"Failed to trigger daily workflow for user {user.id}: {str(e)}")
-                results["errors"].append({"user_id": user.id, "error": str(e)})
+            for user in users:
+                total_processed += 1
+                try:
+                    # Trigger daily workflow for each user
+                    execute_daily_workflow.delay(user.id)
+                    results["workflows_triggered"] += 1
+                    
+                except Exception as e:
+                    logger.error(f"Failed to trigger daily workflow for user {user.id}: {str(e)}")
+                    results["errors"].append({"user_id": user.id, "error": str(e)})
+            
+            offset += batch_size
+        
+        results["total_users"] = total_processed
         
         logger.info(f"Daily workflow automation triggered for {results['workflows_triggered']} users")
         return results

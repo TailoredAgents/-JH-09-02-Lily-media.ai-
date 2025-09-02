@@ -3,6 +3,7 @@ Integration Services API Endpoints
 Exposes Instagram, Facebook, research automation, and content generation services
 """
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks, Query
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
@@ -62,26 +63,24 @@ class WorkflowTriggerRequest(BaseModel):
 # Instagram API Endpoints
 
 @router.post("/instagram/post")
-async def create_instagram_post(
+def create_instagram_post(
     request: InstagramPostRequest,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """Create Instagram post with media"""
     try:
-        # Get user's Instagram access token
-        instagram_token = await instagram_client.get_user_token(current_user.id)
+        # Get user's Instagram access token (sync operation)
+        instagram_token = instagram_client.get_user_token(current_user.id)
         if not instagram_token:
             raise HTTPException(status_code=401, detail="Instagram account not connected")
         
-        # Create Instagram post
-        result = await instagram_client.create_post(
+        # Create Instagram post using existing sync method
+        result = instagram_client.post_image(
             access_token=instagram_token,
+            image_url=request.media_urls[0],
             caption=request.caption,
-            media_urls=request.media_urls,
-            media_type=InstagramMediaType(request.media_type),
-            location_id=request.location_id,
-            hashtags=request.hashtags
+            user_id=current_user.id
         )
         
         # Store in database
@@ -190,7 +189,7 @@ async def get_facebook_insights(
 # Research Automation Endpoints
 
 @router.post("/research/execute")
-async def execute_research(
+def execute_research(
     request: ResearchQueryRequest,
     background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_active_user),

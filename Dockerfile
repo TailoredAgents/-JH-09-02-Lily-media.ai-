@@ -64,5 +64,7 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
 # Expose port
 EXPOSE 8000
 
-# Run application
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run application with multiple workers (override WEB_CONCURRENCY at deploy)
+ENV WEB_CONCURRENCY=4
+CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "app:app", \
+     "--bind", "0.0.0.0:8000", "--workers", "${WEB_CONCURRENCY}", "--timeout", "60"]

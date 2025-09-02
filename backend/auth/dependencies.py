@@ -17,7 +17,7 @@ jwt_handler = JWTHandler()
 
 class AuthUser:
     """Authenticated user model"""
-    def __init__(self, user_id: str, email: str, username: str, auth_method: str = "auth0"):
+    def __init__(self, user_id: str, email: str, username: str, auth_method: str = 'auth0'):
         self.user_id = user_id
         self.email = email
         self.username = username
@@ -104,7 +104,7 @@ async def sync_auth0_user(db: Session, auth0_id: str, email: str, username: str)
     
     return user
 
-async def get_current_active_user(
+def get_current_active_user(
     current_user: AuthUser = Depends(get_current_user),
     db: Session = Depends(get_db)
 ) -> User:
@@ -125,7 +125,7 @@ async def get_current_active_user(
     
     return user
 
-async def get_admin_user(
+def get_admin_user(
     current_user: User = Depends(get_current_active_user)
 ) -> User:
     """Require admin user for protected routes"""
@@ -149,6 +149,6 @@ async def get_optional_user(
     try:
         token = credentials.credentials
         current_user = await get_current_user(db, token)
-        return await get_current_active_user(current_user, db)
+        return get_current_active_user(current_user, db)
     except HTTPException:
         return None

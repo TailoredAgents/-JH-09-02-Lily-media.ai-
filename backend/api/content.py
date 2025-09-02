@@ -573,11 +573,13 @@ async def get_upcoming_content(
     def query_upcoming_content(db_session):
         end_date = datetime.now(timezone.utc) + timedelta(days=days)
         
+        # Add pagination to prevent over-fetch
+        page_size = min(100, 50)  # Cap at 100 items for calendar view
         content_items = db_session.query(ContentLog).filter(
             ContentLog.user_id == current_user.id,
             ContentLog.status == "scheduled",
             ContentLog.scheduled_for.between(datetime.now(timezone.utc), end_date)
-        ).order_by(ContentLog.scheduled_for).all()
+        ).order_by(ContentLog.scheduled_for).limit(page_size).all()
         
         return [
             {
@@ -614,10 +616,12 @@ async def get_content_analytics(
     start_date = datetime.now(timezone.utc) - timedelta(days=days)
     
     def query_content_analytics(db_session: Session):
+        # Add pagination to prevent over-fetch for analytics
+        page_size = 500  # Reasonable limit for analytics data
         return db_session.query(ContentLog).filter(
             ContentLog.user_id == current_user.id,
             ContentLog.created_at >= start_date
-        ).all()
+        ).order_by(ContentLog.created_at.desc()).limit(page_size).all()
     
     # Use safe query wrapper
     content_items = safe_table_query(
