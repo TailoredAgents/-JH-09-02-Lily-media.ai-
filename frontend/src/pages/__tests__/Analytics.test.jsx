@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter } from 'react-router-dom'
-import Analytics from '../Analytics'
+import Analytics from '../../components/AnalyticsHub'
 
 // Mock the hooks and services
 jest.mock('../../hooks/useApi', () => ({

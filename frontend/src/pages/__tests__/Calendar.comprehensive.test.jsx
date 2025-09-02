@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter } from 'react-router-dom'
-import Calendar from '../Calendar'
+import Calendar from '../Scheduler'
 
 // Mock dependencies
 jest.mock('../../hooks/useApi', () => ({

@@ -59,3 +59,10 @@
 - ✅ Audit logging and compliance
 - research the internet to confirm the proper way to fix or produce what youre working on
 - Guardrail: production-ready only — no mock/fake/demo data in app code or migrations; mocks allowed in tests only; scan & confirm no banned patterns in the diff.
+- Never create placeholder files
+- Always write production ready code
+- Always create valid and proper endpoints
+- Never use mock data
+- Never write mock code
+- Always test build before commit
+- Always commit to https://github.com/TailoredAgents/-JH-09-02-Lily-media.ai-.git

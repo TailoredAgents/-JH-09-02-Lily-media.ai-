@@ -6,6 +6,7 @@ import os
 import logging
 from datetime import datetime, timezone
 from dotenv import load_dotenv
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -13,8 +14,12 @@ def get_utc_now() -> datetime:
     """Get current UTC time with timezone awareness"""
     return datetime.now(timezone.utc)
 
-# Load environment variables from .env file
-load_dotenv()
+# Load environment variables from both backend/.env and project root .env (root wins)
+_backend_env = Path(__file__).resolve().parents[1] / ".env"
+_root_env = Path(__file__).resolve().parents[2] / ".env"
+for _env in (_backend_env, _root_env):
+    if _env.exists():
+        load_dotenv(_env, override=False)
 
 def _detect_environment() -> str:
     """Detect environment with proper logic and clear fallbacks"""
@@ -252,6 +257,12 @@ class Settings(BaseSettings):
         case_sensitive=False,
         extra="allow"  # Allow extra fields from environment
     )
+    
+    def model_post_init(self, __context):
+        # If META_GRAPH_VERSION is set explicitly in the environment,
+        # prefer it to override meta_api_version.
+        if os.getenv("META_GRAPH_VERSION"):
+            self.meta_api_version = self.meta_graph_version
     
     
     def get_celery_broker_url(self) -> str:

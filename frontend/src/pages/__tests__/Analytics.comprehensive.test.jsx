@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import Analytics from '../Analytics'
+import Analytics from '../../components/AnalyticsHub'
 
 // Mock Chart.js
 jest.mock('react-chartjs-2', () => ({
