@@ -60,12 +60,8 @@ class Login2FARequest(BaseModel):
     @field_validator('backup_code')
     @classmethod
     def validate_backup_code(cls, v):
-        if v is not None:
-            # Allow various formats: XXXX-XXXX, XXXXXXXX
-            v = v.replace(" ", "").replace("-", "").upper()
-            if len(v) != 8 or not all(c.isalnum() for c in v):
-                raise ValueError('Invalid backup code format')
-        return v
+        from backend.auth.validators import normalize_and_validate_backup_code
+        return normalize_and_validate_backup_code(v)
 
 
 class TwoFactorStatusResponse(BaseModel):

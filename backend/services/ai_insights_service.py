@@ -88,46 +88,21 @@ class AIInsightsService:
                 ]
             )
             
+            # Use shared parser utility
+            from backend.services.web_search_utils import parse_openai_web_search_results
+            raw_results = parse_openai_web_search_results(response, query, max_results=5)
+            
+            # Transform to the expected format for insights service
             results = []
-            
-            # Parse web search results from Responses API
-            if hasattr(response, 'tool_calls') and response.tool_calls:
-                for tool_call in response.tool_calls:
-                    if tool_call.type == 'web_search':
-                        # Extract search results from web search tool response
-                        if hasattr(tool_call, 'web_search') and hasattr(tool_call.web_search, 'results'):
-                            search_results = tool_call.web_search.results
-                            for item in search_results:
-                                results.append({
-                                    'title': item.get('title', ''),
-                                    'snippet': item.get('snippet', ''),
-                                    'link': item.get('url', ''),
-                                    'source': item.get('source', 'web'),
-                                    'date': item.get('published_date', date_filter),
-                                    'relevance_score': 0.9  # High relevance from GPT-5 web search
-                                })
-            
-            # If no tool results, parse from output text as fallback
-            if not results and hasattr(response, 'output_text'):
-                content = response.output_text
-                # Try to parse JSON from response if possible
-                try:
-                    parsed_data = json.loads(content)
-                    if isinstance(parsed_data, list):
-                        results = parsed_data
-                    elif isinstance(parsed_data, dict) and 'results' in parsed_data:
-                        results = parsed_data['results']
-                except json.JSONDecodeError:
-                    # Create a single structured result from the content
-                    if content and len(content) > 50:
-                        results.append({
-                            'title': f"AI Agent Industry Update: {query}",
-                            'snippet': content[:500] + "..." if len(content) > 500 else content,
-                            'link': '',
-                            'source': 'GPT-5 Web Search',
-                            'date': date_filter,
-                            'relevance_score': 0.8
-                        })
+            for item in raw_results:
+                results.append({
+                    'title': item.get('title', ''),
+                    'snippet': item.get('snippet', ''),
+                    'link': item.get('url', ''),
+                    'source': 'GPT-5 Web Search',
+                    'date': item.get('date', date_filter),
+                    'relevance_score': 0.9  # High relevance from GPT-5 web search
+                })
             
             return results
             

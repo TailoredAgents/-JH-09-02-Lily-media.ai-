@@ -32,11 +32,8 @@ class LoginRequest(BaseModel):
     
     @validator('backup_code')
     def validate_backup_code(cls, v):
-        if v is not None:
-            v = v.replace(" ", "").replace("-", "").upper()
-            if len(v) != 8 or not all(c.isalnum() for c in v):
-                raise ValueError('Invalid backup code format')
-        return v
+        from backend.auth.validators import normalize_and_validate_backup_code
+        return normalize_and_validate_backup_code(v)
 
 class RegisterRequest(BaseModel):
     email: EmailStr

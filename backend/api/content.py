@@ -940,20 +940,8 @@ async def regenerate_image(
         # Get user settings for industry presets and brand parameters
         from backend.db.models import UserSetting
         user_settings = db.query(UserSetting).filter(UserSetting.user_id == current_user.id).first()
-        user_settings_dict = None
-        
-        if user_settings:
-            user_settings_dict = {
-                "industry_type": user_settings.industry_type,
-                "visual_style": user_settings.visual_style,
-                "primary_color": user_settings.primary_color,
-                "secondary_color": getattr(user_settings, 'secondary_color', '#10b981'),
-                "image_mood": getattr(user_settings, 'image_mood', ["professional", "clean"]),
-                "brand_keywords": getattr(user_settings, 'brand_keywords', []),
-                "avoid_list": getattr(user_settings, 'avoid_list', []),
-                "preferred_image_style": getattr(user_settings, 'preferred_image_style', {}),
-                "image_quality": getattr(user_settings, 'image_quality', "high")
-            }
+        from backend.api.content_utils import build_user_settings_dict
+        user_settings_dict = build_user_settings_dict(user_settings)
         
         # Build enhanced prompt with user settings
         enhanced_prompt = request.custom_prompt

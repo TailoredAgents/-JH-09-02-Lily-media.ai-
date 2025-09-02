@@ -44,13 +44,8 @@ class SimpleVectorSearch:
     
     def _load_metadata(self) -> Dict:
         """Load metadata from disk or create empty dict"""
-        if os.path.exists(self.metadata_file):
-            try:
-                with open(self.metadata_file, 'r') as f:
-                    return json.load(f)
-            except Exception as e:
-                logger.error(f"Error loading metadata: {e}")
-        return {}
+        from backend.core.io_utils import load_json_dict
+        return load_json_dict(self.metadata_file)
     
     def _save_vectors(self):
         """Save vectors to disk"""
@@ -58,8 +53,8 @@ class SimpleVectorSearch:
     
     def _save_metadata(self):
         """Save metadata to disk"""
-        with open(self.metadata_file, 'w') as f:
-            json.dump(self.metadata, f, indent=2, default=str)
+        from backend.core.io_utils import save_json_dict
+        save_json_dict(self.metadata_file, self.metadata)
     
     def embed_text(self, text: str) -> np.ndarray:
         """Create embedding for text using OpenAI"""

@@ -63,13 +63,8 @@ class FAISSMemorySystem:
     
     def _load_metadata(self) -> Dict:
         """Load metadata mapping index IDs to content information"""
-        if os.path.exists(self.metadata_file):
-            try:
-                with open(self.metadata_file, 'r') as f:
-                    return json.load(f)
-            except Exception as e:
-                logger.warning(f"Error loading metadata: {e}. Starting with empty metadata.")
-        return {}
+        from backend.core.io_utils import load_json_dict
+        return load_json_dict(self.metadata_file)
     
     def _save_index(self):
         """Save FAISS index to disk"""
@@ -78,8 +73,8 @@ class FAISSMemorySystem:
     
     def _save_metadata(self):
         """Save metadata to disk"""
-        with open(self.metadata_file, 'w') as f:
-            json.dump(self._metadata, f, indent=2, default=str)
+        from backend.core.io_utils import save_json_dict
+        save_json_dict(self.metadata_file, self._metadata)
     
     def embed_text(self, text: str) -> np.ndarray:
         """Create embedding for text using OpenAI"""

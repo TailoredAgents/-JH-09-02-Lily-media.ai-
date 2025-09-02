@@ -216,51 +216,10 @@ class WebResearchService:
                 ]
             )
             
-            # Parse web search results from Responses API
-            results = []
-            
-            # Check for tool calls in the response (web search results)
-            if hasattr(response, 'tool_calls') and response.tool_calls:
-                for tool_call in response.tool_calls:
-                    if tool_call.type == 'web_search':
-                        # Extract search results from web search tool response
-                        if hasattr(tool_call, 'web_search') and hasattr(tool_call.web_search, 'results'):
-                            search_results = tool_call.web_search.results
-                            for item in search_results[:max_results]:
-                                results.append(WebSearchResult(
-                                    title=item.get('title', ''),
-                                    url=item.get('url', ''),
-                                    snippet=item.get('snippet', ''),
-                                    date=item.get('published_date'),
-                                    source='gpt_5_web_search'
-                                ))
-            
-            # If no tool results, parse from output text as fallback
-            if not results and hasattr(response, 'output_text'):
-                content = response.output_text
-                # Try to extract search results from the text response
-                import re
-                # Look for URL patterns in the response
-                url_matches = re.findall(r'https?://[^\s<>"]+', content)
-                if url_matches:
-                    # Create results from found URLs
-                    for i, url in enumerate(url_matches[:max_results]):
-                        results.append(WebSearchResult(
-                            title=f"Search result {i+1} for: {query}",
-                            url=url,
-                            snippet=content[:200] + "..." if len(content) > 200 else content,
-                            date=datetime.now().strftime('%Y-%m-%d'),
-                            source='gpt_5_web_search'
-                        ))
-                else:
-                    # Create a single result from the full response
-                    results.append(WebSearchResult(
-                        title=f"Web search results for: {query}",
-                        url=f"https://search.example.com/results?q={query.replace(' ', '+')}",
-                        snippet=content[:300] + "..." if len(content) > 300 else content,
-                        date=datetime.now().strftime('%Y-%m-%d'),
-                        source='gpt_5_web_search'
-                    ))
+            # Use shared parser utility
+            from backend.services.web_search_utils import parse_openai_web_search_results, as_web_results
+            results_dicts = parse_openai_web_search_results(response, query, max_results=max_results)
+            results = as_web_results(results_dicts)
                 
             logger.info(f"GPT-5 web search returned {len(results)} results for: {query}")
             return results

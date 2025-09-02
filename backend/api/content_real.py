@@ -400,24 +400,8 @@ async def generate_content(request: ContentGenerationRequest):
         logger.error(f"Content generation error: {e}")
         raise HTTPException(status_code=500, detail=f"Content generation failed: {str(e)}")
 
-@router.post("/generate-image")
-async def generate_image(request: ImageGenerationRequest):
-    """Generate AI-powered images using Grok-2 Image"""
-    try:
-        result = await image_service.generate_image(
-            prompt=request.prompt,
-            platform=request.platform,
-            quality_preset=request.quality_preset,
-            content_context=request.content_context,
-            industry_context=request.industry_context,
-            tone=request.tone
-        )
-        
-        return result
-        
-    except Exception as e:
-        logger.error(f"Image generation error: {e}")
-        raise HTTPException(status_code=500, detail=f"Image generation failed: {str(e)}")
+# Image generation endpoint moved to content.py to avoid duplication
+from backend.api.content import generate_image
 
 @router.post("/regenerate-image")
 async def regenerate_image(
@@ -440,20 +424,8 @@ async def regenerate_image(
         # Get user settings for industry presets and brand parameters
         from backend.db.models import UserSetting
         user_settings = db.query(UserSetting).filter(UserSetting.user_id == current_user.id).first()
-        user_settings_dict = None
-        
-        if user_settings:
-            user_settings_dict = {
-                "industry_type": user_settings.industry_type,
-                "visual_style": user_settings.visual_style,
-                "primary_color": user_settings.primary_color,
-                "secondary_color": user_settings.secondary_color,
-                "image_mood": user_settings.image_mood or ["professional", "clean"],
-                "brand_keywords": user_settings.brand_keywords or [],
-                "avoid_list": user_settings.avoid_list or [],
-                "preferred_image_style": user_settings.preferred_image_style or {},
-                "image_quality": user_settings.image_quality or "high"
-            }
+        from backend.api.content_utils import build_user_settings_dict
+        user_settings_dict = build_user_settings_dict(user_settings)
         
         # Build enhanced prompt with user settings
         enhanced_prompt = request.custom_prompt
