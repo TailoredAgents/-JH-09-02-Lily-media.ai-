@@ -11,6 +11,19 @@ import hashlib
 import json
 
 from fastapi import Request, Response, HTTPException, status
+from .constants import (
+    DEFAULT_RATE_LIMIT_PER_MINUTE,
+    DEFAULT_RATE_LIMIT_PER_HOUR,
+    DEFAULT_BURST_LIMIT,
+    PRODUCTION_RATE_LIMIT_PER_MINUTE,
+    PRODUCTION_RATE_LIMIT_PER_HOUR,
+    PRODUCTION_BURST_LIMIT,
+    BURST_WINDOW_SECONDS,
+    REQUEST_BODY_SCAN_LIMIT_BYTES,
+    RATE_LIMIT_REDIS_KEY_TTL_SECONDS,
+    MINUTE_RATE_LIMIT_TTL_SECONDS,
+    HOUR_RATE_LIMIT_TTL_SECONDS
+)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -67,9 +80,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     """Redis-backed rate limiting middleware for production scalability"""
     
     def __init__(self, app, 
-                 requests_per_minute: int = 60, 
-                 requests_per_hour: int = 1000,
-                 burst_limit: int = 10):
+                 requests_per_minute: int = DEFAULT_RATE_LIMIT_PER_MINUTE, 
+                 requests_per_hour: int = DEFAULT_RATE_LIMIT_PER_HOUR,
+                 burst_limit: int = DEFAULT_BURST_LIMIT):
         super().__init__(app)
         self.requests_per_minute = requests_per_minute
         self.requests_per_hour = requests_per_hour
@@ -146,13 +159,13 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             minute_key = f"rate_limit:{client_ip}:minute:{current_minute}"
             hour_key = f"rate_limit:{client_ip}:hour:{current_hour}"
             
-            # Check burst limit (sliding window of 10 seconds)
+            # Check burst limit (sliding window)
             burst_count = await self.redis_client.zcard(burst_key)
             if burst_count >= self.burst_limit:
                 return {
                     "limit_type": "burst", 
-                    "retry_after": 10,
-                    "message": f"Burst limit exceeded: max {self.burst_limit} requests per 10 seconds"
+                    "retry_after": BURST_WINDOW_SECONDS,
+                    "message": f"Burst limit exceeded: max {self.burst_limit} requests per {BURST_WINDOW_SECONDS} seconds"
                 }
             
             # Check minute limit
@@ -169,7 +182,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             if int(hour_count) >= self.requests_per_hour:
                 return {
                     "limit_type": "hour",
-                    "retry_after": 3600,
+                    "retry_after": HOUR_RATE_LIMIT_TTL_SECONDS - 100,  # slightly less than TTL
                     "message": f"Rate limit exceeded: max {self.requests_per_hour} requests per hour"
                 }
             
@@ -178,16 +191,16 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             
             # Burst counter (sliding window)
             pipe.zadd(burst_key, {str(now): now})
-            pipe.zremrangebyscore(burst_key, 0, now - 10)  # Remove entries older than 10 seconds
-            pipe.expire(burst_key, 15)  # Expire key after 15 seconds
+            pipe.zremrangebyscore(burst_key, 0, now - BURST_WINDOW_SECONDS)
+            pipe.expire(burst_key, RATE_LIMIT_REDIS_KEY_TTL_SECONDS)
             
             # Minute counter
             pipe.incr(minute_key)
-            pipe.expire(minute_key, 70)  # Expire after 70 seconds
+            pipe.expire(minute_key, MINUTE_RATE_LIMIT_TTL_SECONDS)
             
             # Hour counter  
             pipe.incr(hour_key)
-            pipe.expire(hour_key, 3700)  # Expire after ~1 hour
+            pipe.expire(hour_key, HOUR_RATE_LIMIT_TTL_SECONDS)
             
             await pipe.execute()
             
@@ -212,16 +225,16 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         while hour_deque and hour_deque[0] < current_hour:
             hour_deque.popleft()
         
-        # Check burst limit (last 10 seconds)
+        # Check burst limit (sliding window)
         burst_times = self.burst_counts[client_ip]
-        burst_times[:] = [t for t in burst_times if now - t < 10]
+        burst_times[:] = [t for t in burst_times if now - t < BURST_WINDOW_SECONDS]
         
         # Rate limit checks
         if len(burst_times) >= self.burst_limit:
             return {
                 "limit_type": "burst",
-                "retry_after": 10,
-                "message": f"Burst limit exceeded: max {self.burst_limit} requests per 10 seconds"
+                "retry_after": BURST_WINDOW_SECONDS,
+                "message": f"Burst limit exceeded: max {self.burst_limit} requests per {BURST_WINDOW_SECONDS} seconds"
             }
             
         if len(minute_deque) >= self.requests_per_minute:
@@ -245,63 +258,74 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         
         return None
     
+    def _is_exempt_request(self, request: Request) -> bool:
+        """Check if request should be exempt from rate limiting"""
+        exempt_paths = [
+            "/health", "/ready", "/metrics", 
+            "/api/auth/refresh",
+            "/docs", "/redoc", "/openapi.json"
+        ]
+        return request.url.path in exempt_paths or request.method == "OPTIONS"
+    
+    def _create_rate_limit_response(self, client_ip: str, limit_info: Dict[str, Any]) -> JSONResponse:
+        """Create rate limit exceeded response"""
+        logger.warning(f"Rate limit exceeded for {client_ip}: {limit_info['message']}")
+        
+        return JSONResponse(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            content={
+                "error": "Rate limit exceeded",
+                "message": limit_info["message"],
+                "retry_after": limit_info["retry_after"]
+            },
+            headers={
+                "Retry-After": str(limit_info["retry_after"]),
+                "X-RateLimit-Limit": str(self._get_limit_for_type(limit_info['limit_type'])),
+                "X-RateLimit-Remaining": "0",
+                "X-RateLimit-Reset": str(int(time.time() + limit_info["retry_after"]))
+            }
+        )
+    
+    def _add_rate_limit_headers(self, response: Response, client_ip: str) -> Response:
+        """Add rate limit headers to successful responses"""
+        minute_remaining = max(0, self.requests_per_minute - len(self.minute_counts[client_ip]))
+        hour_remaining = max(0, self.requests_per_hour - len(self.hour_counts[client_ip]))
+        
+        response.headers["X-RateLimit-Limit-Minute"] = str(self.requests_per_minute)
+        response.headers["X-RateLimit-Remaining-Minute"] = str(minute_remaining)
+        response.headers["X-RateLimit-Limit-Hour"] = str(self.requests_per_hour)
+        response.headers["X-RateLimit-Remaining-Hour"] = str(hour_remaining)
+        
+        return response
+    
+    async def _handle_fallback_request(self, request: Request, call_next) -> JSONResponse:
+        """Handle fallback request processing when rate limiting fails"""
+        try:
+            return await call_next(request)
+        except Exception as inner_e:
+            logger.error(f"Fallback request processing failed: {inner_e}")
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content={"error": "Internal server error", "message": "Rate limiting middleware encountered an error"}
+            )
+
     async def dispatch(self, request: Request, call_next):
         try:
-            # Skip rate limiting for health checks, auth endpoints, and CORS preflight requests
-            exempt_paths = [
-                "/health", "/ready", "/metrics", 
-                "/api/auth/refresh",  # Token refresh should be frequent
-                "/docs", "/redoc", "/openapi.json"  # Documentation endpoints
-            ]
-            if request.url.path in exempt_paths or request.method == "OPTIONS":
+            if self._is_exempt_request(request):
                 return await call_next(request)
             
             client_ip = self.get_client_ip(request)
-            
-            # Check rate limits (uses async Redis if available, falls back to memory)
             limit_info = await self._redis_rate_check(client_ip)
+            
             if limit_info:
-                logger.warning(f"Rate limit exceeded for {client_ip}: {limit_info['message']}")
-                
-                return JSONResponse(
-                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                    content={
-                        "error": "Rate limit exceeded",
-                        "message": limit_info["message"],
-                        "retry_after": limit_info["retry_after"]
-                    },
-                    headers={
-                        "Retry-After": str(limit_info["retry_after"]),
-                        "X-RateLimit-Limit": str(self._get_limit_for_type(limit_info['limit_type'])),
-                        "X-RateLimit-Remaining": "0",
-                        "X-RateLimit-Reset": str(int(time.time() + limit_info["retry_after"]))
-                    }
-                )
+                return self._create_rate_limit_response(client_ip, limit_info)
             
-            # Add rate limit headers to successful responses
             response = await call_next(request)
+            return self._add_rate_limit_headers(response, client_ip)
             
-            # Add current rate limit status to response
-            minute_remaining = max(0, self.requests_per_minute - len(self.minute_counts[client_ip]))
-            hour_remaining = max(0, self.requests_per_hour - len(self.hour_counts[client_ip]))
-            
-            response.headers["X-RateLimit-Limit-Minute"] = str(self.requests_per_minute)
-            response.headers["X-RateLimit-Remaining-Minute"] = str(minute_remaining)
-            response.headers["X-RateLimit-Limit-Hour"] = str(self.requests_per_hour)
-            response.headers["X-RateLimit-Remaining-Hour"] = str(hour_remaining)
-            
-            return response
         except Exception as e:
             logger.error(f"Rate limit middleware error: {e}")
-            # Fail open - allow request to continue if rate limiting fails
-            try:
-                return await call_next(request)
-            except Exception as inner_e:
-                logger.error(f"Fallback request processing failed: {inner_e}")
-                return JSONResponse(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    content={"error": "Internal server error", "message": "Rate limiting middleware encountered an error"}
-                )
+            return await self._handle_fallback_request(request, call_next)
 
 class RequestValidationMiddleware(BaseHTTPMiddleware):
     """Validate incoming requests for security threats"""
@@ -397,10 +421,10 @@ class RequestValidationMiddleware(BaseHTTPMiddleware):
             # For POST/PUT requests, check body (limited to prevent DoS)
             if request.method in ["POST", "PUT", "PATCH"]:
                 try:
-                    # Only check first 10KB to prevent DoS
+                    # Only check first portion to prevent DoS
                     body = await request.body()
-                    if len(body) > 10240:  # 10KB limit for security scanning
-                        body = body[:10240]
+                    if len(body) > REQUEST_BODY_SCAN_LIMIT_BYTES:
+                        body = body[:REQUEST_BODY_SCAN_LIMIT_BYTES]
                     
                     if body:
                         try:
@@ -560,9 +584,9 @@ def setup_security_middleware(app, environment: str = "production"):
         # 2. Rate limiting with production-ready defaults
         try:
             # More generous defaults for SaaS applications
-            default_per_minute = "120" if environment == "production" else "60"
-            default_per_hour = "2000" if environment == "production" else "1000" 
-            default_burst = "30" if environment == "production" else "10"
+            default_per_minute = str(PRODUCTION_RATE_LIMIT_PER_MINUTE) if environment == "production" else str(DEFAULT_RATE_LIMIT_PER_MINUTE)
+            default_per_hour = str(PRODUCTION_RATE_LIMIT_PER_HOUR) if environment == "production" else str(DEFAULT_RATE_LIMIT_PER_HOUR)
+            default_burst = str(PRODUCTION_BURST_LIMIT) if environment == "production" else str(DEFAULT_BURST_LIMIT)
             
             requests_per_minute = int(os.getenv("RATE_LIMIT_PER_MINUTE", default_per_minute))
             requests_per_hour = int(os.getenv("RATE_LIMIT_PER_HOUR", default_per_hour))

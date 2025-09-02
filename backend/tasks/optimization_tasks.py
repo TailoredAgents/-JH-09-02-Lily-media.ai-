@@ -1,9 +1,34 @@
+"""
+Social Media Performance Optimization Tasks.
+
+This module provides Celery tasks for analyzing social media performance,
+optimizing posting schedules, running A/B tests, and generating performance reports.
+Tasks simulate performance data in development but integrate with real social media
+APIs and analytics in production.
+
+Functions:
+    analyze_performance: Analyze overall content performance and provide recommendations
+    optimize_posting_schedule: Optimize posting schedule based on engagement patterns
+    a_b_test_content: Run A/B tests on different content variations
+    generate_performance_report: Generate comprehensive performance reports
+"""
+
 # Ensure warnings are suppressed in worker processes
 from backend.core.suppress_warnings import suppress_third_party_warnings
 suppress_third_party_warnings()
 
 from backend.tasks.celery_app import celery_app
 from backend.agents.tools import openai_tool, memory_tool
+from backend.core.constants import (
+    DEFAULT_TOTAL_POSTS, DEFAULT_AVG_ENGAGEMENT_RATE,
+    TOP_PERFORMING_REACH_THRESHOLD, LOW_PERFORMING_REACH_THRESHOLD,
+    OPTIMIZATION_MAX_TOKENS, PERFORMANCE_REPORT_MAX_TOKENS,
+    AB_TEST_INSIGHTS_MAX_TOKENS, DEFAULT_REPORT_DATE_RANGE_DAYS,
+    TWITTER_ENGAGEMENT_BOOST_MIN, TWITTER_ENGAGEMENT_BOOST_MAX,
+    REACH_MIN_RANDOM, REACH_MAX_RANDOM, CLICKS_MIN_RANDOM, CLICKS_MAX_RANDOM,
+    MIN_AB_TEST_VARIANTS, TOTAL_ENGAGEMENT_DEFAULT, TOTAL_REACH_DEFAULT,
+    NEW_FOLLOWERS_DEFAULT, CONTENT_PIECES_DEFAULT
+)
 import logging
 from datetime import datetime, timedelta
 import random
@@ -16,14 +41,14 @@ def analyze_performance():
     try:
         # Simulate performance data (in production, this would come from social media APIs)
         performance_data = {
-            'total_posts': 156,
-            'avg_engagement_rate': 4.2,
+            'total_posts': DEFAULT_TOTAL_POSTS,
+            'avg_engagement_rate': DEFAULT_AVG_ENGAGEMENT_RATE,
             'top_performing_posts': [
                 {
                     'platform': 'LinkedIn',
                     'content': 'AI is transforming how we approach content marketing...',
                     'engagement_rate': 8.5,
-                    'reach': 5200,
+                    'reach': TOP_PERFORMING_REACH_THRESHOLD + 200,
                     'published_at': '2025-07-20T10:00:00Z'
                 },
                 {
@@ -39,7 +64,7 @@ def analyze_performance():
                     'platform': 'Instagram',
                     'content': 'Generic motivational quote with no context',
                     'engagement_rate': 1.2,
-                    'reach': 450,
+                    'reach': LOW_PERFORMING_REACH_THRESHOLD - 50,
                     'published_at': '2025-07-19T12:00:00Z'
                 }
             ],
@@ -73,7 +98,7 @@ Provide:
 
 Focus on actionable, data-driven recommendations."""
 
-        analysis = openai_tool.generate_text(optimization_prompt, max_tokens=500)
+        analysis = openai_tool.generate_text(optimization_prompt, max_tokens=OPTIMIZATION_MAX_TOKENS)
         
         # Store analysis in memory
         memory_tool.store_content(
@@ -189,7 +214,7 @@ Key insights:
 def a_b_test_content(content_variants, platform):
     """Run A/B tests on different content variations"""
     try:
-        if len(content_variants) < 2:
+        if len(content_variants) < MIN_AB_TEST_VARIANTS:
             return {
                 'status': 'error',
                 'message': 'At least 2 content variants required for A/B testing'
@@ -200,9 +225,9 @@ def a_b_test_content(content_variants, platform):
         
         for i, variant in enumerate(content_variants):
             # Simulate engagement metrics
-            engagement_rate = round(random.uniform(2.0, 8.0), 2)
-            reach = random.randint(500, 5000)
-            clicks = random.randint(10, 200)
+            engagement_rate = round(random.uniform(TWITTER_ENGAGEMENT_BOOST_MIN, TWITTER_ENGAGEMENT_BOOST_MAX), 2)
+            reach = random.randint(REACH_MIN_RANDOM, REACH_MAX_RANDOM)
+            clicks = random.randint(CLICKS_MIN_RANDOM, CLICKS_MAX_RANDOM)
             
             result = {
                 'variant': chr(65 + i),  # A, B, C, etc.
@@ -236,7 +261,7 @@ Content Variants:
 {[f"Variant {chr(65 + i)}: {variant[:100]}..." for i, variant in enumerate(content_variants)]}
 """
         
-        insights = openai_tool.generate_text(insights_prompt, max_tokens=400)
+        insights = openai_tool.generate_text(insights_prompt, max_tokens=AB_TEST_INSIGHTS_MAX_TOKENS)
         
         # Store A/B test results
         memory_tool.store_content(
@@ -267,7 +292,7 @@ Content Variants:
         }
 
 @celery_app.task
-def generate_performance_report(date_range_days=30):
+def generate_performance_report(date_range_days=DEFAULT_REPORT_DATE_RANGE_DAYS):
     """Generate comprehensive performance report"""
     try:
         end_date = datetime.utcnow()
@@ -281,12 +306,12 @@ def generate_performance_report(date_range_days=30):
                 'days': date_range_days
             },
             'overall_metrics': {
-                'total_posts': 156,
-                'total_engagement': 2847,
-                'avg_engagement_rate': 4.2,
-                'total_reach': 45600,
-                'new_followers': 342,
-                'content_pieces': 89
+                'total_posts': DEFAULT_TOTAL_POSTS,
+                'total_engagement': TOTAL_ENGAGEMENT_DEFAULT,
+                'avg_engagement_rate': DEFAULT_AVG_ENGAGEMENT_RATE,
+                'total_reach': TOTAL_REACH_DEFAULT,
+                'new_followers': NEW_FOLLOWERS_DEFAULT,
+                'content_pieces': CONTENT_PIECES_DEFAULT
             },
             'platform_breakdown': {
                 'twitter': {
@@ -327,7 +352,7 @@ Provide:
 
 Keep it concise but comprehensive for executive review."""
 
-        executive_summary = openai_tool.generate_text(summary_prompt, max_tokens=400)
+        executive_summary = openai_tool.generate_text(summary_prompt, max_tokens=PERFORMANCE_REPORT_MAX_TOKENS)
         
         report = {
             'report_id': f"report_{int(datetime.utcnow().timestamp())}",

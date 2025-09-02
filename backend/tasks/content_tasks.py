@@ -1,3 +1,14 @@
+"""
+Content Generation and Management Tasks.
+
+This module provides Celery tasks for generating social media content using CrewAI agents.
+Tasks handle daily content generation, brand voice customization, and content optimization
+for different social media platforms.
+
+Functions:
+    generate_daily_content: Generate daily content using CrewAI agents with specified topics and brand voice
+"""
+
 # Ensure warnings are suppressed in worker processes
 from backend.core.suppress_warnings import suppress_third_party_warnings
 suppress_third_party_warnings()
