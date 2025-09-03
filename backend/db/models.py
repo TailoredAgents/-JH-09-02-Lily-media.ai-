@@ -17,6 +17,7 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
+    public_id = Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True, index=True, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
     username = Column(String, unique=True, index=True, nullable=False)
     full_name = Column(String)
@@ -81,6 +82,7 @@ class ContentLog(Base):
     __tablename__ = "content_logs"
 
     id = Column(Integer, primary_key=True, index=True)
+    public_id = Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True, index=True, nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     platform = Column(String, nullable=False)  # twitter, instagram, facebook
     content = Column(Text, nullable=False)
@@ -742,6 +744,7 @@ class SocialPlatformConnection(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
     platform = Column(String, nullable=False, index=True)  # twitter, instagram, facebook
     
     # Platform account details
@@ -793,12 +796,14 @@ class SocialPlatformConnection(Base):
     
     # Relationships
     user = relationship("User")
+    organization = relationship("Organization")
     posts = relationship("SocialPost", back_populates="connection")
     
-    # Unique constraint: one connection per platform per user
+    # Unique constraint: one connection per platform per user per organization
     __table_args__ = (
-        Index('idx_social_conn_user_platform', user_id, platform),
+        Index('idx_social_platform_conn_org_user_platform', organization_id, user_id, platform, unique=True),
         Index('idx_social_conn_platform_user', platform, platform_user_id),
+        Index('idx_social_platform_conn_org_id', organization_id),
     )
 
 
