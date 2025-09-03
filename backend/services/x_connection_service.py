@@ -6,6 +6,8 @@ import logging
 from typing import Dict, Any, Optional
 import httpx
 
+from backend.core.service_factory import register_service, get_service
+
 logger = logging.getLogger(__name__)
 
 
@@ -183,12 +185,9 @@ class XConnectionService:
             raise ValueError(f"Failed to get user context: {str(e)}")
 
 
-# Global service instance
-_x_connection_service_instance = None
+# Register service with factory
+register_service('x_connection_service', XConnectionService, scope='singleton')
 
 def get_x_connection_service() -> XConnectionService:
-    """Get singleton X connection service instance"""
-    global _x_connection_service_instance
-    if _x_connection_service_instance is None:
-        _x_connection_service_instance = XConnectionService()
-    return _x_connection_service_instance
+    """Get X connection service instance from service factory"""
+    return get_service('x_connection_service')

@@ -6,10 +6,10 @@ import logging
 import base64
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, Optional, Tuple
-import httpx
 
 from backend.core.config import get_settings
 from backend.core.encryption import encrypt_token, decrypt_token
+from backend.core.http_client import get_http_client
 from backend.db.models import SocialConnection, SocialAudit
 from sqlalchemy.orm import Session
 
@@ -225,9 +225,9 @@ class TokenRefreshService:
             "fb_exchange_token": short_token
         }
         
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(url, params=params)
-            response.raise_for_status()
+        client = await get_http_client()
+        response = await client.get(url, params=params)
+        response.raise_for_status()
             
             data = response.json()
             
@@ -252,12 +252,12 @@ class TokenRefreshService:
                 "access_token": f"{self.meta_app_id}|{self.meta_app_secret}"
             }
             
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.get(url, params=params)
-                response.raise_for_status()
-                
-                data = response.json()
-                token_data = data.get("data", {})
+            client = await get_http_client()
+            response = await client.get(url, params=params)
+            response.raise_for_status()
+            
+            data = response.json()
+            token_data = data.get("data", {})
                 
                 return token_data.get("is_valid", False)
                 
@@ -274,9 +274,9 @@ class TokenRefreshService:
             "access_token": user_token
         }
         
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(url, params=params)
-            response.raise_for_status()
+        client = await get_http_client()
+        response = await client.get(url, params=params)
+        response.raise_for_status()
             
             data = response.json()
             page_token = data.get("access_token")
@@ -305,9 +305,9 @@ class TokenRefreshService:
             "refresh_token": refresh_token
         }
         
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(url, headers=headers, data=data)
-            response.raise_for_status()
+        client = await get_http_client()
+        response = await client.post(url, headers=headers, data=data)
+        response.raise_for_status()
             
             token_data = response.json()
             

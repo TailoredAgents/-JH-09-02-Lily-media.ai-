@@ -17,6 +17,7 @@ except ImportError:
     REDIS_AVAILABLE = False
 
 from backend.core.config import get_settings
+from backend.core.service_factory import register_service, get_service
 
 logger = logging.getLogger(__name__)
 
@@ -283,15 +284,12 @@ class PKCEStateStore:
             return {"error": str(e)}
 
 
-# Global instance for application use
-_state_store_instance = None
+# Register service with factory
+register_service('pkce_state_store', PKCEStateStore, scope='singleton')
 
 def get_state_store() -> PKCEStateStore:
-    """Get singleton PKCE state store instance"""
-    global _state_store_instance
-    if _state_store_instance is None:
-        _state_store_instance = PKCEStateStore()
-    return _state_store_instance
+    """Get PKCE state store instance from service factory"""
+    return get_service('pkce_state_store')
 
 def create_pkce_challenge(organization_id: str, platform: str) -> Dict[str, str]:
     """Convenience function to create PKCE challenge"""

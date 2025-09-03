@@ -21,8 +21,9 @@ from backend.services.notification_service import (
     NotificationType, 
     NotificationPriority
 )
+from backend.core.api_version import create_versioned_router
 
-router = APIRouter(prefix="/api/notifications", tags=["notifications"])
+router = create_versioned_router(prefix="/notifications", tags=["notifications"])
 logger = logging.getLogger(__name__)
 
 # Pydantic response models

@@ -723,8 +723,10 @@ class VectorStore:
         """Ensure data is saved when object is destroyed."""
         try:
             self._save_all()
-        except:
-            pass  # Ignore errors during cleanup
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).debug("VectorStore cleanup save failed", 
+                                            exc_info=e)
 
 # Global instance - lazy loaded
 _vector_store = None

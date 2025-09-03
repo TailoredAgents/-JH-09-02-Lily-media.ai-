@@ -125,7 +125,8 @@ class TwitterClient:
                 f"{self.OAUTH_URL}/token",
                 data=token_data,
                 auth=HTTPBasicAuth(self.client_id, self.client_secret),
-                headers={"Content-Type": "application/x-www-form-urlencoded"}
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                timeout=10
             )
             
             if response.status_code != 200:
@@ -166,7 +167,8 @@ class TwitterClient:
                 f"{self.OAUTH_URL}/token",
                 data=token_data,
                 auth=HTTPBasicAuth(self.client_id, self.client_secret),
-                headers={"Content-Type": "application/x-www-form-urlencoded"}
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                timeout=10
             )
             
             if response.status_code != 200:
@@ -264,7 +266,8 @@ class TwitterClient:
                 f"{self.BASE_URL}/users/me",
                 params={
                     "user.fields": "id,name,username,profile_image_url,public_metrics,verified,description,location"
-                }
+                },
+                timeout=10
             )
             
             self._update_rate_limit("users/me", response)
@@ -316,7 +319,8 @@ class TwitterClient:
             # Post tweet
             response = session.post(
                 f"{self.BASE_URL}/tweets",
-                json=tweet_payload
+                json=tweet_payload,
+                timeout=15
             )
             
             self._update_rate_limit("tweets", response)
@@ -385,7 +389,8 @@ class TwitterClient:
                 params={
                     "tweet.fields": "public_metrics,created_at,author_id,context_annotations,entities",
                     "expansions": "author_id"
-                }
+                },
+                timeout=10
             )
             
             self._update_rate_limit("tweets/metrics", response)

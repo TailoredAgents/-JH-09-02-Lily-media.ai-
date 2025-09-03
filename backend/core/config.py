@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings
-from pydantic import Field, ConfigDict
+from pydantic import Field, ConfigDict, SecretStr
 from functools import lru_cache
 from typing import List
 import os
@@ -44,10 +44,10 @@ class Settings(BaseSettings):
     environment: str = Field(default_factory=lambda: _detect_environment())
     debug: bool = Field(default_factory=lambda: _detect_environment() != "production")
     
-    # API Keys
-    openai_api_key: str = ""
-    xai_api_key: str = ""
-    serper_api_key: str = ""
+    # API Keys (secured with SecretStr)
+    openai_api_key: SecretStr = Field(default=SecretStr(""), env="OPENAI_API_KEY")
+    xai_api_key: SecretStr = Field(default=SecretStr(""), env="XAI_API_KEY") 
+    serper_api_key: SecretStr = Field(default=SecretStr(""), env="SERPER_API_KEY")
     
     # Database
     database_url: str = os.getenv("DATABASE_URL", "")  # PostgreSQL from environment
@@ -100,45 +100,74 @@ class Settings(BaseSettings):
                 missing_fields.append("REDIS_URL")
             
             # OpenAI API key (required for most features)
-            if not self.openai_api_key:
+            if not self.openai_api_key.get_secret_value():
                 missing_fields.append("OPENAI_API_KEY")
         
         return missing_fields
     
     # JWT (Updated with proper naming and production security)
     # CRITICAL: These MUST be set in production environment
-    SECRET_KEY: str = Field(default="", env="SECRET_KEY")
-    encryption_key: str = Field(default="", env="ENCRYPTION_KEY")
-    jwt_secret: str = Field(default="", env="JWT_SECRET")
+    SECRET_KEY: SecretStr = Field(default=SecretStr(""), env="SECRET_KEY")
+    encryption_key: SecretStr = Field(default=SecretStr(""), env="ENCRYPTION_KEY")
+    jwt_secret: SecretStr = Field(default=SecretStr(""), env="JWT_SECRET")
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         # Validate critical security settings in production
         if self.environment == "production":
-            if not self.SECRET_KEY or self.SECRET_KEY == "your-secret-key-change-this-in-production":
+            secret_key_value = self.SECRET_KEY.get_secret_value()
+            if not secret_key_value or secret_key_value == "your-secret-key-change-this-in-production":
                 logger.error("🚨 CRITICAL: SECRET_KEY must be set in production environment")
                 logger.error("   Set environment variable: SECRET_KEY=your-secure-secret-key")
                 raise ValueError("CRITICAL: SECRET_KEY must be set in production environment")
             
             # Generate encryption key if not provided (with warning)
-            if not self.encryption_key or len(self.encryption_key) < 32:
+            encryption_key_value = self.encryption_key.get_secret_value()
+            if not encryption_key_value or len(encryption_key_value) < 32:
                 logger.warning("⚠️  ENCRYPTION_KEY not set in production - generating temporary key")
                 logger.warning("   This is NOT secure for production! Set environment variable:")
                 logger.warning("   ENCRYPTION_KEY=your-32-character-encryption-key")
                 import secrets
                 import string
-                self.encryption_key = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(32))
-                logger.warning(f"   Generated temporary key: {self.encryption_key}")
+                temp_key = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(32))
+                self.encryption_key = SecretStr(temp_key)
+                logger.warning(f"   Generated temporary key: {temp_key}")
             
-            if not self.jwt_secret:
+            jwt_secret_value = self.jwt_secret.get_secret_value()
+            if not jwt_secret_value:
                 # Use SECRET_KEY as fallback for JWT_SECRET
-                if self.SECRET_KEY:
+                if secret_key_value:
                     logger.warning("⚠️  JWT_SECRET not set - using SECRET_KEY as fallback")
-                    self.jwt_secret = self.SECRET_KEY
+                    self.jwt_secret = SecretStr(secret_key_value)
                 else:
                     logger.error("🚨 CRITICAL: JWT_SECRET or SECRET_KEY must be set in production") 
                     logger.error("   Set environment variable: JWT_SECRET=your-jwt-secret")
                     raise ValueError("CRITICAL: JWT_SECRET must be set in production environment")
+    
+    # Helper methods to safely access secret values
+    def get_openai_api_key(self) -> str:
+        """Get OpenAI API key value."""
+        return self.openai_api_key.get_secret_value()
+    
+    def get_xai_api_key(self) -> str:
+        """Get xAI API key value."""
+        return self.xai_api_key.get_secret_value()
+    
+    def get_serper_api_key(self) -> str:
+        """Get Serper API key value."""
+        return self.serper_api_key.get_secret_value()
+    
+    def get_secret_key(self) -> str:
+        """Get SECRET_KEY value."""
+        return self.SECRET_KEY.get_secret_value()
+    
+    def get_encryption_key(self) -> str:
+        """Get encryption key value."""
+        return self.encryption_key.get_secret_value()
+    
+    def get_jwt_secret(self) -> str:
+        """Get JWT secret value."""
+        return self.jwt_secret.get_secret_value()
     jwt_algorithm: str = "HS256"
     jwt_access_ttl_seconds: int = 900  # 15 minutes (secure for production)
     jwt_refresh_ttl_seconds: int = 604800  # 7 days (reduced from 14 for security)

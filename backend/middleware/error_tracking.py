@@ -31,8 +31,11 @@ async def error_tracking_middleware(request: Request, call_next: Callable) -> Re
             body = await request.body()
             if body:
                 request_info["body"] = json.loads(body)
-        except:
-            pass
+        except Exception as parse_err:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.debug("Failed to parse request body in error tracker", 
+                        exc_info=parse_err)
     
     try:
         # Process request

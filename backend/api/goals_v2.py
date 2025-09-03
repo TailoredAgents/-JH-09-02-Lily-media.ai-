@@ -15,8 +15,9 @@ from backend.auth.dependencies import get_current_active_user
 from backend.services.notification_service import notification_service
 from backend.services.goals_progress_service import GoalsProgressService
 from backend.tasks.goals_tasks import sync_platform_metrics, update_all_goals_progress
+from backend.core.api_version import create_versioned_router
 
-router = APIRouter(prefix="/api/goals", tags=["goals"])
+router = create_versioned_router(prefix="/goals", tags=["goals"])
 logger = logging.getLogger(__name__)
 
 # Pydantic models

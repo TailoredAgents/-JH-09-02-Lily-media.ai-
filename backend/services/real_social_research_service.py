@@ -5,12 +5,12 @@ Uses real APIs and web scraping for production data
 import logging
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
-import requests
 import json
 import re
 from urllib.parse import quote
 
 from backend.core.config import get_settings
+from backend.core.http_migration_helper import get_sync_client
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -42,7 +42,8 @@ class RealSocialResearchService:
                 "Content-Type": "application/json"
             }
             
-            response = requests.post(
+            client = get_sync_client()
+            response = client.post(
                 "https://google.serper.dev/search",
                 json=payload,
                 headers=headers,
@@ -152,7 +153,8 @@ class RealSocialResearchService:
                 "Content-Type": "application/json"
             }
             
-            response = requests.post(
+            client = get_sync_client()
+            response = client.post(
                 "https://google.serper.dev/search",
                 json=payload,
                 headers=headers,
@@ -276,7 +278,8 @@ class RealSocialResearchService:
                 "Content-Type": "application/json"
             }
             
-            response = requests.post(
+            client = get_sync_client()
+            response = client.post(
                 "https://google.serper.dev/search",
                 json=payload,
                 headers=headers,
@@ -406,7 +409,8 @@ class RealSocialResearchService:
                 "Content-Type": "application/json"
             }
             
-            response = requests.post(
+            client = get_sync_client()
+            response = client.post(
                 "https://google.serper.dev/search",
                 json=payload,
                 headers=headers,

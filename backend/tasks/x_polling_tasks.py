@@ -194,8 +194,11 @@ def poll_all_x_mentions() -> Dict[str, Any]:
                                     db, connection, "poll_mentions", "failure",
                                     {"error": str(e), "exception": True}
                                 ))
-                            except:
-                                pass  # Don't fail the whole task for audit errors
+                            except Exception as audit_err:
+                                import logging
+                                logger = logging.getLogger(__name__)
+                                logger.warning("Audit write failed in X mentions polling",
+                                             extra={"err": str(audit_err)}, exc_info=audit_err)
                     
                     # Update rate limit counter for this organization
                     if redis_client:

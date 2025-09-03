@@ -9,8 +9,7 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from backend.db.database import Base
-from backend.db.models import *  # Import all models
-from backend.core.config import get_settings
+import backend.db.models as _models  # noqa: F401 (import for side effects to register models)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -33,23 +32,11 @@ target_metadata = Base.metadata
 def get_database_url():
     """Get database URL - ALWAYS POSTGRESQL, NEVER SQLITE"""
     # ALWAYS use PostgreSQL - no conditions, no fallbacks
-    postgresql_url = "postgresql://socialmedia:BbsIYQtjBnhKwRL3F9kXbv1wrtsVxuTg@dpg-d2ln7eer433s739509lg-a/socialmedia_uq72?sslmode=require"
+    postgresql_url = "postgresql://socialmedia:BbsIYQtjBnhKwRL3F9kXbv1wrtsVxuTg@dpg-d2ln7eer433s739509lg-a.oregon-postgres.render.com/socialmedia_uq72?sslmode=require"
     
-    # Try to get from environment or settings, but ALWAYS validate it's PostgreSQL
-    try:
-        settings = get_settings()
-        db_url = settings.get_database_url()
-        
-        # Reject SQLite completely
-        if "sqlite" in db_url.lower():
-            print("WARNING: SQLite detected in Alembic, forcing PostgreSQL")
-            return postgresql_url
-            
-        return db_url
-    except:
-        # Any error = use PostgreSQL
-        print("WARNING: Could not get database URL, using PostgreSQL")
-        return postgresql_url
+    # For Alembic operations, use the hardcoded PostgreSQL URL directly
+    # This avoids dependency on app config which requires environment variables
+    return postgresql_url
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.

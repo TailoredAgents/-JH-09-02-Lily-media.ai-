@@ -27,6 +27,7 @@ except ImportError:
 from backend.core.encryption import encrypt_token
 from backend.auth.social_oauth import SocialOAuthManager
 from backend.integrations.connection_health import compute_connection_health
+from backend.core.api_version import create_versioned_router
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
@@ -50,8 +51,8 @@ def require_partner_oauth_enabled():
         )
 
 # Router setup
-router = APIRouter(
-    prefix="/api/oauth",
+router = create_versioned_router(
+    prefix="/oauth",
     tags=["partner-oauth"],
     dependencies=[Depends(require_partner_oauth_enabled)]
 )
@@ -865,8 +866,11 @@ async def connect_meta_account(
             )
             db.add(audit)
             db.commit()
-        except:
-            pass
+        except Exception as audit_err:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.exception("Partner OAuth audit write failed", 
+                           exc_info=audit_err)
         
         raise HTTPException(
             status_code=400,
@@ -893,8 +897,11 @@ async def connect_meta_account(
             )
             db.add(audit)
             db.commit()
-        except:
-            pass
+        except Exception as audit_err:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.exception("Partner OAuth audit write failed", 
+                           exc_info=audit_err)
         
         raise HTTPException(
             status_code=500,
@@ -1031,8 +1038,11 @@ async def connect_x_account(
             )
             db.add(audit)
             db.commit()
-        except:
-            pass
+        except Exception as audit_err:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.exception("Partner OAuth audit write failed", 
+                           exc_info=audit_err)
         
         raise HTTPException(
             status_code=400,
@@ -1058,8 +1068,11 @@ async def connect_x_account(
             )
             db.add(audit)
             db.commit()
-        except:
-            pass
+        except Exception as audit_err:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.exception("Partner OAuth audit write failed", 
+                           exc_info=audit_err)
         
         raise HTTPException(
             status_code=500,
@@ -1292,8 +1305,11 @@ async def disconnect_connection(
             )
             db.add(audit)
             db.commit()
-        except:
-            pass
+        except Exception as audit_err:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.exception("Partner OAuth audit write failed", 
+                           exc_info=audit_err)
         
         raise HTTPException(
             status_code=500,

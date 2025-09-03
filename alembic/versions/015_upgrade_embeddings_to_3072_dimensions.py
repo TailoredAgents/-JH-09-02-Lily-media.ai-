@@ -11,7 +11,7 @@ from sqlalchemy import text
 
 # revision identifiers
 revision = '015_upgrade_embeddings'
-down_revision = '014_add_admin_system'
+down_revision = '014'
 branch_labels = None
 depends_on = None
 

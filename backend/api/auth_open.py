@@ -16,12 +16,13 @@ from backend.db.models import User
 from backend.core.security import JWTHandler
 from backend.services.email_service import email_methods
 from backend.core.config import get_settings
+from backend.core.api_version import create_versioned_router
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
 jwt_handler = JWTHandler()
 
-router = APIRouter(prefix="/api/auth", tags=["authentication"])
+router = create_versioned_router(prefix="/auth", tags=["authentication"])
 
 # Request/Response Models
 class OpenRegisterRequest(BaseModel):
@@ -57,6 +58,19 @@ class TokenResponse(BaseModel):
     email_verified: bool
     tier: str
     is_superuser: bool
+
+class MessageResponse(BaseModel):
+    message: str
+    status: str = "success"
+
+class VerifyEmailResponse(MessageResponse):
+    email_verified: bool = True
+
+class ForgotPasswordResponse(MessageResponse):
+    password_reset_sent: bool = True
+
+class LogoutResponse(MessageResponse):
+    logged_out: bool = True
 
 # Helper Functions
 def generate_verification_token() -> str:
@@ -210,7 +224,7 @@ async def open_register(
         is_superuser=new_user.is_superuser
     )
 
-@router.post("/verify-email")
+@router.post("/verify-email", response_model=VerifyEmailResponse)
 async def verify_email(
     request: EmailVerificationRequest,
     db: Session = Depends(get_db)
@@ -243,9 +257,12 @@ async def verify_email(
     
     logger.info(f"Email verified for user: {user.email}")
     
-    return {"message": "Email verified successfully"}
+    return {
+        "message": "Email verified successfully",
+        "email_verified": True
+    }
 
-@router.post("/resend-verification")
+@router.post("/resend-verification", response_model=MessageResponse)
 async def resend_verification(
     request: ResendVerificationRequest,
     background_tasks: BackgroundTasks,
@@ -292,7 +309,7 @@ async def resend_verification(
     
     return {"message": "Verification email sent"}
 
-@router.post("/forgot-password")
+@router.post("/forgot-password", response_model=ForgotPasswordResponse)
 async def forgot_password(
     request: ForgotPasswordRequest,
     background_tasks: BackgroundTasks,
@@ -333,9 +350,12 @@ async def forgot_password(
     
     logger.info(f"Password reset requested for: {user.email}")
     
-    return {"message": "Password reset link sent"}
+    return {
+        "message": "Password reset link sent",
+        "password_reset_sent": True
+    }
 
-@router.post("/reset-password")
+@router.post("/reset-password", response_model=MessageResponse)
 async def reset_password(
     request: ResetPasswordRequest,
     db: Session = Depends(get_db)
@@ -618,7 +638,7 @@ async def get_current_user(
             detail="Invalid or expired token"
         )
 
-@router.post("/logout")
+@router.post("/logout", response_model=LogoutResponse)
 async def logout(response: Response):
     """
     Logout endpoint - clears the refresh token cookie
@@ -633,4 +653,8 @@ async def logout(response: Response):
         samesite="none" if settings.environment == "production" else "lax"  # Must match setting logic
     )
     
-    return {"message": "Logout successful", "status": "success"}
+    return {
+        "message": "Logout successful", 
+        "status": "success",
+        "logged_out": True
+    }

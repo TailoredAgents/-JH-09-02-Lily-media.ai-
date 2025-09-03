@@ -12,12 +12,18 @@ sys.path.insert(0, root_dir)
 
 import logging
 
-# Setup logging before any imports
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+# Setup centralized logging
+try:
+    from backend.core.logging import setup_development_logging, get_logger
+    setup_development_logging()
+    logger = get_logger(__name__)
+except ImportError:
+    # Fallback to basic logging if centralized logging fails
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    logger = logging.getLogger(__name__)
 
 logger.info(f"🔄 Redirecting from backend/main.py to root app.py")
 logger.info(f"📁 Root directory: {root_dir}")

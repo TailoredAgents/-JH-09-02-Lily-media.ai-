@@ -17,6 +17,9 @@ from backend.auth.dependencies import get_current_user, get_optional_user
 # Import multi-tenancy fixtures
 from backend.tests.fixtures.multi_tenant_fixtures import *
 
+# Import Redis test fixtures
+from backend.tests.fixtures.redis_fixtures import *
+
 # Test database setup
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
 

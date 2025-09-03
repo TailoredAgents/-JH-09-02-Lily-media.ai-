@@ -20,9 +20,10 @@ from backend.services.file_upload_service import file_upload_service
 from backend.utils.db_checks import ensure_table_exists, safe_table_query
 from backend.services.content_scheduler_service import get_content_scheduler_service
 from backend.api.partner_oauth import is_partner_oauth_enabled
+from backend.core.api_version import create_versioned_router
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/api/content", tags=["content"])
+router = create_versioned_router(prefix="/content", tags=["content"])
 
 # Pydantic models
 class CreateContentRequest(BaseModel):

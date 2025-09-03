@@ -166,7 +166,7 @@ class EmailService:
     async def _send_via_sendgrid(self, message: EmailMessage) -> Dict[str, Any]:
         """Send email via SendGrid API"""
         try:
-            import httpx
+            from backend.core.http_client import get_http_client
             
             headers = {
                 'Authorization': f'Bearer {self.api_key}',
@@ -185,13 +185,13 @@ class EmailService:
             if message.text_body:
                 data["content"].append({"type": "text/plain", "value": message.text_body})
             
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    "https://api.sendgrid.com/v3/mail/send",
-                    headers=headers,
-                    json=data
-                )
-                response.raise_for_status()
+            client = await get_http_client()
+            response = await client.post(
+                "https://api.sendgrid.com/v3/mail/send",
+                headers=headers,
+                json=data
+            )
+            response.raise_for_status()
             
             logger.info(f"Email sent via SendGrid to {message.to}")
             return {
@@ -244,7 +244,7 @@ class EmailService:
     async def _send_via_resend(self, message: EmailMessage) -> Dict[str, Any]:
         """Send email via Resend API"""
         try:
-            import httpx
+            from backend.core.http_client import get_http_client
             
             headers = {
                 'Authorization': f'Bearer {self.api_key}',
@@ -264,14 +264,14 @@ class EmailService:
             if message.reply_to:
                 data["reply_to"] = message.reply_to
             
-            async with httpx.AsyncClient(timeout=15.0) as client:
-                response = await client.post(
-                    "https://api.resend.com/emails",
-                    headers=headers,
-                    json=data
-                )
-                response.raise_for_status()
-                result = response.json()
+            client = await get_http_client()
+            response = await client.post(
+                "https://api.resend.com/emails",
+                headers=headers,
+                json=data
+            )
+            response.raise_for_status()
+            result = response.json()
             
             logger.info(f"Email sent via Resend to {message.to}")
             return {

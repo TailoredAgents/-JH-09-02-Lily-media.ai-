@@ -7,6 +7,7 @@ from typing import Dict, List, Any, Optional
 import httpx
 
 from backend.core.config import get_settings
+from backend.core.service_factory import register_service, get_service
 
 logger = logging.getLogger(__name__)
 
@@ -261,12 +262,9 @@ class MetaPageTokenService:
             }
 
 
-# Global service instance
-_meta_page_service_instance = None
+# Register service with factory
+register_service('meta_page_token_service', MetaPageTokenService, scope='singleton')
 
 def get_meta_page_service() -> MetaPageTokenService:
-    """Get singleton Meta page token service instance"""
-    global _meta_page_service_instance
-    if _meta_page_service_instance is None:
-        _meta_page_service_instance = MetaPageTokenService()
-    return _meta_page_service_instance
+    """Get Meta page token service instance from service factory"""
+    return get_service('meta_page_token_service')

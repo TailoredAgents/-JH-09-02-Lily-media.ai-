@@ -169,8 +169,16 @@ def check_critical_tables_exist(db: Session) -> dict:
         dict: Status of critical tables
     """
     critical_tables = [
-        'users', 'content_logs', 'notifications',  
-        'refresh_token_blacklist', 'goals', 'memories'
+        # Core identity and settings
+        'users', 'user_settings', 'organizations',
+        # Content and analytics
+        'content_logs', 'content_items', 'content_performance_snapshots', 'metrics',
+        # Scheduling and drafts
+        'content_drafts', 'content_schedules',
+        # Social integrations
+        'social_connections', 'social_audit',
+        # Other core data
+        'notifications', 'memories', 'refresh_token_blacklist'
     ]
     
     status = {

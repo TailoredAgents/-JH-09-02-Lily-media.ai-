@@ -1,6 +1,7 @@
 """
 Unit tests for circuit breaker (Phase 8)
 Tests transitions: closed → open → half-open → closed
+Updated to use fakeredis for reliable testing
 """
 import time
 import pytest
@@ -11,22 +12,26 @@ from backend.services.rate_limit import CircuitBreaker
 
 
 class TestCircuitBreaker:
-    """Test circuit breaker functionality"""
+    """Test circuit breaker functionality with reliable Redis testing"""
     
-    def setup_method(self):
-        """Set up test fixtures"""
-        self.mock_redis = Mock(spec=redis.Redis)
-        self.breaker = CircuitBreaker(
-            redis_client=self.mock_redis,
+    def test_init_with_fake_redis(self, fake_redis):
+        """Test circuit breaker initialization with fake Redis"""
+        breaker = CircuitBreaker(
+            redis_client=fake_redis,
             key_prefix="test_cb",
             fail_threshold=3,
             cooldown_s=60
         )
+        
+        assert breaker.redis == fake_redis
+        assert breaker.key_prefix == "test_cb"
+        assert breaker.fail_threshold == 3
+        assert breaker.cooldown_s == 60
     
-    def test_init_with_custom_params(self):
+    def test_init_with_custom_params(self, fake_redis):
         """Test circuit breaker initialization with custom parameters"""
         breaker = CircuitBreaker(
-            redis_client=self.mock_redis,
+            redis_client=fake_redis,
             key_prefix="custom",
             fail_threshold=5,
             cooldown_s=120
@@ -36,21 +41,35 @@ class TestCircuitBreaker:
         assert breaker.fail_threshold == 5
         assert breaker.cooldown_s == 120
     
-    def test_allow_closed_state(self):
+    def test_allow_closed_state(self, fake_redis):
         """Test allow() in closed state (normal operation)"""
-        # Mock Redis to return closed state
-        self.mock_redis.eval.return_value = 1  # Allow request
+        breaker = CircuitBreaker(
+            redis_client=fake_redis,
+            key_prefix="test_cb",
+            fail_threshold=3,
+            cooldown_s=60
+        )
         
-        result = self.breaker.allow("org123", "meta")
+        # Mock Redis to return closed state
+        fake_redis.eval = lambda *args, **kwargs: 1  # Allow request
+        
+        result = breaker.allow("org123", "meta")
         
         assert result is True
     
-    def test_allow_open_state_within_cooldown(self):
+    def test_allow_open_state_within_cooldown(self, fake_redis):
         """Test allow() in open state within cooldown period"""
-        # Mock Redis to return open state within cooldown
-        self.mock_redis.eval.return_value = 0  # Block request
+        breaker = CircuitBreaker(
+            redis_client=fake_redis,
+            key_prefix="test_cb",
+            fail_threshold=3,
+            cooldown_s=60
+        )
         
-        result = self.breaker.allow("org123", "meta")
+        # Mock Redis to return open state within cooldown
+        fake_redis.eval = lambda *args, **kwargs: 0  # Block request
+        
+        result = breaker.allow("org123", "meta")
         
         assert result is False
     

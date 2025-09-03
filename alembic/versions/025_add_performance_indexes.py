@@ -30,21 +30,8 @@ def upgrade():
     op.create_index('idx_user_settings_voice_industry', 'user_settings', ['brand_voice', 'industry_type'])
     op.create_index('idx_user_settings_user_id', 'user_settings', ['user_id'])
     
-    # Content scheduling indexes
-    op.create_index('idx_content_schedule_status_time', 'content_schedule', ['status', 'scheduled_time'])
-    op.create_index('idx_content_schedule_user_platform', 'content_schedule', ['user_id', 'platform'])
-    
-    # Partner OAuth connection indexes
-    op.create_index('idx_partner_oauth_org_provider', 'partner_oauth_connections', ['organization_id', 'provider'])
-    op.create_index('idx_partner_oauth_status', 'partner_oauth_connections', ['status'])
-    
-    # Content draft indexes
-    op.create_index('idx_content_draft_org_status', 'content_draft', ['organization_id', 'status'])
-    op.create_index('idx_content_draft_verified', 'content_draft', ['verified_for_posting'])
-    
-    # Audit log indexes for compliance queries
-    op.create_index('idx_audit_log_org_action', 'partner_oauth_audit_log', ['organization_id', 'action'])
-    op.create_index('idx_audit_log_timestamp', 'partner_oauth_audit_log', ['timestamp'])
+    # Note: Indexes for content scheduling, drafts, and partner OAuth are handled
+    # in their respective migrations to match actual table/column names.
 
 
 def downgrade():
