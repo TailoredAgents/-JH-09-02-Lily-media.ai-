@@ -18,6 +18,7 @@ celery_app = Celery(
         "backend.tasks.webhook_tasks",  # Webhook processing
         "backend.tasks.token_health_tasks",  # Token refresh and health
         "backend.tasks.x_polling_tasks",  # X mentions polling
+        "backend.tasks.webhook_watchdog_tasks",  # GA Checklist: DLQ watchdog
         # Disabled heavy tasks to prevent memory issues
         # "backend.tasks.content_tasks",  # CrewAI - uses 500MB+
         # "backend.tasks.research_tasks",  # CrewAI - uses 500MB+ 
@@ -104,5 +105,12 @@ celery_app.conf.beat_schedule = {
         'task': 'backend.tasks.token_health_tasks.cleanup_old_audits',
         'schedule': 60.0 * 60.0 * 24 * 7,  # Weekly
         'options': {'queue': 'token_health', 'expires': 3600},  # 1 hour expiry
+    },
+    
+    # GA Checklist: DLQ watchdog scan - every hour
+    'dlq-watchdog-scan': {
+        'task': 'backend.tasks.webhook_watchdog_tasks.scan_dlq_watchdog',
+        'schedule': 60.0 * 60.0,  # Every hour
+        'options': {'queue': 'webhook_watchdog', 'expires': 1800},  # 30 min expiry
     },
 }

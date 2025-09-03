@@ -32,6 +32,9 @@ from . import (
     database_health,  # Database schema health checks
     partner_oauth,  # Partner OAuth for multi-tenant connections
     assistant_chat,  # OpenAI Assistant chat for landing page
+    data_deletion,  # GA Checklist: Data deletion endpoints for compliance
+    webhooks,  # GA Checklist: Meta webhook endpoints for compliance
+    legal_documents,  # GA Checklist: Privacy Policy & Terms URLs for platform compliance
 )
 
 # All routers to be registered with the FastAPI app
@@ -66,4 +69,7 @@ ROUTERS = [
     database_health.router,  # Database schema health monitoring
     partner_oauth.router,  # Partner OAuth for multi-tenant connections
     assistant_chat.router,  # OpenAI Assistant chat for landing page
+    data_deletion.router,  # GA Checklist: Data deletion endpoints for compliance
+    webhooks.router,  # GA Checklist: Meta webhook endpoints for compliance
+    legal_documents.router,  # GA Checklist: Privacy Policy & Terms URLs for platform compliance
 ]
