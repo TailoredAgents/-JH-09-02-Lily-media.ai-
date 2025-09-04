@@ -73,9 +73,18 @@ class Settings(BaseSettings):
             logger.error(error_msg)
             raise ValueError(error_msg)
         
-        # Add SSL mode for PostgreSQL if not already present
-        if db_url.startswith("postgresql://") and "sslmode" not in db_url:
-            db_url += "?sslmode=require"
+        # Add SSL mode for PostgreSQL if not already present and not local
+        if db_url.startswith("postgresql://") and "sslmode=" not in db_url:
+            try:
+                from urllib.parse import urlsplit
+                parts = urlsplit(db_url)
+                host = parts.hostname or ""
+                is_local = host in {"localhost", "127.0.0.1"}
+            except Exception:
+                is_local = False
+            if not is_local:
+                sep = "&" if "?" in db_url else "?"
+                db_url = f"{db_url}{sep}sslmode=require"
         
         return db_url
     
@@ -213,7 +222,10 @@ class Settings(BaseSettings):
     twitter_access_token_secret: str = ""
     twitter_bearer_token: str = ""
     
-    # LinkedIn - REMOVED (too restrictive API)
+    # LinkedIn API - 2025 Implementation (requires Partnership Program)
+    linkedin_client_id: str = ""
+    linkedin_client_secret: str = ""
+    linkedin_redirect_uri: str = ""
     
     # Meta Graph API (2025) - Unified Facebook/Instagram
     meta_app_id: str = ""

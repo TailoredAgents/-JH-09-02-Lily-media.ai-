@@ -37,7 +37,7 @@ services:
       - redis
     volumes:
       - .:/app
-    command: celery -A backend.tasks.celery_app worker --loglevel=info --queues=autonomous,reports,metrics,posting,legacy
+    command: celery -A backend.tasks.celery_app worker --loglevel=info --queues=autonomous,reports,metrics,posting,research,token_health,x_polling,webhook_watchdog --concurrency=1 --max-tasks-per-child=5 --max-memory-per-child=200000 --pool=threads
 
   # Celery Beat for scheduled tasks
   celery-beat:

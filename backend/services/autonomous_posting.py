@@ -4,19 +4,20 @@ Autonomous Social Media Posting Service
 This service handles automated posting to connected social media platforms
 """
 import logging
+import time
 from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 
 from backend.db.models import ContentLog, User
 from backend.integrations.twitter_client import TwitterAPIClient as TwitterClient
-# LinkedIn integration removed - using stub
-LinkedInClient = None
+from backend.integrations.linkedin_client import linkedin_client as LinkedInClient
 from backend.integrations.instagram_client import InstagramAPIClient as InstagramClient
 from backend.integrations.facebook_client import FacebookAPIClient as FacebookClient
 from backend.services.research_automation_service import ResearchAutomationService
 from backend.agents.tools import openai_tool
 from backend.core.config import get_settings
+from backend.core.observability import get_observability_manager
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -28,18 +29,29 @@ class AutonomousPostingService:
         self.research_service = ResearchAutomationService()
         self.platform_clients = {
             'twitter': TwitterClient(),
-            'linkedin': LinkedInClient(), 
+            'linkedin': LinkedInClient, 
             'instagram': InstagramClient(),
             'facebook': FacebookClient()
         }
+        self.observability = get_observability_manager()
     
     async def execute_autonomous_cycle(self, user_id: int, db: Session) -> Dict[str, Any]:
         """Execute a complete autonomous posting cycle"""
         
+        cycle_start_time = time.time()
+        
         try:
             logger.info(f"Starting autonomous posting cycle for user {user_id}")
             
+            # Add Sentry breadcrumb for debugging
+            self.observability.add_sentry_breadcrumb(
+                f"Starting autonomous cycle for user {user_id}",
+                category="autonomous_posting",
+                data={"user_id": user_id}
+            )
+            
             # Step 1: Conduct industry research
+            research_start_time = time.time()
             research_results = await self.research_service.conduct_research(
                 industry="AI Agent Products",
                 focus_areas=[
@@ -49,6 +61,10 @@ class AutonomousPostingService:
                     "business productivity tools"
                 ]
             )
+            
+            # Track research performance
+            research_duration = time.time() - research_start_time
+            self.observability.track_ai_generation("research", "multi_platform", "success", research_duration)
             
             # Step 2: Generate content ideas based on research
             content_ideas = await self._generate_content_ideas(research_results)
@@ -74,6 +90,19 @@ class AutonomousPostingService:
             
             logger.info(f"Autonomous posting cycle completed for user {user_id}")
             
+            # Track successful cycle
+            cycle_duration = time.time() - cycle_start_time
+            self.observability.track_autonomous_cycle("success")
+            self.observability.add_sentry_breadcrumb(
+                f"Autonomous cycle completed successfully for user {user_id}",
+                category="autonomous_posting",
+                data={
+                    "user_id": user_id,
+                    "posts_created": len(posting_results),
+                    "duration_seconds": cycle_duration
+                }
+            )
+            
             return {
                 "status": "success",
                 "user_id": user_id,
@@ -81,11 +110,21 @@ class AutonomousPostingService:
                 "content_ideas_generated": len(content_ideas) + len(posting_results),
                 "posts_created": len(posting_results),
                 "platforms_posted": [r["platform"] for r in posting_results if r["status"] == "success"],
-                "cycle_completed_at": datetime.now(timezone.utc)
+                "cycle_completed_at": datetime.now(timezone.utc),
+                "duration_seconds": cycle_duration
             }
             
         except Exception as e:
             logger.error(f"Autonomous posting cycle failed for user {user_id}: {e}")
+            
+            # Track failed cycle
+            self.observability.track_autonomous_cycle("failed")
+            self.observability.capture_exception(e, {
+                "user_id": user_id,
+                "cycle_step": "autonomous_posting_cycle",
+                "duration_seconds": time.time() - cycle_start_time
+            })
+            
             return {
                 "status": "error",
                 "user_id": user_id,
@@ -95,6 +134,8 @@ class AutonomousPostingService:
     
     async def _generate_content_ideas(self, research_results: Dict) -> List[Dict]:
         """Generate content ideas based on research results"""
+        
+        generation_start_time = time.time()
         
         try:
             insights = research_results.get("insights", [])
@@ -149,17 +190,52 @@ Focus on providing value, showcasing AI automation benefits, and engaging with t
                 }
             ]
             
-            # Try to extract ideas from AI response, fall back to defaults
+            # Try to extract ideas from AI response using 2025 best practices
             if response and len(response) > 100:
-                # Simple parsing - in production, use more sophisticated parsing
-                content_ideas = default_ideas  # For now, use defaults
+                try:
+                    # Attempt to parse JSON response (OpenAI structured output format)
+                    import json
+                    if response.strip().startswith('{') or response.strip().startswith('['):
+                        parsed_response = json.loads(response)
+                        if isinstance(parsed_response, list):
+                            content_ideas = parsed_response
+                        elif isinstance(parsed_response, dict) and 'content_ideas' in parsed_response:
+                            content_ideas = parsed_response['content_ideas']
+                        else:
+                            # Fallback to defaults only if parsing completely fails
+                            content_ideas = default_ideas
+                    else:
+                        # If response is plain text, create structured content from it
+                        content_ideas = [{
+                            "hook": "AI-Generated Content",
+                            "content": response[:500],  # Truncate if needed
+                            "hashtags": ["#AIGenerated", "#SocialMedia"],
+                            "platform": preferred_platforms[0] if preferred_platforms else "twitter",
+                            "content_type": "text"
+                        }]
+                except json.JSONDecodeError as e:
+                    logger.warning(f"Failed to parse AI response as JSON: {e}, using defaults")
+                    content_ideas = default_ideas
+                except Exception as e:
+                    logger.warning(f"Error processing AI response: {e}, using defaults") 
+                    content_ideas = default_ideas
             else:
                 content_ideas = default_ideas
+            
+            # Track content generation success
+            generation_duration = time.time() - generation_start_time
+            self.observability.track_ai_generation("content_ideas", "multi_platform", "success", generation_duration)
             
             return content_ideas
             
         except Exception as e:
             logger.error(f"Content idea generation failed: {e}")
+            
+            # Track content generation failure
+            generation_duration = time.time() - generation_start_time
+            self.observability.track_ai_generation("content_ideas", "multi_platform", "failed", generation_duration)
+            self.observability.capture_exception(e, {"step": "content_idea_generation"})
+            
             # Return basic default ideas
             return [
                 {
@@ -233,6 +309,9 @@ Focus on providing value, showcasing AI automation benefits, and engaging with t
                     
                     db.commit()
                     
+                    # Track successful post
+                    self.observability.track_social_post(platform, "success")
+                    
                     return {
                         "status": "success",
                         "platform": platform,
@@ -243,6 +322,9 @@ Focus on providing value, showcasing AI automation benefits, and engaging with t
                 else:
                     content_record.status = "failed"
                     db.commit()
+                    
+                    # Track failed post
+                    self.observability.track_social_post(platform, "failed")
                     
                     return {
                         "status": "failed",

@@ -35,6 +35,8 @@ from . import (
     data_deletion,  # GA Checklist: Data deletion endpoints for compliance
     webhooks,  # GA Checklist: Meta webhook endpoints for compliance
     legal_documents,  # GA Checklist: Privacy Policy & Terms URLs for platform compliance
+    memory_vector,  # Vector memory endpoints used by frontend
+    linkedin_oauth,  # LinkedIn OAuth 2.0 integration for autonomous posting
 )
 
 # All routers to be registered with the FastAPI app
@@ -51,11 +53,13 @@ ROUTERS = [
     memory.router,
     workflow_v2.router,
     monitoring.router,
+    monitoring.analytics_router,  # /api/analytics endpoints
     diagnostics.router,
     content_history.router,
     notifications.router,
     vector_search_production.router,  # Production pgvector search (primary)
     vector_search.router,  # Legacy vector search (will be phased out)
+    memory_vector.router,  # Vector memory endpoints used by frontend
     similarity.router,
     deep_research.router,
     integration_services.router,
@@ -72,4 +76,5 @@ ROUTERS = [
     data_deletion.router,  # GA Checklist: Data deletion endpoints for compliance
     webhooks.router,  # GA Checklist: Meta webhook endpoints for compliance
     legal_documents.router,  # GA Checklist: Privacy Policy & Terms URLs for platform compliance
+    linkedin_oauth.router,  # LinkedIn OAuth 2.0 integration for autonomous posting
 ]
