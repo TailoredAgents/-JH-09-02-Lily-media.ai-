@@ -37,6 +37,9 @@ from . import (
     legal_documents,  # GA Checklist: Privacy Policy & Terms URLs for platform compliance
     memory_vector,  # Vector memory endpoints used by frontend
     linkedin_oauth,  # LinkedIn OAuth 2.0 integration for autonomous posting
+    dashboard_metrics,  # Dashboard metrics API for frontend consumption
+    websockets,  # WebSocket endpoints for real-time status updates
+    multi_tenant,  # Multi-tenant organization and RBAC management
 )
 
 # All routers to be registered with the FastAPI app
@@ -77,4 +80,7 @@ ROUTERS = [
     webhooks.router,  # GA Checklist: Meta webhook endpoints for compliance
     legal_documents.router,  # GA Checklist: Privacy Policy & Terms URLs for platform compliance
     linkedin_oauth.router,  # LinkedIn OAuth 2.0 integration for autonomous posting
+    dashboard_metrics.router,  # Dashboard metrics API for frontend consumption
+    websockets.router,  # WebSocket endpoints for real-time status updates
+    multi_tenant.router,  # Multi-tenant organization and RBAC management
 ]
