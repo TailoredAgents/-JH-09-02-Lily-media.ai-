@@ -23,10 +23,9 @@ from backend.db.models import User, SocialConnection, SocialAudit
 from backend.auth.dependencies import get_current_user
 from backend.core.config import get_settings
 from backend.services.connection_publisher_service import get_connection_publisher_service
-from backend.tasks.webhook_tasks import unsubscribe_from_webhooks
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/api/v1/data-deletion", tags=["data-deletion"])
+router = APIRouter(prefix="/api/data-deletion", tags=["data-deletion"])
 
 
 @router.post("/connection/{connection_id}")
@@ -494,10 +493,10 @@ async def data_deletion_status() -> JSONResponse:
                 "ccpa_compliance": True
             },
             "endpoints": {
-                "delete_connection": "/api/v1/data-deletion/connection/{connection_id}",
-                "delete_user_data": "/api/v1/data-deletion/user-data",
-                "retention_policy": "/api/v1/data-deletion/retention-policy",
-                "cleanup_expired": "/api/v1/data-deletion/audit-logs/expired"
+                "delete_connection": "/api/data-deletion/connection/{connection_id}",
+                "delete_user_data": "/api/data-deletion/user-data",
+                "retention_policy": "/api/data-deletion/retention-policy",
+                "cleanup_expired": "/api/data-deletion/audit-logs/expired"
             }
         }
         

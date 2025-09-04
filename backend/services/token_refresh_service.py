@@ -228,20 +228,20 @@ class TokenRefreshService:
         client = await get_http_client()
         response = await client.get(url, params=params)
         response.raise_for_status()
-            
-            data = response.json()
-            
-            long_lived_token = data.get("access_token")
-            if not long_lived_token:
-                raise ValueError("No access_token in response")
-            
-            # Calculate expiry if provided
-            expires_in = data.get("expires_in")
-            expires_at = None
-            if expires_in:
-                expires_at = self._now_utc() + timedelta(seconds=int(expires_in))
-            
-            return long_lived_token, expires_at
+        
+        data = response.json()
+        
+        long_lived_token = data.get("access_token")
+        if not long_lived_token:
+            raise ValueError("No access_token in response")
+        
+        # Calculate expiry if provided
+        expires_in = data.get("expires_in")
+        expires_at = None
+        if expires_in:
+            expires_at = self._now_utc() + timedelta(seconds=int(expires_in))
+        
+        return long_lived_token, expires_at
     
     async def _validate_meta_token(self, token: str) -> bool:
         """Validate Meta token via debug endpoint"""
@@ -258,8 +258,8 @@ class TokenRefreshService:
             
             data = response.json()
             token_data = data.get("data", {})
-                
-                return token_data.get("is_valid", False)
+            
+            return token_data.get("is_valid", False)
                 
         except Exception as e:
             logger.error(f"Token validation failed: {e}")
@@ -277,14 +277,14 @@ class TokenRefreshService:
         client = await get_http_client()
         response = await client.get(url, params=params)
         response.raise_for_status()
-            
-            data = response.json()
-            page_token = data.get("access_token")
-            
-            if not page_token:
-                raise ValueError("No page access_token in response")
-            
-            return page_token
+        
+        data = response.json()
+        page_token = data.get("access_token")
+        
+        if not page_token:
+            raise ValueError("No page access_token in response")
+        
+        return page_token
     
     async def _refresh_x_oauth_tokens(self, refresh_token: str) -> Dict[str, Any]:
         """Refresh X OAuth2 tokens"""
@@ -308,15 +308,15 @@ class TokenRefreshService:
         client = await get_http_client()
         response = await client.post(url, headers=headers, data=data)
         response.raise_for_status()
-            
-            token_data = response.json()
-            
-            required_fields = ["access_token", "refresh_token"]
-            for field in required_fields:
-                if field not in token_data:
-                    raise ValueError(f"Missing {field} in token response")
-            
-            return token_data
+        
+        token_data = response.json()
+        
+        required_fields = ["access_token", "refresh_token"]
+        for field in required_fields:
+            if field not in token_data:
+                raise ValueError(f"Missing {field} in token response")
+        
+        return token_data
     
     def _now_utc(self) -> datetime:
         """Get current UTC datetime"""

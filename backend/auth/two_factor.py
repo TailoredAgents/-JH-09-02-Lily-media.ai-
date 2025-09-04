@@ -18,7 +18,7 @@ class TwoFactorService:
     def __init__(self, app_name: str = "Lily AI Social Media"):
         self.app_name = app_name
         # Create encryption key from settings secret key
-        key = hashlib.sha256(settings.SECRET_KEY.encode()).digest()
+        key = hashlib.sha256(settings.SECRET_KEY.get_secret_value().encode()).digest()
         self.cipher = Fernet(base64.urlsafe_b64encode(key))
     
     def generate_secret(self) -> str:

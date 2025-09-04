@@ -21,24 +21,9 @@ logger = logging.getLogger(__name__)
 if PYTZ_AVAILABLE:
     EST = pytz.timezone(settings.timezone)
 else:
-    # Create a simple EST timezone without pytz (UTC-5 during standard time, UTC-4 during daylight time)
-    class SimpleEST(timezone):
-        def __init__(self):
-            # Use UTC-5 as default (EST)
-            super().__init__(timedelta(hours=-5), "EST")
-        
-        def dst(self, dt):
-            # Simple DST calculation - not perfect but works for basic use
-            # DST typically runs from 2nd Sunday in March to 1st Sunday in November
-            if dt.month < 3 or dt.month > 11:
-                return timedelta(0)
-            elif dt.month > 3 and dt.month < 11:
-                return timedelta(hours=1)
-            else:
-                # March and November need day calculation - simplified
-                return timedelta(hours=1) if dt.month == 3 and dt.day > 10 else timedelta(0)
-    
-    EST = SimpleEST()
+    # Use fixed UTC-5 offset for EST (without DST support)
+    # In production, should use pytz or zoneinfo for proper DST handling
+    EST = timezone(timedelta(hours=-5), "EST")
 
 def get_lily_timezone():
     """Get Lily's configured timezone (EST/EDT)"""

@@ -25,7 +25,7 @@ class AdminAuthHandler:
     """Enhanced admin authentication with security features"""
     
     def __init__(self):
-        self.secret_key = settings.jwt_secret + "_ADMIN_SALT"  # Different from user JWT
+        self.secret_key = str(settings.jwt_secret.get_secret_value()) + "_ADMIN_SALT"  # Different from user JWT
         self.algorithm = settings.jwt_algorithm
         self.access_token_expire_minutes = 30  # Shorter for admins
         self.refresh_token_expire_days = 7   # Shorter refresh window
