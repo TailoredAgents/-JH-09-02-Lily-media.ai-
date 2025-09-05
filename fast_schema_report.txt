@@ -1,0 +1,37 @@
+======================================================================
+🔍 FAST DATABASE SCHEMA ANALYSIS REPORT
+======================================================================
+📅 Generated: 2025-09-03 14:47:24
+
+✅ SCHEMA STATUS: HEALTHY
+   No critical issues found
+
+📊 DATABASE SUMMARY
+  Total Tables: 49
+  Model Tables: 38
+  Critical Issues: 0
+  Warning Issues: 0
+
+📋 TABLE STATUS
+  ℹ️  Extra Tables: 10
+
+📈 TOP TABLES BY SIZE
+  admin_users                        1 rows
+  registration_keys                  1 rows
+  users                              1 rows
+  alembic_version                    1 rows
+  user_settings                      1 rows
+  organizations                      1 rows
+  inbox_settings                     0 rows
+  knowledge_base_entries             0 rows
+  company_knowledge                  0 rows
+  content_logs                       0 rows
+
+🔄 MIGRATION STATUS
+  Current Version: 004_all_remaining_tables
+
+💡 IMMEDIATE ACTIONS REQUIRED
+3. 📋 Run full schema migration if needed
+4. 🔄 Ensure Alembic is properly configured
+
+======================================================================

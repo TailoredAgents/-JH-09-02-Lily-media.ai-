@@ -196,8 +196,8 @@ def poll_all_x_mentions() -> Dict[str, Any]:
                                 ))
                             except Exception as audit_err:
                                 import logging
-                                logger = logging.getLogger(__name__)
-                                logger.warning("Audit write failed in X mentions polling",
+                                audit_logger = logging.getLogger(__name__)
+                                audit_logger.warning("Audit write failed in X mentions polling",
                                              extra={"err": str(audit_err)}, exc_info=audit_err)
                     
                     # Update rate limit counter for this organization

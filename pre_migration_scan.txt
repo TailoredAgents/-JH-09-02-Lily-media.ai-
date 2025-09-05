@@ -1,0 +1,57 @@
+INFO: ✅ Connected to production database
+INFO: 🚀 Starting fast database schema scan...
+INFO: 📋 Found 49 tables in database
+INFO: 📊 Found 38 model definitions
+INFO: 📊 Retrieved row counts for all tables
+INFO: 🔄 Current Alembic version: 004_all_remaining_tables
+INFO: ✅ Fast schema scan completed
+🔍 Fast Database Schema Scanner
+==================================================
+======================================================================
+🔍 FAST DATABASE SCHEMA ANALYSIS REPORT
+======================================================================
+📅 Generated: 2025-09-03 14:31:07
+
+❌ SCHEMA STATUS: CRITICAL ISSUES FOUND
+   1 critical issues require immediate attention
+
+📊 DATABASE SUMMARY
+  Total Tables: 49
+  Model Tables: 38
+  Critical Issues: 1
+  Warning Issues: 0
+
+📋 TABLE STATUS
+  ℹ️  Extra Tables: 10
+
+📈 TOP TABLES BY SIZE
+  admin_users                        1 rows
+  registration_keys                  1 rows
+  users                              1 rows
+  alembic_version                    1 rows
+  user_settings                      1 rows
+  inbox_settings                     0 rows
+  knowledge_base_entries             0 rows
+  company_knowledge                  0 rows
+  content_logs                       0 rows
+  milestones                         0 rows
+
+🚨 CRITICAL ISSUES
+ 1. Critical column organization_id missing from social_platform_connections
+     Table: social_platform_connections
+
+🔄 MIGRATION STATUS
+  Current Version: 004_all_remaining_tables
+
+💡 IMMEDIATE ACTIONS REQUIRED
+1. 🚨 Address critical issues immediately:
+   - Critical column organization_id missing from social_platform_connections
+3. 📋 Run full schema migration if needed
+4. 🔄 Ensure Alembic is properly configured
+
+======================================================================
+
+📄 Results saved to: fast_schema_analysis.json
+📄 Report saved to: fast_schema_report.txt
+
+❌ SCAN FAILED: 1 critical issues found

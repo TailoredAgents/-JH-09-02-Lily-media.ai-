@@ -1,0 +1,1079 @@
+============================================================
+GA CHECKLIST: LOG SECURITY AUDIT REPORT
+============================================================
+
+📊 AUDIT SUMMARY
+  Files Audited: 1265
+  Total Violations: 251
+  Files with Violations: 67
+  Safe Patterns Found: 28
+  Compliance Score: 94.7%
+
+❌ COMPLIANCE STATUS: VIOLATIONS FOUND
+   Action required to resolve logging security issues
+
+🚨 SECURITY VIOLATIONS
+1. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/setup_security.py:53
+   Code: print(f"🔑 Generated SECRET_KEY: {secret_key[:20]}...")
+   Pattern: print\(.*secret.*\)
+
+2. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/create_first_user.py:92
+   Code: print("❌ Email, username, and password are required!")
+   Pattern: print\(.*password.*\)
+
+3. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/create_first_user.py:162
+   Code: print(f"🔐 API Secret: {api_secret}")
+   Pattern: print\(.*secret.*\)
+
+4. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/database_scan.py:229
+   Code: print("  • Users: {row[0]} total, {row[1]} with email, {row[2]} with username, {row[3]} with password")
+   Pattern: print\(.*password.*\)
+
+5. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/create_all_remaining_tables.py:62
+   Code: print("   → Creating refresh_token_blacklist table...")
+   Pattern: print\(.*token.*\)
+
+6. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/create_all_remaining_tables.py:489
+   Code: print("  • refresh_token_blacklist - Token security")
+   Pattern: print\(.*token.*\)
+
+7. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/debug_auth.py:32
+   Code: logger.info(f"SECRET_KEY configured: {bool(settings.SECRET_KEY and settings.SECRET_KEY != 'your-secret-key-change-this-in-production')}")
+   Pattern: logger\.\w+\(.*secret.*\)
+
+8. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/debug_auth.py:33
+   Code: logger.info(f"SECRET_KEY length: {len(settings.SECRET_KEY) if settings.SECRET_KEY else 0}")
+   Pattern: logger\.\w+\(.*secret.*\)
+
+9. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/debug_auth.py:38
+   Code: logger.info(f"Access token expire minutes: {jwt_handler.access_token_expire_minutes}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+10. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/debug_auth.py:39
+   Code: logger.info(f"Refresh token expire days: {jwt_handler.refresh_token_expire_days}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+11. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/debug_auth.py:49
+   Code: logger.info("✅ Token verification: SUCCESS")
+   Pattern: logger\.\w+\(.*token.*\)
+
+12. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/scripts/generate_secrets.py:12
+   Code: print("Generating Secure Production Secrets")
+   Pattern: print\(.*secret.*\)
+
+13. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/scripts/generate_secrets.py:23
+   Code: print("SECRET_KEY=" + secret_key)
+   Pattern: print\(.*secret.*\)
+
+14. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/scripts/generate_secrets.py:24
+   Code: print("JWT_SECRET=" + jwt_secret)
+   Pattern: print\(.*secret.*\)
+
+15. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/scripts/generate_secrets.py:25
+   Code: print("ADMIN_JWT_SECRET=" + admin_jwt_secret)
+   Pattern: print\(.*secret.*\)
+
+16. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/scripts/generate_secrets.py:28
+   Code: print("1. Never commit these secrets to your repository")
+   Pattern: print\(.*secret.*\)
+
+17. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/scripts/generate_secrets.py:30
+   Code: print("3. Use different secrets for each environment")
+   Pattern: print\(.*secret.*\)
+
+18. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/scripts/generate_secrets.py:31
+   Code: print("4. These secrets are shown only once - save them now!")
+   Pattern: print\(.*secret.*\)
+
+19. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/scripts/create_super_admin.py:50
+   Code: print("❌ Passwords don't match. Try again.")
+   Pattern: print\(.*password.*\)
+
+20. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/scripts/create_super_admin.py:54
+   Code: print("❌ Password must be at least 8 characters.")
+   Pattern: print\(.*password.*\)
+
+21. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/scripts/create_registration_keys.py:42
+   Code: print("❌ Admin password is required")
+   Pattern: print\(.*password.*\)
+
+22. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/scripts/create_registration_keys.py:56
+   Code: print("❌ Invalid admin password")
+   Pattern: print\(.*password.*\)
+
+23. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/scripts/generate_production_secrets.py:20
+   Code: print("Generating Secure Production Secrets")
+   Pattern: print\(.*secret.*\)
+
+24. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/scripts/generate_production_secrets.py:39
+   Code: print("1. Never commit these secrets to your repository")
+   Pattern: print\(.*secret.*\)
+
+25. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/scripts/generate_production_secrets.py:41
+   Code: print("3. Use different secrets for each environment (dev/staging/prod)")
+   Pattern: print\(.*secret.*\)
+
+26. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/scripts/generate_production_secrets.py:42
+   Code: print("4. These secrets are shown only once - save them now!")
+   Pattern: print\(.*secret.*\)
+
+27. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/scripts/validate_production_security.py:71
+   Code: logger.info("🔍 Validating secret quality...")
+   Pattern: logger\.\w+\(.*secret.*\)
+
+28. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/scripts/validate_production_security.py:183
+   Code: logger.info("🔧 Generating secure secrets...")
+   Pattern: logger\.\w+\(.*secret.*\)
+
+29. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/scripts/validate_production_security.py:258
+   Code: logger.info("🔧 Generating secure secrets for missing configuration:")
+   Pattern: logger\.\w+\(.*secret.*\)
+
+30. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/scripts/validate_production_security.py:262
+   Code: logger.info("GENERATED SECURE SECRETS (save these securely):")
+   Pattern: logger\.\w+\(.*secret.*\)
+
+31. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/scripts/validate_production_security.py:266
+   Code: logger.info(f"export {key}='{value}'")
+   Pattern: logger\.\w+\(.*key.*\)
+
+32. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/.venv/lib/python3.13/site-packages/dotenv/main.py:112
+   Code: logger.warning("Key %s not found in %s.", key, self.dotenv_path)
+   Pattern: logger\.\w+\(.*key.*\)
+
+33. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/.venv/lib/python3.13/site-packages/pydantic/types.py:1600
+   Code: print(m.secret_bool.get_secret_value())
+   Pattern: print\(.*secret.*\)
+
+34. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/.venv/lib/python3.13/site-packages/pydantic/types.py:1625
+   Code: print(m.secret_date.get_secret_value())
+   Pattern: print\(.*secret.*\)
+
+35. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/.venv/lib/python3.13/site-packages/pydantic/types.py:1823
+   Code: print(user.password.get_secret_value())
+   Pattern: print\(.*secret.*\)
+
+36. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/.venv/lib/python3.13/site-packages/pydantic/types.py:1825
+   Code: print((SecretStr('password'), SecretStr('')))
+   Pattern: print\(.*secret.*\)
+
+37. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/.venv/lib/python3.13/site-packages/pydantic/types.py:1849
+   Code: print(model.password)
+   Pattern: print\(.*password.*\)
+
+38. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/.venv/lib/python3.13/site-packages/pydantic/types.py:1889
+   Code: print(user.password.get_secret_value())
+   Pattern: print\(.*secret.*\)
+
+39. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/.venv/lib/python3.13/site-packages/pydantic/types.py:1891
+   Code: print((SecretBytes(b'password'), SecretBytes(b'')))
+   Pattern: print\(.*secret.*\)
+
+40. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/.venv/lib/python3.13/site-packages/pip/_vendor/distro/distro.py:1393
+   Code: logger.info(json.dumps(dist.info(), indent=4, sort_keys=True))
+   Pattern: logger\.\w+\(.*key.*\)
+
+41. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/.venv/lib/python3.13/site-packages/pip/_vendor/rich/prompt.py:386
+   Code: print("[prompt.invalid]password too short")
+   Pattern: print\(.*password.*\)
+
+42. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/.venv/lib/python3.13/site-packages/pip/_vendor/rich/prompt.py:387
+   Code: print(f"password={password!r}")
+   Pattern: print\(.*password.*\)
+
+43. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/.venv/lib/python3.13/site-packages/pip/_internal/network/auth.py:86
+   Code: logger.debug("Getting credentials from keyring for %s", url)
+   Pattern: logger\.\w+\(.*key.*\)
+
+44. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/.venv/lib/python3.13/site-packages/pip/_internal/network/auth.py:93
+   Code: logger.debug("Getting password from keyring for %s", url)
+   Pattern: logger\.\w+\(.*password.*\)
+
+45. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/.venv/lib/python3.13/site-packages/pip/_internal/network/auth.py:164
+   Code: logger.verbose("Keyring provider requested: %s", provider)
+   Pattern: logger\.\w+\(.*key.*\)
+
+46. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/.venv/lib/python3.13/site-packages/pip/_internal/network/auth.py:172
+   Code: logger.verbose("Keyring provider set: import")
+   Pattern: logger\.\w+\(.*key.*\)
+
+47. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/.venv/lib/python3.13/site-packages/pip/_internal/network/auth.py:217
+   Code: logger.verbose("Keyring provider set: subprocess with executable %s", cli)
+   Pattern: logger\.\w+\(.*key.*\)
+
+48. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/.venv/lib/python3.13/site-packages/pip/_internal/network/auth.py:220
+   Code: logger.verbose("Keyring provider set: disabled")
+   Pattern: logger\.\w+\(.*key.*\)
+
+49. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/.venv/lib/python3.13/site-packages/pip/_internal/network/auth.py:276
+   Code: logger.debug("Keyring is skipped due to an exception", exc_info=True)
+   Pattern: logger\.\w+\(.*key.*\)
+
+50. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/.venv/lib/python3.13/site-packages/pip/_internal/network/auth.py:387
+   Code: logger.debug("Found credentials in keyring for %s", netloc)
+   Pattern: logger\.\w+\(.*key.*\)
+
+51. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/.venv/lib/python3.13/site-packages/pip/_internal/network/auth.py:559
+   Code: logger.info("Saving credentials to keyring")
+   Pattern: logger\.\w+\(.*key.*\)
+
+52. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/.venv/lib/python3.13/site-packages/pip/_internal/locations/__init__.py:187
+   Code: logger.log(_MISMATCH_LEVEL, message, key, issue_url, old, new)
+   Pattern: logger\.\w+\(.*key.*\)
+
+53. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/tasks/token_health_tasks.py:60
+   Code: logger.info("Token health audit skipped - feature disabled")
+   Pattern: logger\.\w+\(.*token.*\)
+
+54. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/tasks/token_health_tasks.py:64
+   Code: logger.info("Starting nightly token health audit")
+   Pattern: logger\.\w+\(.*token.*\)
+
+55. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/tasks/token_health_tasks.py:130
+   Code: logger.info(f"Token health audit completed: {audit_results}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+56. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/tasks/token_health_tasks.py:251
+   Code: logger.info(f"Found {len(connections)} connections needing token refresh")
+   Pattern: logger\.\w+\(.*token.*\)
+
+57. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/tasks/posting_tasks.py:42
+   Code: logger.info(f"Post already scheduled with key {idempotency_key}")
+   Pattern: logger\.\w+\(.*key.*\)
+
+58. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/tasks/posting_tasks.py:74
+   Code: logger.info(f"Post scheduled for {platform} at {scheduled_time} with key {idempotency_key}")
+   Pattern: logger\.\w+\(.*key.*\)
+
+59. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/tasks/posting_tasks.py:108
+   Code: logger.info(f"Post already published with key {idempotency_key}")
+   Pattern: logger\.\w+\(.*key.*\)
+
+60. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/tasks/posting_tasks.py:173
+   Code: logger.info(f"Post published successfully to {platform} with key {idempotency_key}")
+   Pattern: logger\.\w+\(.*key.*\)
+
+61. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/encryption.py:174
+   Code: logger.info(f"Added encryption key: {kid}")
+   Pattern: logger\.\w+\(.*key.*\)
+
+62. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/encryption.py:176
+   Code: logger.error(f"Failed to add key {kid}: {e}")
+   Pattern: logger\.\w+\(.*key.*\)
+
+63. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/encryption.py:191
+   Code: logger.info(f"Rotated default key from {old_default} to {new_kid}")
+   Pattern: logger\.\w+\(.*key.*\)
+
+64. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/config.py:120
+   Code: logger.error("🚨 CRITICAL: SECRET_KEY must be set in production environment")
+   Pattern: logger\.\w+\(.*secret.*\)
+
+65. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/config.py:121
+   Code: logger.error("   Set environment variable: SECRET_KEY=your-secure-secret-key")
+   Pattern: logger\.\w+\(.*secret.*\)
+
+66. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/config.py:127
+   Code: logger.warning("⚠️  ENCRYPTION_KEY not set in production - generating temporary key")
+   Pattern: logger\.\w+\(.*key.*\)
+
+67. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/config.py:129
+   Code: logger.warning("   ENCRYPTION_KEY=your-32-character-encryption-key")
+   Pattern: logger\.\w+\(.*key.*\)
+
+68. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/config.py:134
+   Code: logger.warning(f"   Generated temporary key: {temp_key}")
+   Pattern: logger\.\w+\(.*key.*\)
+
+69. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/config.py:140
+   Code: logger.warning("⚠️  JWT_SECRET not set - using SECRET_KEY as fallback")
+   Pattern: logger\.\w+\(.*secret.*\)
+
+70. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/config.py:143
+   Code: logger.error("🚨 CRITICAL: JWT_SECRET or SECRET_KEY must be set in production")
+   Pattern: logger\.\w+\(.*secret.*\)
+
+71. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/config.py:144
+   Code: logger.error("   Set environment variable: JWT_SECRET=your-jwt-secret")
+   Pattern: logger\.\w+\(.*secret.*\)
+
+72. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/security.py:37
+   Code: logger.warning("Using default JWT secret key - change this in production!")
+   Pattern: logger\.\w+\(.*secret.*\)
+
+73. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/security.py:61
+   Code: logger.debug(f"Created access token for user: {data.get('sub', 'unknown')}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+74. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/security.py:64
+   Code: logger.error(f"Failed to create access token: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+75. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/security.py:83
+   Code: logger.debug(f"Created refresh token for user: {data.get('sub', 'unknown')}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+76. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/security.py:86
+   Code: logger.error(f"Failed to create refresh token: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+77. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/security.py:125
+   Code: logger.debug("Password hashed successfully")
+   Pattern: logger\.\w+\(.*password.*\)
+
+78. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/security.py:128
+   Code: logger.error(f"Failed to hash password: {e}")
+   Pattern: logger\.\w+\(.*password.*\)
+
+79. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/security.py:144
+   Code: logger.debug(f"Password verification: {'success' if result else 'failed'}")
+   Pattern: logger\.\w+\(.*password.*\)
+
+80. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/security.py:147
+   Code: logger.error(f"Password verification error: {e}")
+   Pattern: logger\.\w+\(.*password.*\)
+
+81. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/token_encryption_validator.py:48
+   Code: logger.info("✅ TOKEN_ENCRYPTION_KEY environment variable is set")
+   Pattern: logger\.\w+\(.*token.*\)
+
+82. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/token_encryption_validator.py:59
+   Code: logger.info("✅ Token encryption key format is valid")
+   Pattern: logger\.\w+\(.*token.*\)
+
+83. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/token_encryption_validator.py:70
+   Code: logger.info(f"✅ Token encryption key ID: {key_id}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+84. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/token_encryption_validator.py:82
+   Code: logger.info("✅ Token encryption/decryption test passed")
+   Pattern: logger\.\w+\(.*token.*\)
+
+85. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/token_encryption_validator.py:133
+   Code: logger.debug(f"Key format validation failed: {e}")
+   Pattern: logger\.\w+\(.*key.*\)
+
+86. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/token_encryption_validator.py:246
+   Code: logger.info(f"Token encryption backup info: key_id={key_id}, hash={key_hash}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+87. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/token_encryption_validator.py:283
+   Code: logger.info(f"🔑 Encryption key backup info generated: ID={backup_info.get('key_id')}")
+   Pattern: logger\.\w+\(.*key.*\)
+
+88. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/token_encryption_validator.py:288
+   Code: logger.critical("Please check TOKEN_ENCRYPTION_KEY configuration and try again")
+   Pattern: logger\.\w+\(.*token.*\)
+
+89. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/token_encryption_validator.py:321
+   Code: print(f"TOKEN_ENCRYPTION_KEY={new_key}")
+   Pattern: print\(.*token.*\)
+
+90. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/token_encryption.py:43
+   Code: logger.info("Token encryption service initialized")
+   Pattern: logger\.\w+\(.*token.*\)
+
+91. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/token_encryption.py:64
+   Code: logger.error(f"Failed to create encryption key: {e}")
+   Pattern: logger\.\w+\(.*key.*\)
+
+92. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/token_encryption.py:95
+   Code: logger.error(f"Token encryption failed: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+93. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/token_encryption.py:123
+   Code: logger.debug("Successfully decrypted token")
+   Pattern: logger\.\w+\(.*token.*\)
+
+94. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/token_encryption.py:127
+   Code: logger.error(f"Token decryption failed: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+95. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/token_encryption.py:153
+   Code: logger.debug(f"Successfully encrypted token data with {len(token_data)} fields")
+   Pattern: logger\.\w+\(.*token.*\)
+
+96. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/token_encryption.py:157
+   Code: logger.error(f"Token data encryption failed: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+97. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/token_encryption.py:184
+   Code: logger.debug(f"Successfully decrypted token data with {len(token_data)} fields")
+   Pattern: logger\.\w+\(.*token.*\)
+
+98. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/token_encryption.py:188
+   Code: logger.error(f"Token data decryption failed: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+99. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/token_encryption.py:246
+   Code: logger.error(f"Failed to rotate token: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+100. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/token_encryption.py:254
+   Code: logger.info(f"Successfully rotated encryption key for {len(re_encrypted_tokens)} tokens")
+   Pattern: logger\.\w+\(.*token.*\)
+
+101. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/token_encryption.py:258
+   Code: logger.error(f"Encryption key rotation failed: {e}")
+   Pattern: logger\.\w+\(.*key.*\)
+
+102. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/token_encryption.py:278
+   Code: logger.info("Social token manager initialized")
+   Pattern: logger\.\w+\(.*token.*\)
+
+103. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/token_encryption.py:324
+   Code: logger.debug(f"Retrieved OAuth tokens for {platform}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+104. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/token_encryption.py:366
+   Code: logger.warning(f"Access token expired for platform {token_data.get('platform')}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+105. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/token_encryption.py:372
+   Code: logger.error(f"Failed to get access token: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+106. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/auth/fastapi_users_config.py:71
+   Code: print(f"User {user.id} has forgot their password. Reset token: {token}")
+   Pattern: print\(.*token.*\)
+
+107. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/auth/fastapi_users_config.py:93
+   Code: print(f"Password reset email sent successfully to {user.email}")
+   Pattern: print\(.*password.*\)
+
+108. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/auth/fastapi_users_config.py:95
+   Code: print(f"Failed to send password reset email to {user.email}: {result.get('message')}")
+   Pattern: print\(.*password.*\)
+
+109. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/auth/fastapi_users_config.py:98
+   Code: print(f"Error sending password reset email to {user.email}: {str(e)}")
+   Pattern: print\(.*password.*\)
+
+110. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/auth/fastapi_users_config.py:104
+   Code: print(f"Verification requested for user {user.id}. Verification token: {token}")
+   Pattern: print\(.*token.*\)
+
+111. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/auth/social_oauth.py:278
+   Code: logger.error(f"Token exchange failed for {platform}: {response.text}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+112. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/auth/social_oauth.py:304
+   Code: logger.info(f"Successfully obtained tokens for {platform} (user: {state_data['user_id']})")
+   Pattern: logger\.\w+\(.*token.*\)
+
+113. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/auth/social_oauth.py:309
+   Code: logger.error(f"HTTP error during token exchange for {platform}: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+114. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/auth/social_oauth.py:312
+   Code: logger.error(f"Unexpected error during token exchange for {platform}: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+115. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/auth/social_oauth.py:352
+   Code: logger.error(f"Token refresh failed for {platform}: {response.text}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+116. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/auth/social_oauth.py:377
+   Code: logger.info(f"Successfully refreshed tokens for {platform}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+117. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/auth/social_oauth.py:382
+   Code: logger.error(f"HTTP error during token refresh for {platform}: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+118. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/auth/social_oauth.py:385
+   Code: logger.error(f"Unexpected error during token refresh for {platform}: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+119. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/auth/social_oauth.py:577
+   Code: logger.info(f"Successfully stored tokens for {platform} (user: {user_id})")
+   Pattern: logger\.\w+\(.*token.*\)
+
+120. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/auth/social_oauth.py:581
+   Code: logger.error(f"Error storing user tokens: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+121. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/auth/social_oauth.py:644
+   Code: logger.info(f"Refreshed token for {platform} (user: {user_id})")
+   Pattern: logger\.\w+\(.*token.*\)
+
+122. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/auth/social_oauth.py:647
+   Code: logger.error(f"Failed to refresh token for {platform} (user: {user_id}): {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+123. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/auth/social_oauth.py:653
+   Code: logger.error(f"Error getting valid token: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+124. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/auth/social_oauth.py:723
+   Code: logger.error(f"Error getting user access token: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+125. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/auth/jwt_handler.py:28
+   Code: logger.warning("Using default JWT secret key - change this in production!")
+   Pattern: logger\.\w+\(.*secret.*\)
+
+126. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/auth/jwt_handler.py:43
+   Code: logger.debug(f"Created access token for user: {data.get('sub', 'unknown')}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+127. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/auth/jwt_handler.py:46
+   Code: logger.error(f"Failed to create access token: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+128. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/auth/jwt_handler.py:79
+   Code: logger.error(f"Unexpected error verifying token: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+129. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/auth/jwt_handler.py:107
+   Code: logger.debug(f"Created refresh token for user: {data.get('sub', 'unknown')}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+130. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/auth/jwt_handler.py:110
+   Code: logger.error(f"Failed to create refresh token: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+131. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/auth/middleware.py:130
+   Code: logger.info(f"Successfully validated Auth0 token for user: {payload.get('sub')}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+132. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/auth/middleware.py:139
+   Code: logger.info(f"Successfully validated local JWT token for user: {payload.get('sub')}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+133. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/auth/middleware.py:210
+   Code: logger.error("Token payload missing 'sub' claim")
+   Pattern: logger\.\w+\(.*token.*\)
+
+134. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/auth/middleware.py:259
+   Code: logger.info("Token added to blacklist")
+   Pattern: logger\.\w+\(.*token.*\)
+
+135. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/agents/tools.py:143
+   Code: logger.warning("OpenAI API key not configured. Content generation will be unavailable.")
+   Pattern: logger\.\w+\(.*key.*\)
+
+136. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/agents/tools.py:408
+   Code: logger.warning("OpenAI API key not configured. Memory embeddings will be unavailable.")
+   Pattern: logger\.\w+\(.*key.*\)
+
+137. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/agents/tools.py:434
+   Code: logger.warning("Cannot create embedding: OpenAI API key not configured")
+   Pattern: logger\.\w+\(.*key.*\)
+
+138. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/integrations/twitter_client.py:59
+   Code: logger.warning("Twitter OAuth credentials not provided. Set TWITTER_CLIENT_ID and TWITTER_CLIENT_SECRET environment variables.")
+   Pattern: logger\.\w+\(.*secret.*\)
+
+139. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/integrations/twitter_client.py:133
+   Code: logger.error(f"Token exchange failed: {response.status_code} - {response.text}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+140. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/integrations/twitter_client.py:142
+   Code: logger.info("Successfully exchanged authorization code for tokens")
+   Pattern: logger\.\w+\(.*token.*\)
+
+141. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/integrations/twitter_client.py:146
+   Code: logger.error(f"Token exchange failed: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+142. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/integrations/twitter_client.py:175
+   Code: logger.error(f"Token refresh failed: {response.status_code} - {response.text}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+143. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/integrations/twitter_client.py:184
+   Code: logger.info("Successfully refreshed access token")
+   Pattern: logger\.\w+\(.*token.*\)
+
+144. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/integrations/twitter_client.py:188
+   Code: logger.error(f"Token refresh failed: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+145. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/integrations/facebook_client.py:1097
+   Code: logger.error(f"Failed to get Facebook token for user {user_id}: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+146. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/integrations/instagram_client.py:84
+   Code: logger.warning("Instagram OAuth credentials not provided. Set INSTAGRAM_CLIENT_ID and INSTAGRAM_CLIENT_SECRET environment variables.")
+   Pattern: logger\.\w+\(.*secret.*\)
+
+147. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/integrations/instagram_client.py:166
+   Code: logger.error(f"Instagram token exchange failed: {response.status_code} - {response.text}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+148. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/integrations/instagram_client.py:177
+   Code: logger.info("Successfully exchanged authorization code for Instagram tokens")
+   Pattern: logger\.\w+\(.*token.*\)
+
+149. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/integrations/instagram_client.py:181
+   Code: logger.error(f"Instagram token exchange failed: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+150. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/integrations/instagram_client.py:209
+   Code: logger.info("Successfully obtained long-lived Instagram token")
+   Pattern: logger\.\w+\(.*token.*\)
+
+151. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/integrations/instagram_client.py:212
+   Code: logger.warning(f"Failed to get long-lived token: {response.text}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+152. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/integrations/instagram_client.py:216
+   Code: logger.error(f"Failed to get long-lived Instagram token: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+153. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/integrations/performance_optimizer.py:98
+   Code: logger.info(f"Evicted {len(expired_keys)} expired cache entries")
+   Pattern: logger\.\w+\(.*key.*\)
+
+154. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/integrations/performance_optimizer.py:117
+   Code: logger.info(f"LRU evicted {len(keys_to_remove)} cache entries")
+   Pattern: logger\.\w+\(.*key.*\)
+
+155. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/integrations/performance_optimizer.py:326
+   Code: logger.warning(f"Used burst token for {platform} (remaining: {self.burst_tokens[platform]})")
+   Pattern: logger\.\w+\(.*token.*\)
+
+156. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/scripts/create_super_admin.py:52
+   Code: print("Password must be at least 8 characters long")
+   Pattern: print\(.*password.*\)
+
+157. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/scripts/create_super_admin.py:57
+   Code: print("Passwords do not match")
+   Pattern: print\(.*password.*\)
+
+158. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/scripts/validate_platform_integrations.py:200
+   Code: logger.info(f"   ✅ OAuth token fetch: {token_time:.1f}ms")
+   Pattern: logger\.\w+\(.*token.*\)
+
+159. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/db/ensure_columns.py:55
+   Code: logger.info("✅ Successfully created content_logs table with foreign key constraints")
+   Pattern: logger\.\w+\(.*key.*\)
+
+160. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/db/ensure_columns.py:75
+   Code: logger.info("Adding missing foreign key constraint to content_logs table...")
+   Pattern: logger\.\w+\(.*key.*\)
+
+161. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/db/ensure_columns.py:83
+   Code: logger.info("✅ Successfully added foreign key constraint to content_logs")
+   Pattern: logger\.\w+\(.*key.*\)
+
+162. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/db/ensure_columns.py:85
+   Code: logger.warning(f"Could not add foreign key constraint: {fk_error}")
+   Pattern: logger\.\w+\(.*key.*\)
+
+163. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/api/user_settings.py:216
+   Code: logger.info(f"Updated user settings for user {current_user.id}: {list(update_data.keys())}")
+   Pattern: logger\.\w+\(.*key.*\)
+
+164. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/api/auth.py:451
+   Code: logger.info(f"Refresh token blacklisted for user {user_id}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+165. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/api/auth.py:453
+   Code: logger.debug(f"Token already blacklisted for user {user_id}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+166. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/api/data_deletion.py:128
+   Code: logger.info(f"Tokens removed for connection {connection_id}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+167. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/api/partner_oauth.py:384
+   Code: logger.error(f"Token exchange failed for platform {platform}: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+168. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/api/partner_oauth.py:605
+   Code: logger.warning(f"X token revocation failed: {response.status_code} - {response.text}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+169. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/api/social_auth.py:134
+   Code: logger.info(f"Successfully connected {request.platform} for user {token_data['user_id']}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+170. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/api/social_auth.py:355
+   Code: logger.info(f"Refreshed token for {platform} (user: {current_user.id})")
+   Pattern: logger\.\w+\(.*token.*\)
+
+171. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/api/social_auth.py:367
+   Code: logger.error(f"Error refreshing platform token: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+172. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/api/auth_management.py:91
+   Code: logger.info(f"Token blacklisted for user {current_user.id}: {request.reason}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+173. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/api/auth_management.py:101
+   Code: logger.error(f"Failed to blacklist token: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+174. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/api/auth_open.py:194
+   Code: logger.error(f"Failed to create JWT tokens: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+175. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/api/auth_open.py:351
+   Code: logger.info(f"Password reset requested for: {user.email}")
+   Pattern: logger\.\w+\(.*password.*\)
+
+176. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/api/auth_open.py:390
+   Code: logger.info(f"Password reset successful for: {user.email}")
+   Pattern: logger\.\w+\(.*password.*\)
+
+177. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/api/auth_open.py:511
+   Code: logger.info(f"Token refreshed via Authorization header (migration): {user.email}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+178. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/api/auth_open.py:574
+   Code: logger.info(f"Token refreshed for user: {user.email}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+179. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/api/auth_open.py:587
+   Code: logger.error(f"Token refresh failed: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+180. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/api/webhooks.py:110
+   Code: logger.error("META_VERIFY_TOKEN not configured")
+   Pattern: logger\.\w+\(.*token.*\)
+
+181. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/api/webhooks.py:115
+   Code: logger.warning("Meta webhook verification token mismatch")
+   Pattern: logger\.\w+\(.*token.*\)
+
+182. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/api/webhooks.py:236
+   Code: logger.warning(f"Facebook webhook verification failed: mode={hub_mode}, token_match={hub_verify_token == expected_token}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+183. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/monitoring/ga_observability_dashboard.py:462
+   Code: logger.info(f"Token health metrics: {asdict(metrics)}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+184. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/monitoring/ga_observability_dashboard.py:466
+   Code: logger.error(f"Failed to get token health metrics: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+185. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/monitoring/ga_observability_dashboard.py:634
+   Code: logger.error(f"Token refresh outcomes dashboard error: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+186. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/email_service_wrapper.py:33
+   Code: logger.info(f"Password reset email sent successfully to {to_email}")
+   Pattern: logger\.\w+\(.*password.*\)
+
+187. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/email_service_wrapper.py:36
+   Code: logger.error(f"Failed to send password reset email to {to_email}: {e}")
+   Pattern: logger\.\w+\(.*password.*\)
+
+188. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/meta_webhook_service.py:47
+   Code: logger.error("META_APP_SECRET not configured")
+   Pattern: logger\.\w+\(.*secret.*\)
+
+189. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/real_trends_service.py:159
+   Code: logger.info(f"Retrieved search volume data for {len(keywords)} keywords")
+   Pattern: logger\.\w+\(.*key.*\)
+
+190. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/real_trends_service.py:216
+   Code: logger.info(f"Estimated search volume for {len(keywords)} keywords using Serper")
+   Pattern: logger\.\w+\(.*key.*\)
+
+191. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/real_trends_service.py:349
+   Code: logger.info(f"Analyzed seasonal trends for {len(keywords)} keywords")
+   Pattern: logger\.\w+\(.*key.*\)
+
+192. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/webhook_service.py:107
+   Code: logger.warning(f"No webhook secret configured for {platform}")
+   Pattern: logger\.\w+\(.*secret.*\)
+
+193. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/error_recovery_service.py:451
+   Code: logger.info("Authentication error detected - token refresh may be needed")
+   Pattern: logger\.\w+\(.*token.*\)
+
+194. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/meta_page_token_service.py:169
+   Code: logger.info(f"Successfully exchanged for page token: {page_id}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+195. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/meta_page_token_service.py:178
+   Code: logger.error(f"Graph API error getting page token: {e.response.status_code} - {e.response.text}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+196. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/meta_page_token_service.py:191
+   Code: logger.error(f"Failed to exchange for page token: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+197. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/meta_page_token_service.py:258
+   Code: logger.error(f"Failed to validate page token: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+198. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/cache_decorators.py:37
+   Code: logger.error(f"Failed to extract user_id from token for {platform}: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+199. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/research_automation.py:160
+   Code: logger.info(f"Starting automated research for keywords: {query.keywords}")
+   Pattern: logger\.\w+\(.*key.*\)
+
+200. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/research_automation.py:257
+   Code: logger.error(f"Twitter research failed for keyword '{keyword}': {e}")
+   Pattern: logger\.\w+\(.*key.*\)
+
+201. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/research_automation.py:281
+   Code: logger.error(f"Instagram research failed for keyword '{keyword}': {e}")
+   Pattern: logger\.\w+\(.*key.*\)
+
+202. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/research_automation.py:305
+   Code: logger.error(f"Facebook research failed for keyword '{keyword}': {e}")
+   Pattern: logger\.\w+\(.*key.*\)
+
+203. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/research_automation.py:329
+   Code: logger.error(f"LinkedIn research failed for keyword '{keyword}': {e}")
+   Pattern: logger\.\w+\(.*key.*\)
+
+204. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/research_automation.py:352
+   Code: logger.error(f"Google Trends research failed for keyword '{keyword}': {e}")
+   Pattern: logger\.\w+\(.*key.*\)
+
+205. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/research_automation.py:364
+   Code: logger.warning("News API key not configured, skipping news research")
+   Pattern: logger\.\w+\(.*key.*\)
+
+206. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/research_automation.py:417
+   Code: logger.error(f"News API research failed for keyword '{keyword}': {e}")
+   Pattern: logger\.\w+\(.*key.*\)
+
+207. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/research_automation.py:440
+   Code: logger.error(f"Reddit research failed for keyword '{keyword}': {e}")
+   Pattern: logger\.\w+\(.*key.*\)
+
+208. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/research_automation.py:463
+   Code: logger.error(f"YouTube research failed for keyword '{keyword}': {e}")
+   Pattern: logger\.\w+\(.*key.*\)
+
+209. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/image_generation_service.py:39
+   Code: logger.warning("xAI API key not configured. Image generation will be unavailable.")
+   Pattern: logger\.\w+\(.*key.*\)
+
+210. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/pkce_state_store.py:204
+   Code: logger.info(f"Cached tokens for state {state[:8]}...")
+   Pattern: logger\.\w+\(.*token.*\)
+
+211. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/pkce_state_store.py:207
+   Code: logger.error(f"Failed to cache tokens: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+212. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/pkce_state_store.py:230
+   Code: logger.error(f"Failed to read cached tokens: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+213. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/content_generation_automation.py:728
+   Code: logger.warning(f"Failed to extract trending keywords: {e}")
+   Pattern: logger\.\w+\(.*key.*\)
+
+214. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/content_automation.py:453
+   Code: logger.warning("OpenAI API key not configured, falling back to template")
+   Pattern: logger\.\w+\(.*key.*\)
+
+215. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/alt_text_service.py:25
+   Code: logger.warning("OpenAI API key not configured. Alt-text generation will be unavailable.")
+   Pattern: logger\.\w+\(.*key.*\)
+
+216. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/rate_limit.py:125
+   Code: logger.error(f"Error in token bucket acquire for {org_id}:{platform}: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+217. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/rate_limit.py:174
+   Code: logger.error(f"Error getting remaining tokens for {org_id}:{platform}: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+218. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/token_refresh_service.py:55
+   Code: logger.info(f"Starting Meta token refresh for connection {connection.id}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+219. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/token_refresh_service.py:74
+   Code: logger.info(f"Successfully exchanged for long-lived token for connection {connection.id}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+220. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/token_refresh_service.py:76
+   Code: logger.warning(f"Failed to exchange for long-lived token: {e}, using existing token")
+   Pattern: logger\.\w+\(.*token.*\)
+
+221. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/token_refresh_service.py:89
+   Code: logger.error(f"Failed to re-derive page token: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+222. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/token_refresh_service.py:122
+   Code: logger.error(f"Meta token refresh error for connection {connection.id}: {error_msg}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+223. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/token_refresh_service.py:151
+   Code: logger.info(f"Starting X token refresh for connection {connection.id}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+224. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/token_refresh_service.py:167
+   Code: logger.error(f"X OAuth2 token refresh failed: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+225. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/token_refresh_service.py:204
+   Code: logger.error(f"X token refresh error for connection {connection.id}: {error_msg}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+226. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/connection_publisher_service.py:174
+   Code: logger.info(f"Refreshing token for connection {connection.id}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+227. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/connection_publisher_service.py:182
+   Code: logger.warning(f"Token refresh not supported for platform: {connection.platform}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+228. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/connection_publisher_service.py:186
+   Code: logger.error(f"Token refresh failed for connection {connection.id}: {message}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+229. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/connection_publisher_service.py:190
+   Code: logger.error(f"Error ensuring token freshness for connection {connection.id}: {e}")
+   Pattern: logger\.\w+\(.*token.*\)
+
+230. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/research_automation_production.py:157
+   Code: logger.info(f"Completed comprehensive research for {len(query.keywords)} keywords across {len(query.platforms)} platforms")
+   Pattern: logger\.\w+\(.*key.*\)
+
+231. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/web_research_service.py:170
+   Code: logger.warning("OpenAI API key not configured - GPT-5 web search unavailable")
+   Pattern: logger\.\w+\(.*key.*\)
+
+232. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/frontend/venv/lib/python3.13/site-packages/pip/_vendor/distlib/metadata.py:134
+   Code: logger.debug('Removed 1.0 due to %s', key)
+   Pattern: logger\.\w+\(.*key.*\)
+
+233. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/frontend/venv/lib/python3.13/site-packages/pip/_vendor/distlib/metadata.py:137
+   Code: logger.debug('Removed 1.1 due to %s', key)
+   Pattern: logger\.\w+\(.*key.*\)
+
+234. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/frontend/venv/lib/python3.13/site-packages/pip/_vendor/distlib/metadata.py:140
+   Code: logger.debug('Removed 1.2 due to %s', key)
+   Pattern: logger\.\w+\(.*key.*\)
+
+235. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/frontend/venv/lib/python3.13/site-packages/pip/_vendor/distlib/metadata.py:143
+   Code: logger.debug('Removed 1.3 due to %s', key)
+   Pattern: logger\.\w+\(.*key.*\)
+
+236. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/frontend/venv/lib/python3.13/site-packages/pip/_vendor/distlib/metadata.py:147
+   Code: logger.debug('Removed 2.1 due to %s', key)
+   Pattern: logger\.\w+\(.*key.*\)
+
+237. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/frontend/venv/lib/python3.13/site-packages/pip/_vendor/distlib/metadata.py:150
+   Code: logger.debug('Removed 2.2 due to %s', key)
+   Pattern: logger\.\w+\(.*key.*\)
+
+238. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/frontend/venv/lib/python3.13/site-packages/pip/_vendor/distlib/metadata.py:153
+   Code: # logger.debug('Removed 2.0 due to %s', key)
+   Pattern: logger\.\w+\(.*key.*\)
+
+239. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/frontend/venv/lib/python3.13/site-packages/pip/_vendor/distro/distro.py:1393
+   Code: logger.info(json.dumps(dist.info(), indent=4, sort_keys=True))
+   Pattern: logger\.\w+\(.*key.*\)
+
+240. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/frontend/venv/lib/python3.13/site-packages/pip/_vendor/rich/prompt.py:386
+   Code: print("[prompt.invalid]password too short")
+   Pattern: print\(.*password.*\)
+
+241. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/frontend/venv/lib/python3.13/site-packages/pip/_vendor/rich/prompt.py:387
+   Code: print(f"password={password!r}")
+   Pattern: print\(.*password.*\)
+
+242. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/frontend/venv/lib/python3.13/site-packages/pip/_internal/network/auth.py:86
+   Code: logger.debug("Getting credentials from keyring for %s", url)
+   Pattern: logger\.\w+\(.*key.*\)
+
+243. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/frontend/venv/lib/python3.13/site-packages/pip/_internal/network/auth.py:93
+   Code: logger.debug("Getting password from keyring for %s", url)
+   Pattern: logger\.\w+\(.*password.*\)
+
+244. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/frontend/venv/lib/python3.13/site-packages/pip/_internal/network/auth.py:164
+   Code: logger.verbose("Keyring provider requested: %s", provider)
+   Pattern: logger\.\w+\(.*key.*\)
+
+245. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/frontend/venv/lib/python3.13/site-packages/pip/_internal/network/auth.py:172
+   Code: logger.verbose("Keyring provider set: import")
+   Pattern: logger\.\w+\(.*key.*\)
+
+246. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/frontend/venv/lib/python3.13/site-packages/pip/_internal/network/auth.py:217
+   Code: logger.verbose("Keyring provider set: subprocess with executable %s", cli)
+   Pattern: logger\.\w+\(.*key.*\)
+
+247. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/frontend/venv/lib/python3.13/site-packages/pip/_internal/network/auth.py:220
+   Code: logger.verbose("Keyring provider set: disabled")
+   Pattern: logger\.\w+\(.*key.*\)
+
+248. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/frontend/venv/lib/python3.13/site-packages/pip/_internal/network/auth.py:276
+   Code: logger.debug("Keyring is skipped due to an exception", exc_info=True)
+   Pattern: logger\.\w+\(.*key.*\)
+
+249. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/frontend/venv/lib/python3.13/site-packages/pip/_internal/network/auth.py:387
+   Code: logger.debug("Found credentials in keyring for %s", netloc)
+   Pattern: logger\.\w+\(.*key.*\)
+
+250. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/frontend/venv/lib/python3.13/site-packages/pip/_internal/network/auth.py:561
+   Code: logger.info("Saving credentials to keyring")
+   Pattern: logger\.\w+\(.*key.*\)
+
+251. /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/frontend/venv/lib/python3.13/site-packages/pip/_internal/locations/__init__.py:185
+   Code: logger.log(_MISMATCH_LEVEL, message, key, issue_url, old, new)
+   Pattern: logger\.\w+\(.*key.*\)
+
+✅ SAFE LOGGING PATTERNS (Evidence of Security Practices)
+
+📁 /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/api/auth.py
+   Line 457: logger.debug(f"Could not blacklist invalid token during logout: {e}")...
+
+📁 /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/api/auth_management.py
+   Line 66: logger.warning(f"Token validation failed: {e.detail}")...
+   Line 72: logger.error(f"Unexpected error during token validation: {e}")...
+
+📁 /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/api/partner_oauth.py
+   Line 1227: logger.warning(f"No page token found for Meta connection {connection_id} webhook...
+
+📁 /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/api/webhooks.py
+   Line 86: # Don't log query parameters to avoid exposing tokens...
+
+📁 /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/auth/jwt_handler.py
+   Line 57: logger.debug("Token validation failed: missing expiration")...
+   Line 64: logger.debug("Token validation failed: token expired")...
+   Line 73: logger.debug(f"Token validation failed: {e}")...
+
+📁 /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/auth/middleware.py
+   Line 198: logger.warning(f"No token provided for protected endpoint: {request.url.path}")...
+
+📁 /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/security.py
+   Line 106: logger.debug(f"Token validation failed: {e}")...
+
+📁 /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/token_encryption.py
+   Line 91: logger.debug(f"Successfully encrypted token (length: {len(token)})")...
+   Line 304: logger.info(f"Storing OAuth tokens for {platform}: {safe_data}")...
+
+📁 /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/core/token_encryption_validator.py
+   Line 91: logger.info("✅ Token encryption key security validation passed")...
+   Line 101: logger.info("🎉 Token encryption validation: ALL CHECKS PASSED")...
+   Line 104: logger.warning(f"⚠️  Token encryption validation: {validation_results['checks_pa...
+   ... and 7 more safe patterns
+
+📁 /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/token_refresh_service.py
+   Line 117: logger.info(f"Meta token refresh completed for connection {connection.id}: {succ...
+   Line 199: logger.info(f"X token refresh completed for connection {connection.id}: {success...
+   Line 265: logger.error(f"Token validation failed: {e}")...
+
+📁 /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/backend/services/x_connection_service.py
+   Line 127: logger.error(f"Token validation failed: {e}")...
+
+📁 /Users/jeffreyhacker/Lily-Media.AI/socialmedia2/debug_auth.py
+   Line 45: logger.info("✅ Access token creation: SUCCESS")...
+   Line 53: logger.error(f"❌ Token creation/verification failed: {token_error}")...
+
+============================================================
+RECOMMENDATIONS:
+============================================================
+⚠️  Review and fix logging violations above
+⚠️  Ensure no tokens/secrets are logged
+⚠️  Use safe logging patterns shown in examples
+
+For GA checklist compliance:
+- All OAuth tokens should be encrypted before storage
+- No access/refresh tokens should appear in logs
+- Use filtered/sanitized data for debugging logs
+- Test with sample end-to-end runs to verify

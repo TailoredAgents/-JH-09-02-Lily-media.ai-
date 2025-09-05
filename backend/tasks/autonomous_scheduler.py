@@ -106,85 +106,85 @@ def daily_content_generation(self):
                         scheduler.research_service.execute_comprehensive_research(research_query)
                     )
                 
-                # Step 2: Generate content based on research
-                content_service = ContentPersistenceService(db)
-                memory_service = ProductionMemoryService(db)
-                
-                # Get content inspiration from memory
-                inspiration = memory_service.get_content_inspiration(
-                    user_id=user_id,
-                    topic='daily content',
-                    platform=user_config['preferred_platforms'][0],
-                    limit=5
-                )
-                
-                # Step 3: Create content for each platform
-                content_items = []
-                for platform in user_config['preferred_platforms']:
-                    # Determine posting time for this platform
-                    posting_time = user_config['posting_times'].get(platform, '09:00')
+                    # Step 2: Generate content based on research
+                    content_service = ContentPersistenceService(db)
+                    memory_service = ProductionMemoryService(db)
                     
-                    # Schedule for tomorrow at the specified time
-                    tomorrow = datetime.utcnow() + timedelta(days=1)
-                    scheduled_time = tomorrow.replace(
-                        hour=int(posting_time.split(':')[0]),
-                        minute=int(posting_time.split(':')[1]),
-                        second=0,
-                        microsecond=0
-                    )
-                    
-                    # Generate platform-specific content
-                    content_text = f"Daily insight for {platform}: Based on today's research, here's what's trending..."
-                    
-                    # Store content with scheduling
-                    content_item = content_service.create_content(
+                    # Get content inspiration from memory
+                    inspiration = memory_service.get_content_inspiration(
                         user_id=user_id,
-                        title=f"Daily {platform} content - {tomorrow.strftime('%Y-%m-%d')}",
-                        content=content_text,
-                        platform=platform,
-                        content_type='text',
-                        status='scheduled',
-                        scheduled_at=scheduled_time,
-                        metadata={
-                            'generated_by': 'autonomous_scheduler',
-                            'research_data': research_results.get('summary', {}),
-                            'inspiration_sources': len(inspiration.get('similar_content', []))
-                        }
+                        topic='daily content',
+                        platform=user_config['preferred_platforms'][0],
+                        limit=5
                     )
+                
+                    # Step 3: Create content for each platform
+                    content_items = []
+                    for platform in user_config['preferred_platforms']:
+                        # Determine posting time for this platform
+                        posting_time = user_config['posting_times'].get(platform, '09:00')
+                        
+                        # Schedule for tomorrow at the specified time
+                        tomorrow = datetime.utcnow() + timedelta(days=1)
+                        scheduled_time = tomorrow.replace(
+                            hour=int(posting_time.split(':')[0]),
+                            minute=int(posting_time.split(':')[1]),
+                            second=0,
+                            microsecond=0
+                        )
+                        
+                        # Generate platform-specific content
+                        content_text = f"Daily insight for {platform}: Based on today's research, here's what's trending..."
+                        
+                        # Store content with scheduling
+                        content_item = content_service.create_content(
+                            user_id=user_id,
+                            title=f"Daily {platform} content - {tomorrow.strftime('%Y-%m-%d')}",
+                            content=content_text,
+                            platform=platform,
+                            content_type='text',
+                            status='scheduled',
+                            scheduled_at=scheduled_time,
+                            metadata={
+                                'generated_by': 'autonomous_scheduler',
+                                'research_data': research_results.get('summary', {}),
+                                'inspiration_sources': len(inspiration.get('similar_content', []))
+                            }
+                        )
+                        
+                        content_items.append(content_item.id)
                     
-                    content_items.append(content_item.id)
-                
-                # Update workflow as completed
-                workflow.status = 'completed'
-                workflow.results = {
-                    'content_items_created': len(content_items),
-                    'research_quality_score': research_results.get('summary', {}).get('research_quality_score', 0),
-                    'platforms_processed': user_config['preferred_platforms']
-                }
-                db.commit()
-                
-                results.append({
-                    'user_id': user_id,
-                    'status': 'success',
-                    'content_items': len(content_items),
-                    'workflow_id': workflow.id
-                })
-                
-                logger.info(f"Completed autonomous content generation for user {user_id}")
-                
-            except Exception as e:
-                logger.error(f"Failed autonomous content generation for user {user_config['user_id']}: {e}")
-                # Update workflow as failed
-                if 'workflow' in locals():
-                    workflow.status = 'failed'
-                    workflow.error_message = str(e)
+                    # Update workflow as completed
+                    workflow.status = 'completed'
+                    workflow.results = {
+                        'content_items_created': len(content_items),
+                        'research_quality_score': research_results.get('summary', {}).get('research_quality_score', 0),
+                        'platforms_processed': user_config['preferred_platforms']
+                    }
                     db.commit()
+                    
+                    results.append({
+                        'user_id': user_id,
+                        'status': 'success',
+                        'content_items': len(content_items),
+                        'workflow_id': workflow.id
+                    })
+                    
+                    logger.info(f"Completed autonomous content generation for user {user_id}")
                 
-                results.append({
-                    'user_id': user_config['user_id'],
-                    'status': 'failed',
-                    'error': str(e)
-                })
+                except Exception as e:
+                    logger.error(f"Failed autonomous content generation for user {user_config['user_id']}: {e}")
+                    # Update workflow as failed
+                    if 'workflow' in locals():
+                        workflow.status = 'failed'
+                        workflow.error_message = str(e)
+                        db.commit()
+                    
+                    results.append({
+                        'user_id': user_config['user_id'],
+                        'status': 'failed',
+                        'error': str(e)
+                    })
         
         logger.info(f"Daily autonomous content generation completed. Processed {len(results)} users")
         return {
