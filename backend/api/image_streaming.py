@@ -14,6 +14,7 @@ import asyncio
 from backend.db.models import User
 from backend.auth.dependencies import get_current_active_user
 from backend.services.image_generation_service import image_generation_service
+from backend.middleware.feature_flag_enforcement import require_flag
 
 router = APIRouter(prefix="/api/images", tags=["image-streaming"])
 
@@ -28,7 +29,8 @@ class StreamingImageRequest(BaseModel):
 @router.post("/stream")
 async def stream_image_generation(
     request: StreamingImageRequest,
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
+    _: None = Depends(require_flag("IMAGE_GENERATION"))
 ):
     """
     Stream image generation with partial results for real-time feedback.

@@ -36,7 +36,7 @@ class UsageTrackingService:
     async def track_usage(
         self,
         user_id: int,
-        organization_id: str,
+        organization_id: int,
         usage_type: str,
         resource: Optional[str] = None,
         quantity: int = 1,
@@ -146,7 +146,7 @@ class UsageTrackingService:
     
     async def get_organization_usage(
         self,
-        organization_id: str,
+        organization_id: int,
         usage_type: str,
         period: Optional[str] = None
     ) -> int:

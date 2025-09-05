@@ -53,7 +53,7 @@ class OrganizationMemberResponse(BaseModel):
 
 class AssignRoleRequest(BaseModel):
     user_id: int
-    role_name: str = Field(..., regex=r'^(super_admin|org_owner|admin|manager|member|viewer)$')
+    role_name: str = Field(..., pattern=r'^(super_admin|org_owner|admin|manager|member|viewer)$')
 
 class SystemRoleResponse(BaseModel):
     name: str

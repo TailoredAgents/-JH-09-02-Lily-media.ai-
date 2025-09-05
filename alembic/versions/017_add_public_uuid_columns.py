@@ -12,7 +12,7 @@ import uuid
 
 # revision identifiers
 revision = '017_add_public_uuid_columns'
-down_revision = '016_remove_registration_keys'
+down_revision = '016_open_saas_auth'
 branch_labels = None
 depends_on = None
 

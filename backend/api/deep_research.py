@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 from backend.services.research_scheduler import research_scheduler
 from backend.agents.deep_research_agent import deep_research_agent
+from backend.middleware.feature_flag_enforcement import require_flag
 try:
     from backend.tasks.research_tasks import (
         execute_weekly_deep_research_task,
@@ -99,7 +100,8 @@ class ScheduleUpdate(BaseModel):
 async def setup_industry_research(
     industry: str,
     setup_request: IndustryResearchSetup,
-    background_tasks: BackgroundTasks
+    background_tasks: BackgroundTasks,
+    _: None = Depends(require_flag("ENABLE_DEEP_RESEARCH"))
 ):
     """
     Set up autonomous deep research for a specific industry
@@ -212,7 +214,8 @@ async def update_research_schedule(
 @router.post("/execute/{industry}")
 async def trigger_immediate_research(
     industry: str,
-    background_tasks: BackgroundTasks
+    background_tasks: BackgroundTasks,
+    _: None = Depends(require_flag("ENABLE_DEEP_RESEARCH"))
 ):
     """
     Trigger immediate deep research execution for an industry

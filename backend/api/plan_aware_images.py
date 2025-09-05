@@ -11,6 +11,8 @@ from backend.db.database import get_db
 from backend.auth.dependencies import get_current_user
 from backend.db.models import User
 from backend.services.plan_aware_image_service import get_plan_aware_image_service
+from backend.middleware.feature_flag_enforcement import require_flag
+from backend.middleware.subscription_enforcement import require_feature, check_usage_limit
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
@@ -47,7 +49,9 @@ class ImageCapabilitiesResponse(BaseModel):
 async def generate_image_with_plan_gating(
     request: ImageGenerationRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: None = Depends(require_feature("image_generation")),
+    _usage_check: None = Depends(check_usage_limit("image_generation", "max_image_generations_per_month"))
 ):
     """Generate an image with plan-based feature gating and usage tracking"""
     try:
@@ -125,7 +129,8 @@ async def generate_image_with_plan_gating(
 @router.get("/capabilities", response_model=ImageCapabilitiesResponse)
 async def get_image_capabilities(
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: None = Depends(require_feature("image_generation"))
 ):
     """Get user's image generation capabilities and current usage"""
     try:
@@ -153,7 +158,8 @@ async def get_image_capabilities(
 @router.get("/usage")
 async def get_image_usage(
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: None = Depends(require_feature("image_generation"))
 ):
     """Get detailed usage information for current user"""
     try:
@@ -198,7 +204,8 @@ async def get_image_usage(
 @router.get("/models")
 async def get_available_models(
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: None = Depends(require_feature("image_generation"))
 ):
     """Get available AI models for user's plan"""
     try:

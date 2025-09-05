@@ -165,7 +165,7 @@ async def get_session_info(
         return UserSessionInfo(
             user_id=str(current_user.id),
             email=current_user.email,
-            auth_method="auth0",  # Assuming Auth0 for now
+            auth_method="local",  # Local JWT authentication
             active_sessions=1,  # This could be enhanced to track multiple sessions
             last_activity=datetime.utcnow(),
             permissions=permissions
@@ -236,49 +236,37 @@ async def auth_health_check():
     """
     Detailed authentication system health check
     """
-    from backend.auth.middleware import get_jwks_cache_status
+    from backend.auth.middleware import get_jwt_cache_status
     
     try:
-        # Check Auth0 configuration
-        auth0_healthy = bool(
-            settings.auth0_domain and 
-            settings.auth0_audience and 
-            settings.auth0_client_id
-        )
-        
         # Check local JWT configuration
-        local_jwt_healthy = bool(settings.secret_key)
+        local_jwt_healthy = bool(settings.secret_key and settings.secret_key != "your-secret-key-change-this")
         
-        # Get JWKS status
-        jwks_status = get_jwks_cache_status()
+        # Get JWT cache status
+        jwt_cache_status = get_jwt_cache_status()
         
-        # Get middleware stats
-        middleware_stats = jwt_middleware.get_middleware_stats()
+        # Get middleware stats  
+        middleware_stats = await jwt_middleware.get_middleware_stats()
         
-        overall_status = "healthy" if (auth0_healthy or local_jwt_healthy) else "degraded"
+        overall_status = "healthy" if local_jwt_healthy else "degraded"
         
         return {
             "status": overall_status,
             "timestamp": datetime.utcnow().isoformat(),
             "components": {
-                "auth0": {
-                    "configured": auth0_healthy,
-                    "status": "healthy" if auth0_healthy else "not_configured"
-                },
                 "local_jwt": {
                     "configured": local_jwt_healthy,
-                    "status": "healthy" if local_jwt_healthy else "not_configured"
+                    "status": "healthy" if local_jwt_healthy else "misconfigured"
                 },
-                "jwks_cache": jwks_status,
+                "jwt_cache": jwt_cache_status,
                 "middleware": {
                     "status": "healthy",
                     "stats": middleware_stats
                 }
             },
             "recommendations": [
-                "Configure Auth0 for production use" if not auth0_healthy else "",
                 "Set strong secret key for local JWT" if not local_jwt_healthy else "",
-                "Monitor token cache size for memory usage" if middleware_stats["total_cache_size"] > 500 else ""
+                "Redis connection required for distributed caching" if not middleware_stats.get("redis_connected", False) else ""
             ]
         }
         

@@ -40,11 +40,11 @@ class ProductionSettings(Settings):
     refresh_token_expire_days: int = Field(30, env="REFRESH_TOKEN_EXPIRE_DAYS")
     password_hash_rounds: int = Field(12, env="PASSWORD_HASH_ROUNDS")
     
-    # Auth0 Configuration
-    auth0_domain: str = Field(..., env="AUTH0_DOMAIN")
-    auth0_audience: str = Field(..., env="AUTH0_AUDIENCE")
-    auth0_client_id: str = Field(..., env="AUTH0_CLIENT_ID")
-    auth0_client_secret: str = Field(..., env="AUTH0_CLIENT_SECRET")
+    # JWT Configuration (Local Authentication Only)
+    jwt_secret: str = Field(..., env="JWT_SECRET")
+    jwt_algorithm: str = Field("HS256", env="JWT_ALGORITHM")
+    jwt_access_ttl_seconds: int = Field(900, env="JWT_ACCESS_TTL_SECONDS")  # 15 minutes
+    jwt_refresh_ttl_seconds: int = Field(1209600, env="JWT_REFRESH_TTL_SECONDS")  # 14 days
     
     # OpenAI Configuration - Updated for GPT-5 Models
     openai_api_key: str = Field(..., env="OPENAI_API_KEY")

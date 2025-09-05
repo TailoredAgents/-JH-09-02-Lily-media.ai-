@@ -191,7 +191,7 @@ class SubscriptionDependencies:
     @staticmethod 
     async def track_usage_after_operation(
         user_id: int,
-        organization_id: str,
+        organization_id: int,
         usage_type: str,
         resource: Optional[str] = None,
         quantity: int = 1,

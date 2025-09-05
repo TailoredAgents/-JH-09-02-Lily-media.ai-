@@ -11,6 +11,7 @@ import uuid
 from backend.db.database import get_db
 from backend.db.models import WorkflowExecution, User
 from backend.auth.dependencies import get_current_active_user
+from backend.middleware.feature_flag_enforcement import require_flag
 
 router = APIRouter(prefix="/api/workflow", tags=["workflow"])
 
@@ -43,7 +44,8 @@ async def execute_workflow(
     request: ExecuteWorkflowRequest,
     background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: None = Depends(require_flag("WORKFLOW_V2"))
 ):
     """Execute a workflow in the background"""
     

@@ -8,6 +8,7 @@ _DEFAULT_FLAGS = {
     "WORKFLOW_V2": True,
     "ENABLE_DEEP_RESEARCH": False,
     "AUTH0_ENABLED": False,
+    "IMAGE_GENERATION": True,
 }
 
 def _parse_env_flags() -> Dict[str, bool]:
