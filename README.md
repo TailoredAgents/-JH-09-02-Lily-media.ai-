@@ -1,14 +1,15 @@
-# AI Social Media Manager 🤖
+# Lily Media AI - Social Media Management Platform 🤖
 
-**Enterprise-Grade AI-Powered Social Media Management Platform**
+**Enterprise-Grade Multi-Tenant AI-Powered Social Media Management Platform**
 
 *Transform your social media presence with intelligent automation and advanced analytics*
 
-![Version](https://img.shields.io/badge/version-2.0-blue)
+![Version](https://img.shields.io/badge/version-2.1-blue)
 ![Python](https://img.shields.io/badge/python-3.11+-green)
 ![React](https://img.shields.io/badge/react-18.x-blue)
 ![License](https://img.shields.io/badge/license-Proprietary-red)
 ![Production Ready](https://img.shields.io/badge/production-ready-brightgreen)
+![Multi-Tenant](https://img.shields.io/badge/multi--tenant-RBAC-purple)
 
 ## 🚦 CI/CD Status
 

@@ -25,6 +25,16 @@ from backend.services.notification_service import (
     trigger_platform_connected_notification,
     trigger_oauth_expired_notification
 )
+from backend.core.pagination import (
+    PaginationService, 
+    get_pagination_params, 
+    get_cursor_pagination_params,
+    PaginationParams,
+    CursorPaginationParams,
+    PaginatedResponse,
+    CursorPaginatedResponse
+)
+from backend.core.performance import performance_monitor, cached
 
 logger = logging.getLogger(__name__)
 
@@ -272,36 +282,61 @@ async def oauth_callback(
 # Connection management endpoints
 
 @router.get("/connections")
+@performance_monitor("get_user_connections")
+@cached("user_connections_{args[0].id}", ttl=300)
 async def get_user_connections(
     current_user: User = Depends(get_current_active_user),
+    pagination: PaginationParams = Depends(get_pagination_params),
     db: Session = Depends(get_db)
-):
+) -> PaginatedResponse[SocialPlatformConnection]:
     """
-    Get all social platform connections for the current user
+    Get paginated social platform connections for the current user
     
     Args:
         current_user: Authenticated user
+        pagination: Pagination parameters
         db: Database session
         
     Returns:
-        List of user's social platform connections
+        Paginated list of user's social platform connections
     """
     try:
-        connections = db.query(SocialPlatformConnection).filter(
+        # Build base query
+        base_query = db.query(SocialPlatformConnection).filter(
             SocialPlatformConnection.user_id == current_user.id,
             SocialPlatformConnection.is_active == True
-        ).order_by(SocialPlatformConnection.connected_at.desc()).all()
+        )
         
-        logger.info(f"Found {len(connections)} social connections for user {current_user.id}")
+        # Apply default sorting by connected_at desc if no sort specified
+        if not pagination.sort_by:
+            base_query = base_query.order_by(SocialPlatformConnection.connected_at.desc())
         
-        # Always return a list, even if empty
-        return connections or []
+        # Use pagination service
+        pagination_service = PaginationService(db)
+        result = pagination_service.paginate_query(base_query, pagination)
+        
+        logger.info(f"Found {result.pagination['total_items']} social connections for user {current_user.id}")
+        
+        return result
         
     except Exception as e:
         logger.error(f"Error retrieving social connections for user {current_user.id}: {e}")
         logger.error(f"Error type: {type(e)}")
-        # Return empty list on error to prevent 500
-        return []
+        
+        # Return empty paginated result on error
+        return PaginatedResponse(
+            items=[],
+            pagination={
+                "current_page": pagination.page,
+                "page_size": pagination.page_size,
+                "total_items": 0,
+                "total_pages": 0,
+                "has_next": False,
+                "has_previous": False,
+                "next_page": None,
+                "previous_page": None
+            }
+        )
 
 @router.get("/connections/status")
 async def get_connection_status(

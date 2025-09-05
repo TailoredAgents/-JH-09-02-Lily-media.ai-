@@ -38,6 +38,7 @@ websockets==12.0
 # Logging & Monitoring
 structlog==25.4.0
 sentry-sdk[fastapi]==2.35.0
+prometheus-client==0.20.0
 
 # Essential AI - OpenAI only for core functionality
 openai==1.75.0

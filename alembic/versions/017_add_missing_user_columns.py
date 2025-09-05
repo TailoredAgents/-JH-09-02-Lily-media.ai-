@@ -1,7 +1,7 @@
 """Add missing user columns for production database
 
 Revision ID: 017_add_missing_user_columns
-Revises: 016_convert_to_open_saas_auth
+Revises: 016_open_saas_auth
 Create Date: 2025-08-25 20:00:00.000000
 
 """
@@ -11,7 +11,7 @@ from sqlalchemy.dialects.postgresql import UUID
 
 # revision identifiers, used by Alembic.
 revision = '017_add_missing_user_columns'
-down_revision = '016_convert_to_open_saas_auth'
+down_revision = '016_open_saas_auth'
 branch_labels = None
 depends_on = None
 

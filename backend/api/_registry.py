@@ -42,6 +42,7 @@ from . import (
     multi_tenant,  # Multi-tenant organization and RBAC management
     billing,  # Stripe billing and subscription management
     plans,  # Subscription plans and feature gating
+    plan_billing,  # Enhanced plan-based billing with Stripe integration
     plan_aware_images,  # Plan-aware image generation with usage tracking
     performance,  # Performance monitoring and optimization
     monitoring_metrics,  # Prometheus and Sentry monitoring integration
@@ -90,6 +91,7 @@ ROUTERS = [
     multi_tenant.router,  # Multi-tenant organization and RBAC management
     billing.router,  # Stripe billing and subscription management
     plans.router,  # Subscription plans and feature gating
+    plan_billing.router,  # Enhanced plan-based billing with Stripe integration
     plan_aware_images.router,  # Plan-aware image generation with usage tracking
     performance.router,  # Performance monitoring and optimization
     monitoring_metrics.router,  # Prometheus and Sentry monitoring integration

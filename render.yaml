@@ -1,85 +1,51 @@
+# Render deployment configuration for custom domain
 services:
   - type: web
-    name: lily-ai-socialmedia-backend
+    name: socialmedia-backend
     env: python
-    plan: starter
-    runtime: python-3.11.9
-    buildCommand: pip install -e .
-    startCommand: python render_production.py
-    healthCheckPath: /health
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
     envVars:
-      - key: ENVIRONMENT
-        value: production
-      - key: SECRET_KEY
-        fromSecret: SECRET_KEY
-      - key: CORS_ORIGINS
-        value: https://www.lily-ai-socialmedia.com,https://lily-ai-socialmedia-frontend.onrender.com
+      - key: FRONTEND_URL
+        value: https://lilymedia.ai
+      - key: ALLOWED_ORIGINS
+        value: https://lilymedia.ai,https://www.lilymedia.ai,https://app.lilymedia.ai
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://lilymedia.ai,https://www.lilymedia.ai
       - key: DATABASE_URL
         fromDatabase:
-          name: lily-ai-socialmedia-db
+          name: socialmedia-db
           property: connectionString
-      - key: REDIS_URL
-        fromService:
-          name: lily-ai-socialmedia-redis
-          type: redis
-          property: connectionString
-      - key: CELERY_BROKER_URL
-        fromService:
-          name: lily-ai-socialmedia-redis
-          type: redis
-          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
       - key: OPENAI_API_KEY
         sync: false
+      - key: SENTRY_DSN
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: socialmedia-redis
+          property: connectionString
 
   - type: web
-    name: lily-ai-socialmedia-frontend
-    env: node
-    plan: free
-    buildCommand: cd frontend && npm install && npm run build
-    startCommand: cd frontend && npm run preview -- --host 0.0.0.0 --port $PORT
+    name: socialmedia-frontend
+    env: static
+    buildCommand: npm ci && npm run build
+    staticPublishPath: ./dist
     envVars:
       - key: VITE_API_BASE_URL
-        value: https://lily-ai-socialmedia-backend.onrender.com
-      - key: VITE_ENVIRONMENT
-        value: production
-
-  - type: worker
-    name: lily-ai-socialmedia-worker
-    env: python
-    plan: starter
-    runtime: python-3.11.9
-    buildCommand: pip install -e .
-    startCommand: celery -A backend.tasks.celery_app worker --loglevel=info
-    envVars:
-      - key: ENVIRONMENT
-        value: production
-      - key: SECRET_KEY
-        fromSecret: SECRET_KEY
-      - key: DATABASE_URL
-        fromDatabase:
-          name: lily-ai-socialmedia-db
-          property: connectionString
-      - key: REDIS_URL
-        fromService:
-          name: lily-ai-socialmedia-redis
-          type: redis
-          property: connectionString
-      - key: CELERY_BROKER_URL
-        fromService:
-          name: lily-ai-socialmedia-redis
-          type: redis
-          property: connectionString
-      - key: OPENAI_API_KEY
-        sync: false
-
-  - type: redis
-    name: lily-ai-socialmedia-redis
-    plan: free
-    ipAllowList:
-      - source: 0.0.0.0/0
-        description: Allow all connections
+        value: https://api.lilymedia.ai
+      - key: VITE_APP_URL
+        value: https://lilymedia.ai
 
 databases:
-  - name: lily-ai-socialmedia-db
-    databaseName: lily_ai_socialmedia
-    plan: free
+  - name: socialmedia-db
+    databaseName: socialmedia
+    user: socialmedia
+    region: oregon
+
+services:
+  - type: redis
+    name: socialmedia-redis
+    region: oregon
