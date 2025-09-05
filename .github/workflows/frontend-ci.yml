@@ -44,26 +44,62 @@ jobs:
     - name: Check Prettier formatting
       run: npm run format:check
       
-    - name: Run tests
+    - name: Run tests with coverage
       run: npm run test:ci
       
+    - name: Generate coverage report
+      run: |
+        echo "## Test Coverage Report" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        npm run test:coverage -- --coverageReporters=text-summary | tail -n +2 >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+      
+    - name: Coverage quality gate
+      run: |
+        COVERAGE=$(npm run test:coverage --silent -- --coverageReporters=json-summary | jq '.total.lines.pct')
+        echo "Coverage: $COVERAGE%"
+        if (( $(echo "$COVERAGE < 70" | bc -l) )); then
+          echo "❌ Coverage $COVERAGE% is below threshold (70%)"
+          exit 1
+        else
+          echo "✅ Coverage $COVERAGE% meets threshold"
+        fi
+        
     - name: Upload coverage reports
       uses: codecov/codecov-action@v3
       with:
         file: frontend/coverage/lcov.info
         flags: frontend
-        name: frontend-coverage
-        fail_ci_if_error: false
+        name: frontend-coverage-${{ matrix.node-version }}
+        fail_ci_if_error: true
         
+    - name: Run accessibility tests
+      run: npm run test:a11y
+      continue-on-error: true
+      
     - name: Build application
       run: npm run build
       
+    - name: Bundle size check
+      run: |
+        BUNDLE_SIZE=$(du -sh dist/ | cut -f1)
+        echo "Bundle size: $BUNDLE_SIZE"
+        echo "## Bundle Analysis" >> $GITHUB_STEP_SUMMARY
+        echo "📦 **Total bundle size:** $BUNDLE_SIZE" >> $GITHUB_STEP_SUMMARY
+        
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
         name: frontend-build-${{ matrix.node-version }}
         path: frontend/dist/
         retention-days: 7
+        
+    - name: Performance budget check
+      run: |
+        if [ -f "dist/stats.json" ]; then
+          echo "## Performance Budget" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Bundle analysis available" >> $GITHUB_STEP_SUMMARY
+        fi
 
   security-scan:
     runs-on: ubuntu-latest

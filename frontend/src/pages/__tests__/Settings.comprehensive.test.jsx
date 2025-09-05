@@ -5,20 +5,20 @@ import Settings from '../Settings'
 
 // Mock dependencies
 jest.mock('../../hooks/useApi', () => ({
-  useApi: jest.fn()
+  useApi: jest.fn(),
 }))
 
 jest.mock('../../hooks/useNotifications', () => ({
-  useNotifications: jest.fn()
+  useNotifications: jest.fn(),
 }))
 
 jest.mock('../../contexts/AuthContext', () => ({
-  useAuth: jest.fn()
+  useAuth: jest.fn(),
 }))
 
 jest.mock('../../utils/logger.js', () => ({
   error: jest.fn(),
-  info: jest.fn()
+  info: jest.fn(),
 }))
 
 import { useApi } from '../../hooks/useApi'
@@ -39,76 +39,74 @@ describe('Settings Page', () => {
       email: 'john@example.com',
       company: 'Tech Corp',
       timezone: 'America/New_York',
-      language: 'en'
+      language: 'en',
     },
     notifications: {
       email_notifications: true,
       push_notifications: false,
       weekly_reports: true,
-      performance_alerts: true
+      performance_alerts: true,
     },
     privacy: {
       data_sharing: false,
       analytics_tracking: true,
-      third_party_integrations: true
+      third_party_integrations: true,
     },
     billing: {
       plan: 'Pro',
       billing_cycle: 'monthly',
       next_billing_date: '2024-01-15',
-      payment_method: '**** 1234'
+      payment_method: '**** 1234',
     },
     integrations: {
       twitter: { connected: true, username: '@johndoe' },
-       { connected: true, username: 'John Doe' },
+      linkedin: { connected: true, username: 'John Doe' },
       instagram: { connected: false, username: null },
       facebook: { connected: true, username: 'John Doe' },
-    }
+    },
   }
 
   const mockUser = {
     name: 'John Doe',
     email: 'john@example.com',
-    picture: 'https://example.com/avatar.jpg'
+    picture: 'https://example.com/avatar.jpg',
   }
 
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
-      mutations: { retry: false }
-    }
+      mutations: { retry: false },
+    },
   })
 
   const TestWrapper = ({ children }) => (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        {children}
-      </BrowserRouter>
+      <BrowserRouter>{children}</BrowserRouter>
     </QueryClientProvider>
   )
 
   beforeEach(() => {
     jest.clearAllMocks()
-    
+
     mockUseApi.mockReturnValue({
       apiService: {
         getUserSettings: jest.fn(),
         updateUserSettings: jest.fn(),
         connectPlatform: jest.fn(),
         disconnectPlatform: jest.fn(),
-        updateBilling: jest.fn()
+        updateBilling: jest.fn(),
       },
-      makeAuthenticatedRequest: mockMakeAuthenticatedRequest
+      makeAuthenticatedRequest: mockMakeAuthenticatedRequest,
     })
 
     mockUseNotifications.mockReturnValue({
       showSuccess: mockShowSuccess,
-      showError: mockShowError
+      showError: mockShowError,
     })
 
     mockUseAuth.mockReturnValue({
       userProfile: mockUser,
-      logout: jest.fn()
+      logout: jest.fn(),
     })
 
     mockMakeAuthenticatedRequest.mockResolvedValue(mockSettings)
@@ -123,7 +121,9 @@ describe('Settings Page', () => {
       )
 
       expect(screen.getByText('Settings')).toBeInTheDocument()
-      expect(screen.getByText('Manage your account preferences and integrations')).toBeInTheDocument()
+      expect(
+        screen.getByText('Manage your account preferences and integrations')
+      ).toBeInTheDocument()
 
       await waitFor(() => {
         expect(screen.getByText('Profile')).toBeInTheDocument()
@@ -135,7 +135,9 @@ describe('Settings Page', () => {
     })
 
     it('displays loading state initially', () => {
-      mockMakeAuthenticatedRequest.mockImplementation(() => new Promise(() => {}))
+      mockMakeAuthenticatedRequest.mockImplementation(
+        () => new Promise(() => {})
+      )
 
       render(
         <TestWrapper>
@@ -147,7 +149,9 @@ describe('Settings Page', () => {
     })
 
     it('displays error state on API failure', async () => {
-      mockMakeAuthenticatedRequest.mockRejectedValue(new Error('Failed to load settings'))
+      mockMakeAuthenticatedRequest.mockRejectedValue(
+        new Error('Failed to load settings')
+      )
 
       render(
         <TestWrapper>
@@ -219,8 +223,8 @@ describe('Settings Page', () => {
           expect.any(Function),
           expect.objectContaining({
             profile: expect.objectContaining({
-              name: 'John Smith'
-            })
+              name: 'John Smith',
+            }),
           })
         )
       })
@@ -253,8 +257,12 @@ describe('Settings Page', () => {
       )
 
       await waitFor(() => {
-        const emailNotifications = screen.getByRole('checkbox', { name: /email notifications/i })
-        const pushNotifications = screen.getByRole('checkbox', { name: /push notifications/i })
+        const emailNotifications = screen.getByRole('checkbox', {
+          name: /email notifications/i,
+        })
+        const pushNotifications = screen.getByRole('checkbox', {
+          name: /push notifications/i,
+        })
 
         expect(emailNotifications).toBeChecked()
         expect(pushNotifications).not.toBeChecked()
@@ -269,10 +277,14 @@ describe('Settings Page', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getByRole('checkbox', { name: /email notifications/i })).toBeInTheDocument()
+        expect(
+          screen.getByRole('checkbox', { name: /email notifications/i })
+        ).toBeInTheDocument()
       })
 
-      const emailCheckbox = screen.getByRole('checkbox', { name: /email notifications/i })
+      const emailCheckbox = screen.getByRole('checkbox', {
+        name: /email notifications/i,
+      })
       fireEvent.click(emailCheckbox)
 
       expect(emailCheckbox).not.toBeChecked()
@@ -290,13 +302,19 @@ describe('Settings Page', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getByRole('checkbox', { name: /email notifications/i })).toBeInTheDocument()
+        expect(
+          screen.getByRole('checkbox', { name: /email notifications/i })
+        ).toBeInTheDocument()
       })
 
-      const emailCheckbox = screen.getByRole('checkbox', { name: /email notifications/i })
+      const emailCheckbox = screen.getByRole('checkbox', {
+        name: /email notifications/i,
+      })
       fireEvent.click(emailCheckbox)
 
-      const saveButton = screen.getByRole('button', { name: /save notifications/i })
+      const saveButton = screen.getByRole('button', {
+        name: /save notifications/i,
+      })
       fireEvent.click(saveButton)
 
       await waitFor(() => {
@@ -304,8 +322,8 @@ describe('Settings Page', () => {
           expect.any(Function),
           expect.objectContaining({
             notifications: expect.objectContaining({
-              email_notifications: false
-            })
+              email_notifications: false,
+            }),
           })
         )
       })
@@ -321,8 +339,12 @@ describe('Settings Page', () => {
       )
 
       await waitFor(() => {
-        const dataSharing = screen.getByRole('checkbox', { name: /data sharing/i })
-        const analyticsTracking = screen.getByRole('checkbox', { name: /analytics tracking/i })
+        const dataSharing = screen.getByRole('checkbox', {
+          name: /data sharing/i,
+        })
+        const analyticsTracking = screen.getByRole('checkbox', {
+          name: /analytics tracking/i,
+        })
 
         expect(dataSharing).not.toBeChecked()
         expect(analyticsTracking).toBeChecked()
@@ -337,10 +359,14 @@ describe('Settings Page', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getByRole('checkbox', { name: /data sharing/i })).toBeInTheDocument()
+        expect(
+          screen.getByRole('checkbox', { name: /data sharing/i })
+        ).toBeInTheDocument()
       })
 
-      const dataSharingCheckbox = screen.getByRole('checkbox', { name: /data sharing/i })
+      const dataSharingCheckbox = screen.getByRole('checkbox', {
+        name: /data sharing/i,
+      })
       fireEvent.click(dataSharingCheckbox)
 
       expect(dataSharingCheckbox).toBeChecked()
@@ -378,9 +404,9 @@ describe('Settings Page', () => {
     it('connects a platform', async () => {
       mockMakeAuthenticatedRequest
         .mockResolvedValueOnce(mockSettings) // Initial load
-        .mockResolvedValueOnce({ 
-          success: true, 
-          auth_url: 'https://instagram.com/oauth/authorize' 
+        .mockResolvedValueOnce({
+          success: true,
+          auth_url: 'https://instagram.com/oauth/authorize',
         }) // Connect response
 
       render(
@@ -393,7 +419,9 @@ describe('Settings Page', () => {
         expect(screen.getByText('Instagram')).toBeInTheDocument()
       })
 
-      const connectButton = screen.getByRole('button', { name: /connect instagram/i })
+      const connectButton = screen.getByRole('button', {
+        name: /connect instagram/i,
+      })
       fireEvent.click(connectButton)
 
       await waitFor(() => {
@@ -419,7 +447,9 @@ describe('Settings Page', () => {
         expect(screen.getByText('Twitter')).toBeInTheDocument()
       })
 
-      const disconnectButton = screen.getByRole('button', { name: /disconnect twitter/i })
+      const disconnectButton = screen.getByRole('button', {
+        name: /disconnect twitter/i,
+      })
       fireEvent.click(disconnectButton)
 
       await waitFor(() => {
@@ -466,7 +496,9 @@ describe('Settings Page', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /upgrade plan/i })).toBeInTheDocument()
+        expect(
+          screen.getByRole('button', { name: /upgrade plan/i })
+        ).toBeInTheDocument()
       })
     })
 
@@ -478,7 +510,9 @@ describe('Settings Page', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /update payment/i })).toBeInTheDocument()
+        expect(
+          screen.getByRole('button', { name: /update payment/i })
+        ).toBeInTheDocument()
       })
     })
   })
@@ -492,7 +526,9 @@ describe('Settings Page', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /export data/i })).toBeInTheDocument()
+        expect(
+          screen.getByRole('button', { name: /export data/i })
+        ).toBeInTheDocument()
       })
     })
 
@@ -504,7 +540,9 @@ describe('Settings Page', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /delete account/i })).toBeInTheDocument()
+        expect(
+          screen.getByRole('button', { name: /delete account/i })
+        ).toBeInTheDocument()
       })
     })
 
@@ -516,13 +554,19 @@ describe('Settings Page', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /delete account/i })).toBeInTheDocument()
+        expect(
+          screen.getByRole('button', { name: /delete account/i })
+        ).toBeInTheDocument()
       })
 
-      const deleteButton = screen.getByRole('button', { name: /delete account/i })
+      const deleteButton = screen.getByRole('button', {
+        name: /delete account/i,
+      })
       fireEvent.click(deleteButton)
 
-      expect(screen.getByText('Are you sure you want to delete your account?')).toBeInTheDocument()
+      expect(
+        screen.getByText('Are you sure you want to delete your account?')
+      ).toBeInTheDocument()
     })
   })
 
@@ -546,7 +590,9 @@ describe('Settings Page', () => {
       fireEvent.click(saveButton)
 
       await waitFor(() => {
-        expect(mockShowSuccess).toHaveBeenCalledWith('Settings saved successfully')
+        expect(mockShowSuccess).toHaveBeenCalledWith(
+          'Settings saved successfully'
+        )
       })
     })
 
@@ -629,7 +675,9 @@ describe('Settings Page', () => {
       const saveButton = screen.getByRole('button', { name: /save profile/i })
       fireEvent.click(saveButton)
 
-      expect(screen.getByText('Please enter a valid email address')).toBeInTheDocument()
+      expect(
+        screen.getByText('Please enter a valid email address')
+      ).toBeInTheDocument()
     })
   })
 })

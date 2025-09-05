@@ -1,0 +1,172 @@
+name: Frontend Quality & Testing
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'frontend/**'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'frontend/**'
+
+defaults:
+  run:
+    working-directory: frontend
+
+jobs:
+  quality-gate:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run linting
+      run: npm run lint
+      
+    - name: Check code formatting
+      run: npm run format:check
+      
+    - name: Run unit tests with coverage
+      run: npm run test:coverage
+      
+    - name: Analyze coverage quality
+      run: npm run coverage:analyze
+      
+    - name: Run accessibility tests
+      run: npm run test:a11y
+      continue-on-error: true
+      
+    - name: Run integration tests
+      run: npm run test:integration
+      continue-on-error: true
+      
+    - name: Generate quality report
+      run: |
+        echo "## 🧪 Test Results Summary" >> $GITHUB_STEP_SUMMARY
+        echo "| Test Suite | Status | Coverage |" >> $GITHUB_STEP_SUMMARY
+        echo "|------------|--------|----------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Unit Tests | ✅ Passed | $(node -p "JSON.parse(require('fs').readFileSync('coverage/coverage-summary.json', 'utf8')).total.lines.pct")% |" >> $GITHUB_STEP_SUMMARY
+        echo "| Linting | ✅ Passed | - |" >> $GITHUB_STEP_SUMMARY
+        echo "| Formatting | ✅ Passed | - |" >> $GITHUB_STEP_SUMMARY
+        
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v4
+      with:
+        file: frontend/coverage/lcov.info
+        flags: frontend
+        name: frontend-coverage
+        fail_ci_if_error: true
+        
+    - name: Upload coverage artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: frontend/coverage/
+        retention-days: 14
+
+  build-test:
+    runs-on: ubuntu-latest
+    needs: quality-gate
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+        
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build application
+      run: npm run build
+      
+    - name: Verify build artifacts
+      run: |
+        if [ ! -d "dist" ]; then
+          echo "❌ Build directory not found"
+          exit 1
+        fi
+        
+        if [ ! -f "dist/index.html" ]; then
+          echo "❌ Main HTML file not found"
+          exit 1
+        fi
+        
+        echo "✅ Build successful"
+        echo "📦 Build size: $(du -sh dist | cut -f1)"
+        
+    - name: Test production build
+      run: |
+        npm run preview &
+        PID=$!
+        sleep 5
+        
+        # Basic health check
+        curl -f http://localhost:4173 || (echo "❌ Production build health check failed" && kill $PID && exit 1)
+        
+        kill $PID
+        echo "✅ Production build health check passed"
+        
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-${{ matrix.node-version }}
+        path: frontend/dist/
+        retention-days: 7
+
+  security-audit:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run security audit
+      run: |
+        echo "## 🔒 Security Audit Results" >> $GITHUB_STEP_SUMMARY
+        
+        # Run npm audit and capture results
+        if npm audit --audit-level=moderate; then
+          echo "✅ No security vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "⚠️ Security vulnerabilities detected - review required" >> $GITHUB_STEP_SUMMARY
+          npm audit --audit-level=moderate --json >> $GITHUB_STEP_SUMMARY || true
+        fi
+      continue-on-error: true
+      
+    - name: Check for outdated dependencies
+      run: |
+        echo "## 📦 Dependency Status" >> $GITHUB_STEP_SUMMARY
+        npm outdated >> $GITHUB_STEP_SUMMARY || echo "All dependencies are up to date" >> $GITHUB_STEP_SUMMARY
+      continue-on-error: true

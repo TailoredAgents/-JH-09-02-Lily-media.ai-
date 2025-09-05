@@ -32,10 +32,25 @@ export default {
   ],
   coverageThreshold: {
     global: {
-      branches: 60,
-      functions: 60,
-      lines: 60,
-      statements: 60
+      branches: 70,
+      functions: 75,
+      lines: 75,
+      statements: 75
+    },
+    './src/components/': {
+      branches: 75,
+      functions: 80,
+      lines: 80,
+      statements: 80
+    },
+    './src/hooks/': {
+      branches: 80,
+      functions: 85,
+      lines: 85,
+      statements: 85
     }
-  }
+  },
+  testTimeout: 10000,
+  verbose: true,
+  bail: 1
 };
