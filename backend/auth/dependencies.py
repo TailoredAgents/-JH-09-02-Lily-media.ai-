@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from backend.db.database import get_db
 from backend.db.models import User
-from backend.auth.auth0 import auth0_verifier
+# Auth0 removed - using local JWT authentication only
 from backend.auth.jwt_handler import JWTHandler
 
 # Security scheme
@@ -17,7 +17,7 @@ jwt_handler = JWTHandler()
 
 class AuthUser:
     """Authenticated user model"""
-    def __init__(self, user_id: str, email: str, username: str, auth_method: str = 'auth0'):
+    def __init__(self, user_id: str, email: str, username: str, auth_method: str = 'local'):
         self.user_id = user_id
         self.email = email
         self.username = username
@@ -33,9 +33,7 @@ async def get_token(credentials: HTTPAuthorizationCredentials = Depends(security
         )
     return credentials.credentials
 
-async def verify_auth0_token(token: str = Depends(get_token)) -> Dict[str, Any]:
-    """Verify Auth0 JWT token"""
-    return auth0_verifier.verify_token(token)
+# Auth0 verification removed - using local JWT only
 
 async def verify_local_token(token: str = Depends(get_token)) -> Dict[str, Any]:
     """Verify locally issued JWT token"""
@@ -45,64 +43,24 @@ async def get_current_user(
     db: Session = Depends(get_db),
     token: str = Depends(get_token)
 ) -> AuthUser:
-    """Get current authenticated user (supports both Auth0 and local JWT)"""
+    """Get current authenticated user using local JWT authentication"""
     
-    # Try local JWT first (primary authentication method)
-    try:
-        payload = jwt_handler.verify_token(token)
-        user_id = payload.get("sub")
-        email = payload.get("email")
-        username = payload.get("username")
-        
-        return AuthUser(user_id=user_id, email=email, username=username, auth_method="local")
+    # Verify local JWT token
+    payload = jwt_handler.verify_token(token)
+    user_id = payload.get("sub")
+    email = payload.get("email")
+    username = payload.get("username")
     
-    except HTTPException:
-        # Fallback to Auth0 for backward compatibility (if configured)
-        try:
-            if auth0_verifier.enabled:
-                payload = auth0_verifier.verify_token(token)
-                user_id = payload.get("sub")
-                email = payload.get("email")
-                username = payload.get("nickname") or payload.get("preferred_username") or email
-                
-                # Ensure user exists in local database
-                await sync_auth0_user(db, user_id, email, username)
-                
-                return AuthUser(user_id=user_id, email=email, username=username, auth_method="auth0")
-            else:
-                # Auth0 not configured, skip fallback
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid authentication token",
-                    headers={"WWW-Authenticate": "Bearer"},
-                )
-        
-        except HTTPException:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid authentication token",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-
-async def sync_auth0_user(db: Session, auth0_id: str, email: str, username: str) -> User:
-    """Sync Auth0 user with local database"""
-    # Check if user exists
-    user = db.query(User).filter_by(email=email).first()
-    
-    if not user:
-        # Create new user
-        user = User(
-            email=email,
-            username=username,
-            full_name=username,
-            is_active=True,
-            tier="base"
+    if not user_id or not email:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload",
+            headers={"WWW-Authenticate": "Bearer"},
         )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
     
-    return user
+    return AuthUser(user_id=user_id, email=email, username=username, auth_method="local")
+
+# Auth0 sync function removed - using local user management only
 
 def get_current_active_user(
     current_user: AuthUser = Depends(get_current_user),

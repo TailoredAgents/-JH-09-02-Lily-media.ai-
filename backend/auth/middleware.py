@@ -1,6 +1,6 @@
 """
 Advanced JWT Validation Middleware for FastAPI
-Provides comprehensive Auth0 JWT validation with enhanced error handling and caching
+Provides comprehensive local JWT validation with enhanced error handling and caching
 """
 import time
 import logging
@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 import asyncio
 from functools import lru_cache
 
-from backend.auth.auth0 import auth0_verifier
+# Auth0 removed - using local JWT authentication only
 from backend.auth.jwt_handler import JWTHandler
 from backend.core.config import get_settings
 
@@ -26,8 +26,7 @@ class JWTValidationMiddleware:
     Advanced JWT Validation Middleware
     
     Features:
-    - Auth0 JWT token validation with JWKS caching
-    - Fallback to local JWT validation
+    - Local JWT token validation with caching
     - Request rate limiting per user
     - Comprehensive error logging and metrics
     - Token blacklist support
