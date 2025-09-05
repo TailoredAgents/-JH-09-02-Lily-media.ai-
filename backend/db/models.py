@@ -27,7 +27,7 @@ class User(Base):
     is_verified = Column(Boolean, default=False)  # For FastAPI Users
     tier = Column(String, default="base")  # base, pro, enterprise - DEPRECATED, use plan_id
     plan_id = Column(Integer, ForeignKey("plans.id"), nullable=True)  # Reference to Plan model
-    auth_provider = Column(String, default="local")  # local, auth0
+    auth_provider = Column(String, default="local")  # Authentication provider
     
     # Two-Factor Authentication
     two_factor_enabled = Column(Boolean, default=False)

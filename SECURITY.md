@@ -15,7 +15,7 @@ The AI Social Media Content Agent takes security seriously. This document outlin
 
 ### Application Security
 
-- **🔑 Authentication**: Multi-provider authentication (Auth0 + JWT)
+- **🔑 Authentication**: JWT-based authentication system
 - **🛡️ Authorization**: Role-based access control
 - **🌐 CORS Protection**: Configured cross-origin resource sharing
 - **🔒 Security Headers**: Comprehensive security headers implementation
@@ -124,7 +124,7 @@ We provide security updates for the following versions:
 
 ### Backend Security
 
-- **Authentication**: JWT with Auth0 integration
+- **Authentication**: JWT-based custom authentication
 - **Authorization**: Role-based access control
 - **Input Validation**: Pydantic models with strict validation
 - **SQL Injection Prevention**: SQLAlchemy ORM usage

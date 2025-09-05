@@ -31,12 +31,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### 🏗️ **Major Architecture Overhaul**
 - **Multi-Agent AI System**: Integrated CrewAI for sophisticated content generation
 - **Vector Search Engine**: FAISS-based semantic search with 40K+ embedding capacity
-- **Enterprise Authentication**: Auth0 integration with JWT token management
+- **Enterprise Authentication**: Custom JWT token management system
 - **Real-time Analytics**: Advanced performance tracking and insights dashboard
 - **Background Task Processing**: Celery-based task queue for automated workflows
 
 #### 🚀 **Frontend Dashboard (React 18)**
-- **Modern React Dashboard**: Professional interface with Auth0 integration
+- **Modern React Dashboard**: Professional interface with custom authentication
 - **Component Library**: Comprehensive reusable UI components
 - **Real-time Updates**: Live data synchronization with backend services
 - **Responsive Design**: Mobile-first design with cross-device compatibility
@@ -75,7 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### 🏗️ **Infrastructure Improvements**
 - **Database Performance**: Query optimization with <200ms response times
 - **API Architecture**: RESTful design with consistent error handling
-- **Authentication Flow**: Streamlined Auth0 integration with role-based access
+- **Authentication Flow**: Streamlined JWT authentication with role-based access
 - **Caching Strategy**: Intelligent cache invalidation and warming
 
 #### 🎨 **User Experience Enhancements**

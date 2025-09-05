@@ -75,25 +75,7 @@ def check_security_requirements():
     
     return issues
 
-def generate_auth0_config():
-    """Generate Auth0 configuration template"""
-    config = {
-        "domain": "your-domain.us.auth0.com",
-        "client_id": "your_client_id_here",
-        "client_secret": "your_client_secret_here",
-        "audience": "https://your-api-audience/",
-        "callback_url": os.getenv("AUTH0_CALLBACK_URL", "http://localhost:8000/api/auth/auth0/callback")
-    }
-    
-    print("\n📋 Auth0 Configuration Template:")
-    print("================================")
-    for key, value in config.items():
-        print(f"{key.upper()}: {value}")
-    
-    print("\n💡 Add these to your .env file:")
-    for key, value in config.items():
-        env_key = f"AUTH0_{key.upper()}"
-        print(f"{env_key}={value}")
+# Auth0 configuration removed - system now uses custom JWT authentication
 
 def main():
     """Main security setup function"""
@@ -123,18 +105,11 @@ def main():
         if response.lower() == 'y':
             update_env_file()
     
-    # Generate Auth0 config
-    print("\n🔑 Auth0 Setup (Optional)")
-    response = input("Do you want to see Auth0 configuration template? (y/N): ")
-    if response.lower() == 'y':
-        generate_auth0_config()
-    
     print("\n✅ Security setup completed!")
     print("\n📝 Next Steps:")
     print("1. Add your actual API keys to .env file")
-    print("2. Configure Auth0 settings if using enterprise auth")
-    print("3. Test authentication endpoints at /docs")
-    print("4. Run: python setup_database.py --sample-data")
+    print("2. Test authentication endpoints at /docs")
+    print("3. Run: python setup_database.py --sample-data")
     
     return True
 
