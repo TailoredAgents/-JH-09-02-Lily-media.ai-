@@ -20,6 +20,7 @@ from backend.auth.admin_auth import (
     admin_auth, AdminAuthUser, get_current_admin_user,
     require_super_admin, require_admin_or_higher, require_moderator_or_higher
 )
+from backend.middleware.feature_flag_enforcement import require_flag
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -93,7 +94,8 @@ async def admin_login(
     request: AdminLoginRequest,
     req: Request,
     response: Response,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: None = Depends(require_flag("ADMIN_ACCESS"))
 ):
     """Admin login with enhanced security"""
     

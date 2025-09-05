@@ -21,6 +21,7 @@ from backend.utils.db_checks import ensure_table_exists, safe_table_query
 from backend.services.content_scheduler_service import get_content_scheduler_service
 from backend.api.partner_oauth import is_partner_oauth_enabled
 from backend.core.api_version import create_versioned_router
+from backend.middleware.feature_flag_enforcement import require_flag
 
 logger = logging.getLogger(__name__)
 router = create_versioned_router(prefix="/content", tags=["content"])
@@ -704,7 +705,8 @@ async def get_content_analytics(
 async def generate_content(
     request: GenerateContentRequest,
     current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: None = Depends(require_flag("AI_CONTENT_GENERATION"))
 ):
     """Generate AI content based on prompt"""
     
@@ -748,7 +750,8 @@ async def generate_content_ideas(
     topic: Optional[str] = Query(None),
     tone: str = Query("professional", pattern="^(professional|casual|humorous|inspiring|educational)$"),
     current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: None = Depends(require_flag("AI_CONTENT_GENERATION"))
 ):
     """Generate AI-powered content ideas using GPT-5 mini with web search"""
     
@@ -880,7 +883,8 @@ async def generate_content_ideas(
 @router.post("/generate-image")
 async def generate_image(
     request: GenerateImageRequest,
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
+    _: None = Depends(require_flag("IMAGE_GENERATION"))
 ):
     """Generate an image using xAI Grok 2 Vision model"""
     
@@ -898,7 +902,8 @@ async def generate_image(
 @router.post("/edit-image")
 async def edit_image(
     request: EditImageRequest,
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
+    _: None = Depends(require_flag("IMAGE_GENERATION"))
 ):
     """Edit an existing image using multi-turn capabilities"""
     
@@ -922,7 +927,8 @@ async def edit_image(
 async def regenerate_image(
     request: RegenerateImageRequest,
     current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: None = Depends(require_flag("IMAGE_GENERATION"))
 ):
     """
     Regenerate image for existing content with custom user prompt.
@@ -1018,7 +1024,8 @@ async def regenerate_image(
 @router.post("/generate-content-images")
 async def generate_content_images(
     request: GenerateContentImagesRequest,
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
+    _: None = Depends(require_flag("IMAGE_GENERATION"))
 ):
     """Generate multiple images optimized for different platforms based on content"""
     

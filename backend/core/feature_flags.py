@@ -9,6 +9,25 @@ _DEFAULT_FLAGS = {
     "ENABLE_DEEP_RESEARCH": False,
     "AUTH0_ENABLED": False,
     "IMAGE_GENERATION": True,
+    
+    # AI-Powered Features
+    "AI_CONTENT_GENERATION": True,
+    "AI_SUGGESTIONS": True,
+    "AI_SOCIAL_RESPONSES": True,
+    
+    # Advanced Features
+    "ADVANCED_MEMORY": True,
+    "VECTOR_SEARCH": True,
+    "ADVANCED_WORKFLOWS": True,
+    "AUTONOMOUS_FEATURES": True,
+    
+    # Administrative Features
+    "ADMIN_ACCESS": True,
+    "ORGANIZATION_MANAGEMENT": True,
+    
+    # Premium Features
+    "BILLING_MANAGEMENT": True,
+    "ADVANCED_ANALYTICS": True,
 }
 
 def _parse_env_flags() -> Dict[str, bool]:

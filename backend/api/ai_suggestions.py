@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 from backend.db.database import get_db
 from backend.db.models import User, UserSetting, Content, Goal, Memory
 from backend.auth.dependencies import get_current_active_user
+from backend.middleware.feature_flag_enforcement import require_flag
 from openai import AsyncOpenAI
 from backend.core.config import get_settings
 from backend.core.constants import (
@@ -395,7 +396,8 @@ def get_fallback_suggestions(suggestion_type: str, context: Dict[str, Any]) -> L
 async def get_contextual_suggestions(
     request: SuggestionRequest,
     current_user: User = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: None = Depends(require_flag("AI_SUGGESTIONS"))
 ):
     """Get personalized AI suggestions based on user context"""
     try:
@@ -461,7 +463,9 @@ async def get_contextual_suggestions(
         )
 
 @router.get("/suggestion-types")
-async def get_available_suggestion_types():
+async def get_available_suggestion_types(
+    _: None = Depends(require_flag("AI_SUGGESTIONS"))
+):
     """Get list of available suggestion types"""
     return {
         "types": ["content", "goals", "inbox", "memory", "scheduler"],

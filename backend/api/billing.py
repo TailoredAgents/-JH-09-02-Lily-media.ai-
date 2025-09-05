@@ -19,6 +19,7 @@ from backend.db.multi_tenant_models import Organization
 from backend.services.stripe_service import get_stripe_service, StripeService, StripeError
 from backend.services.subscription_service import SubscriptionTier
 from backend.core.api_version import create_versioned_router
+from backend.middleware.feature_flag_enforcement import require_flag
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +65,8 @@ def get_billing_service(db: Session = Depends(get_db)):
 async def create_checkout_session(
     request: CreateCheckoutRequest,
     current_user: User = Depends(get_current_active_user),
-    stripe_service: StripeService = Depends(get_billing_service)
+    stripe_service: StripeService = Depends(get_billing_service),
+    _: None = Depends(require_flag("BILLING_MANAGEMENT"))
 ):
     """
     Create a Stripe checkout session for subscription signup

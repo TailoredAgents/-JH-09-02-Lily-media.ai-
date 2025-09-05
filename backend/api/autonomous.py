@@ -18,6 +18,7 @@ from backend.db.database import get_db
 from backend.middleware.subscription_enforcement import (
     require_autonomous_posting, require_industry_research
 )
+from backend.middleware.feature_flag_enforcement import require_flag
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +61,8 @@ async def execute_autonomous_cycle(
     background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_active_user),
     _: None = Depends(require_autonomous_posting),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _flag: None = Depends(require_flag("AUTONOMOUS_FEATURES"))
 ):
     """Trigger a complete autonomous posting cycle (Premium+ required)"""
     
@@ -115,7 +117,8 @@ async def get_autonomous_status():
 async def trigger_research(
     background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_active_user),
-    _: None = Depends(require_industry_research)
+    _: None = Depends(require_industry_research),
+    _flag: None = Depends(require_flag("AUTONOMOUS_FEATURES"))
 ):
     """Trigger industry research (Premium+ required)"""
     
