@@ -10,7 +10,7 @@ from backend.tasks.webhook_watchdog import get_webhook_watchdog
 logger = logging.getLogger(__name__)
 
 
-@celery_app.task(name="scan_dlq_watchdog", bind=True)
+@celery_app.task(name="backend.tasks.webhook_watchdog_tasks.scan_dlq_watchdog", bind=True)
 def scan_dlq_watchdog(self):
     """
     Scan Dead Letter Queue for failed webhook processing tasks
@@ -64,7 +64,7 @@ def scan_dlq_watchdog(self):
         }
 
 
-@celery_app.task(name="process_dlq_entry_retry", bind=True)
+@celery_app.task(name="backend.tasks.webhook_watchdog_tasks.process_dlq_entry_retry", bind=True)
 def process_dlq_entry_retry(self, entry_id: str):
     """
     Retry processing a specific DLQ entry
@@ -124,7 +124,7 @@ def process_dlq_entry_retry(self, entry_id: str):
         }
 
 
-@celery_app.task(name="cleanup_old_dlq_entries", bind=True)
+@celery_app.task(name="backend.tasks.webhook_watchdog_tasks.cleanup_old_dlq_entries", bind=True)
 def cleanup_old_dlq_entries(self):
     """
     Clean up old DLQ entries that have expired

@@ -339,3 +339,14 @@ def get_settings():
 
 # Global settings instance
 settings = get_settings()
+
+
+# Custom domain CORS configuration
+CORS_ALLOWED_ORIGINS = [
+    "https://lilymedia.ai",
+    "https://www.lilymedia.ai",
+    "https://app.lilymedia.ai",
+    "https://socialmedia-frontend-pycc.onrender.com",  # Keep Render URL as backup
+    "http://localhost:3000",  # Development
+    "http://localhost:5173",  # Vite dev server
+]

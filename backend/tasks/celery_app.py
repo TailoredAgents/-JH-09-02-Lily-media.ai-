@@ -109,7 +109,7 @@ celery_app.conf.beat_schedule = {
     
     # GA Checklist: DLQ watchdog scan - every hour
     'dlq-watchdog-scan': {
-        'task': 'scan_dlq_watchdog',
+        'task': 'backend.tasks.webhook_watchdog_tasks.scan_dlq_watchdog',
         'schedule': 60.0 * 60.0,  # Every hour
         'options': {'queue': 'webhook_watchdog', 'expires': 1800},  # 30 min expiry
     },

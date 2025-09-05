@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Float, Boolean, Text, JSON, ForeignKey, Index, UniqueConstraint
+from sqlalchemy import Column, Integer, String, DateTime, Float, Boolean, Text, JSON, ForeignKey, Index, UniqueConstraint, Numeric
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import UUID
@@ -25,7 +25,8 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     is_superuser = Column(Boolean, default=False)  # For FastAPI Users
     is_verified = Column(Boolean, default=False)  # For FastAPI Users
-    tier = Column(String, default="base")  # base, pro, enterprise
+    tier = Column(String, default="base")  # base, pro, enterprise - DEPRECATED, use plan_id
+    plan_id = Column(Integer, ForeignKey("plans.id"), nullable=True)  # Reference to Plan model
     auth_provider = Column(String, default="local")  # local, auth0
     
     # Two-Factor Authentication
@@ -74,9 +75,96 @@ class User(Base):
     # User credentials for social media platforms
     credentials = relationship("UserCredentials", back_populates="user", cascade="all, delete-orphan")
     
+    # Plan relationship
+    plan = relationship("Plan", foreign_keys="User.plan_id", back_populates="users")
+    
     # Content and memory relationships (NEW - for AI suggestions performance)
     memories = relationship("Memory", back_populates="user", foreign_keys="Memory.user_id")
     content = relationship("Content", back_populates="user", foreign_keys="Content.user_id")
+
+
+class Plan(Base):
+    """Subscription plan model for Starter, Pro, Enterprise tiers"""
+    __tablename__ = "plans"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False, unique=True)  # Starter, Pro, Enterprise
+    display_name = Column(String, nullable=False)  # Display name for UI
+    description = Column(Text)  # Plan description
+    
+    # Pricing
+    monthly_price = Column(Numeric(10, 2), nullable=False)  # Monthly price in USD
+    annual_price = Column(Numeric(10, 2), nullable=True)  # Annual price (optional)
+    trial_days = Column(Integer, default=14)  # Trial period days
+    
+    # Core limits
+    max_social_profiles = Column(Integer, nullable=False)  # Max connected social accounts
+    max_users = Column(Integer, default=1)  # Max team members
+    max_workspaces = Column(Integer, default=1)  # Max workspaces/organizations
+    max_posts_per_day = Column(Integer, nullable=False)  # Daily posting limit
+    max_posts_per_week = Column(Integer, nullable=False)  # Weekly posting limit
+    
+    # Feature flags (stored as JSON for flexibility)
+    features = Column(JSON, default={})  # Feature permissions and limits
+    
+    # Deprecated: old feature flags (for backward compatibility)
+    full_ai = Column(Boolean, default=False)
+    enhanced_autopilot = Column(Boolean, default=False)
+    ai_inbox = Column(Boolean, default=False)
+    crm_integration = Column(Boolean, default=False)
+    advanced_analytics = Column(Boolean, default=False)
+    predictive_analytics = Column(Boolean, default=False)
+    white_label = Column(Boolean, default=False)
+    
+    # AI model access
+    basic_ai_only = Column(Boolean, default=True)  # Restrict to basic AI models
+    premium_ai_models = Column(Boolean, default=False)  # Access to DALL-E, GPT-4o
+    image_generation_limit = Column(Integer, default=10)  # Images per day
+    
+    # Autopilot capabilities
+    autopilot_posts_per_day = Column(Integer, default=1)
+    autopilot_research_enabled = Column(Boolean, default=False)
+    autopilot_ad_campaigns = Column(Boolean, default=False)
+    
+    # Plan metadata
+    is_active = Column(Boolean, default=True)
+    is_popular = Column(Boolean, default=False)  # Mark as "Most Popular"
+    sort_order = Column(Integer, default=0)  # Display order
+    
+    # Stripe integration
+    stripe_product_id = Column(String)  # Stripe Product ID
+    stripe_monthly_price_id = Column(String)  # Stripe Price ID for monthly
+    stripe_annual_price_id = Column(String)  # Stripe Price ID for annual
+    
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Relationships
+    users = relationship("User", back_populates="plan")
+    
+    def __repr__(self):
+        return f"<Plan(name={self.name}, price=${self.monthly_price}/month)>"
+    
+    def to_dict(self):
+        """Convert to dictionary for API responses"""
+        return {
+            "id": self.id,
+            "name": self.name,
+            "display_name": self.display_name,
+            "description": self.description,
+            "monthly_price": float(self.monthly_price) if self.monthly_price else None,
+            "annual_price": float(self.annual_price) if self.annual_price else None,
+            "trial_days": self.trial_days,
+            "max_social_profiles": self.max_social_profiles,
+            "max_users": self.max_users,
+            "max_workspaces": self.max_workspaces,
+            "max_posts_per_day": self.max_posts_per_day,
+            "max_posts_per_week": self.max_posts_per_week,
+            "features": self.features,
+            "is_popular": self.is_popular
+        }
+
 
 class ContentLog(Base):
     __tablename__ = "content_logs"

@@ -41,6 +41,10 @@ from . import (
     websockets,  # WebSocket endpoints for real-time status updates
     multi_tenant,  # Multi-tenant organization and RBAC management
     billing,  # Stripe billing and subscription management
+    plans,  # Subscription plans and feature gating
+    plan_aware_images,  # Plan-aware image generation with usage tracking
+    performance,  # Performance monitoring and optimization
+    monitoring_metrics,  # Prometheus and Sentry monitoring integration
 )
 
 # All routers to be registered with the FastAPI app
@@ -85,4 +89,8 @@ ROUTERS = [
     websockets.router,  # WebSocket endpoints for real-time status updates
     multi_tenant.router,  # Multi-tenant organization and RBAC management
     billing.router,  # Stripe billing and subscription management
+    plans.router,  # Subscription plans and feature gating
+    plan_aware_images.router,  # Plan-aware image generation with usage tracking
+    performance.router,  # Performance monitoring and optimization
+    monitoring_metrics.router,  # Prometheus and Sentry monitoring integration
 ]
