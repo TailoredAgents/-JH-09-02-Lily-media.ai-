@@ -6,6 +6,7 @@ Handles daily/weekly autonomous content generation and posting loops
 from backend.core.suppress_warnings import suppress_third_party_warnings
 suppress_third_party_warnings()
 
+import asyncio
 import logging
 from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional
@@ -18,6 +19,7 @@ from backend.services.research_automation_production import ProductionResearchAu
 from backend.services.content_persistence_service import ContentPersistenceService
 from backend.services.memory_service_production import ProductionMemoryService
 from backend.tasks.celery_app import celery_app
+from backend.tasks.db_session_manager import get_celery_db_session
 
 logger = logging.getLogger(__name__)
 
@@ -65,49 +67,44 @@ def daily_content_generation(self):
         logger.info("Starting daily autonomous content generation")
         
         scheduler = AutonomousScheduler()
-        db = next(get_db())
         
-        # Get users with autonomous mode enabled
-        active_users = scheduler.get_active_users_for_autonomous_mode(db)
-        
-        if not active_users:
-            logger.info("No users with autonomous mode enabled")
-            return {'status': 'completed', 'users_processed': 0}
-        
-        results = []
-        
-        for user_config in active_users:
-            try:
-                user_id = user_config['user_id']
-                logger.info(f"Processing autonomous content for user {user_id}")
+        with get_celery_db_session() as db:
+            # Get users with autonomous mode enabled
+            active_users = scheduler.get_active_users_for_autonomous_mode(db)
+            
+            if not active_users:
+                logger.info("No users with autonomous mode enabled")
+                return {'status': 'completed', 'users_processed': 0}
+            
+            results = []
+            
+            for user_config in active_users:
+                try:
+                    user_id = user_config['user_id']
+                    logger.info(f"Processing autonomous content for user {user_id}")
+                    
+                    # Create workflow execution record
+                    workflow = WorkflowExecution(
+                        user_id=user_id,
+                        workflow_type='daily_autonomous',
+                        status='running',
+                        configuration=user_config
+                    )
+                    db.add(workflow)
+                    db.commit()
                 
-                # Create workflow execution record
-                workflow = WorkflowExecution(
-                    user_id=user_id,
-                    workflow_type='daily_autonomous',
-                    status='running',
-                    configuration=user_config
-                )
-                db.add(workflow)
-                db.commit()
-                
-                # Step 1: Research trending topics
-                research_query = ResearchQuery(
-                    keywords=['trending topics', 'industry news'],
-                    platforms=user_config['preferred_platforms'],
-                    max_results=20,
-                    include_trends=True
-                )
-                
-                # Note: Celery tasks can't use async/await directly
-                # research_results = await scheduler.research_service.execute_comprehensive_research(research_query)
-                # For now, create a basic research structure
-                research_results = {
-                    'summary': {
-                        'research_quality_score': 75,
-                        'platforms_analyzed': len(user_config['preferred_platforms'])
-                    }
-                }
+                    # Step 1: Research trending topics
+                    research_query = ResearchQuery(
+                        keywords=['trending topics', 'industry news'],
+                        platforms=user_config['preferred_platforms'],
+                        max_results=20,
+                        include_trends=True
+                    )
+                    
+                    # Use asyncio.run() for async research service call (2025 best practice)
+                    research_results = asyncio.run(
+                        scheduler.research_service.execute_comprehensive_research(research_query)
+                    )
                 
                 # Step 2: Generate content based on research
                 content_service = ContentPersistenceService(db)
@@ -208,11 +205,11 @@ def weekly_report_generation(self):
     try:
         logger.info("Starting weekly autonomous report generation")
         
-        db = next(get_db())
         scheduler = AutonomousScheduler()
         
-        # Get users with autonomous mode
-        active_users = scheduler.get_active_users_for_autonomous_mode(db)
+        with get_celery_db_session() as db:
+            # Get users with autonomous mode
+            active_users = scheduler.get_active_users_for_autonomous_mode(db)
         
         if not active_users:
             logger.info("No users for weekly report generation")
@@ -301,11 +298,11 @@ def nightly_metrics_collection(self):
     try:
         logger.info("Starting nightly metrics collection")
         
-        db = next(get_db())
         scheduler = AutonomousScheduler()
         
-        # Get all active users (not just autonomous mode)
-        active_users = db.query(User).filter(User.is_active == True).all()
+        with get_celery_db_session() as db:
+            # Get all active users (not just autonomous mode)
+            active_users = db.query(User).filter(User.is_active == True).all()
         
         metrics_collected = 0
         
@@ -371,8 +368,8 @@ def process_scheduled_content(self):
     try:
         logger.info("Starting scheduled content posting")
         
-        db = next(get_db())
-        content_service = ContentPersistenceService(db)
+        with get_celery_db_session() as db:
+            content_service = ContentPersistenceService(db)
         
         # Get content scheduled for posting now (within the next hour)
         now = datetime.utcnow()

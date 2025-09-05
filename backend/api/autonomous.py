@@ -5,11 +5,19 @@ IMPORTANT: NO MOCK DATA OR FALLBACKS ARE ALLOWED IN THIS FILE.
 All responses must be real autonomous functionality or proper error handling with Lily messages.
 If a service is not available, return a 503 error with Lily's cute message.
 """
-from fastapi import APIRouter, HTTPException, BackgroundTasks
-from typing import Dict, Any
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
+from typing import Dict, Any, Optional
 from datetime import datetime
 from pydantic import BaseModel
 import logging
+from sqlalchemy.orm import Session
+
+from backend.auth.dependencies import get_current_active_user
+from backend.db.models import User
+from backend.db.database import get_db
+from backend.middleware.subscription_enforcement import (
+    require_autonomous_posting, require_industry_research
+)
 
 logger = logging.getLogger(__name__)
 
@@ -33,16 +41,28 @@ except ImportError:
             super().__init__(message)
             self.cute_lily_message = cute_lily_message
 
+try:
+    from backend.services.industry_classification_service import industry_classification_service
+except ImportError:
+    industry_classification_service = None
+
 router = APIRouter(prefix="/api/autonomous", tags=["autonomous"])
 
 class CompanyResearchRequest(BaseModel):
     company_name: str
 
+class IndustryClassificationRequest(BaseModel):
+    company_name: str
+    company_description: Optional[str] = ""
+
 @router.post("/execute-cycle")
 async def execute_autonomous_cycle(
-    background_tasks: BackgroundTasks
+    background_tasks: BackgroundTasks,
+    current_user: User = Depends(get_current_active_user),
+    _: None = Depends(require_autonomous_posting),
+    db: Session = Depends(get_db)
 ):
-    """Trigger a complete autonomous posting cycle"""
+    """Trigger a complete autonomous posting cycle (Premium+ required)"""
     
     try:
         # Execute the autonomous cycle in the background
@@ -54,14 +74,14 @@ async def execute_autonomous_cycle(
             
         background_tasks.add_task(
             autonomous_posting_service.execute_autonomous_cycle,
-            "system",  # Use system user ID
-            None  # No db session for now
+            current_user.id,  # Use actual user ID
+            db  # Pass database session
         )
         
         return {
             "status": "initiated",
             "message": "Autonomous posting cycle has been started",
-            "user_id": "system",
+            "user_id": current_user.id,
             "initiated_at": datetime.utcnow()
         }
         
@@ -93,9 +113,11 @@ async def get_autonomous_status():
 
 @router.post("/research")
 async def trigger_research(
-    background_tasks: BackgroundTasks
+    background_tasks: BackgroundTasks,
+    current_user: User = Depends(get_current_active_user),
+    _: None = Depends(require_industry_research)
 ):
-    """Trigger industry research"""
+    """Trigger industry research (Premium+ required)"""
     
     try:
         # Execute research in the background
@@ -188,10 +210,12 @@ async def get_latest_research():
 
 @router.post("/research/company")
 async def research_company(
-    request: CompanyResearchRequest
+    request: CompanyResearchRequest,
+    current_user: User = Depends(get_current_active_user),
+    _: None = Depends(require_industry_research)
 ):
     """
-    Perform deep company research using advanced AI agents and multiple data sources.
+    Perform deep company research using advanced AI agents and multiple data sources (Premium+ required).
     
     This endpoint uses Lily's comprehensive research capabilities to gather specific,
     actionable insights that guide autonomous content creation.
@@ -299,5 +323,121 @@ async def research_company(
         raise HTTPException(
             status_code=500,
             detail=f"Oopsie 🤭 That's not right, let me just write that down... Something unexpected happened while researching {company_name}. I've made a note to fix this!"
+        )
+
+@router.post("/classify-industry")
+async def classify_industry(
+    request: IndustryClassificationRequest,
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Automatically classify a company's industry using AI analysis
+    """
+    
+    try:
+        if not industry_classification_service:
+            raise HTTPException(
+                status_code=503,
+                detail="Sorry, my industry classification service is taking a little break right now. Please try again later! 😴 - Lily"
+            )
+        
+        # Classify the company's industry
+        industry_code, confidence_score = await industry_classification_service.classify_company_industry(
+            request.company_name,
+            request.company_description
+        )
+        
+        industry_display_name = industry_classification_service.get_industry_display_name(industry_code)
+        research_topics = industry_classification_service.get_industry_research_topics(industry_code)
+        
+        return {
+            "success": True,
+            "company_name": request.company_name,
+            "industry_code": industry_code,
+            "industry_display_name": industry_display_name,
+            "confidence_score": confidence_score,
+            "research_topics": research_topics,
+            "classified_at": datetime.utcnow()
+        }
+        
+    except Exception as e:
+        logger.error(f"Industry classification failed for {request.company_name}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Sorry, I'm having trouble classifying that industry right now. Please try again later! 😔 - Lily"
+        )
+
+@router.get("/industries")
+async def list_supported_industries():
+    """
+    Get list of supported industries for classification
+    """
+    
+    try:
+        if not industry_classification_service:
+            raise HTTPException(
+                status_code=503,
+                detail="Sorry, my industry classification service is taking a little break right now. Please try again later! 😴 - Lily"
+            )
+        
+        industries = industry_classification_service.list_supported_industries()
+        
+        return {
+            "success": True,
+            "industries": industries,
+            "count": len(industries)
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to list supported industries: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Sorry, I'm having trouble getting the industry list right now. Please try again later! 😔 - Lily"
+        )
+
+@router.post("/auto-classify-user")
+async def auto_classify_user_industry(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Automatically classify current user's organization industry and update it in the database
+    """
+    
+    try:
+        if not industry_classification_service:
+            raise HTTPException(
+                status_code=503,
+                detail="Sorry, my industry classification service is taking a little break right now. Please try again later! 😴 - Lily"
+            )
+        
+        # Auto-classify user's industry
+        industry_code = await industry_classification_service.auto_classify_user_industry(current_user.id, db)
+        
+        if not industry_code:
+            raise HTTPException(
+                status_code=400,
+                detail="Sorry, I couldn't determine your organization's industry. Please make sure your organization information is complete! 😔 - Lily"
+            )
+        
+        industry_display_name = industry_classification_service.get_industry_display_name(industry_code)
+        research_topics = industry_classification_service.get_industry_research_topics(industry_code)
+        
+        return {
+            "success": True,
+            "user_id": current_user.id,
+            "industry_code": industry_code,
+            "industry_display_name": industry_display_name,
+            "research_topics": research_topics,
+            "classified_at": datetime.utcnow()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Auto industry classification failed for user {current_user.id}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Sorry, I'm having trouble auto-classifying your industry right now. Please try again later! 😔 - Lily"
         )
 

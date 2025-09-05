@@ -9,12 +9,12 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 
-from backend.db.models import ContentLog, User
-from backend.integrations.twitter_client import TwitterAPIClient as TwitterClient
-from backend.integrations.linkedin_client import linkedin_client as LinkedInClient
-from backend.integrations.instagram_client import InstagramAPIClient as InstagramClient
-from backend.integrations.facebook_client import FacebookAPIClient as FacebookClient
-from backend.services.research_automation_service import ResearchAutomationService
+from backend.db.models import ContentLog, User, SocialConnection
+from backend.services.research_automation_service import AutomatedResearchService
+from backend.services.connection_publisher_service import get_connection_publisher_service
+from backend.services.ai_insights_service import ai_insights_service
+from backend.services.web_research_service import web_research_service
+from backend.services.industry_classification_service import industry_classification_service
 from backend.agents.tools import openai_tool
 from backend.core.config import get_settings
 from backend.core.observability import get_observability_manager
@@ -26,13 +26,8 @@ class AutonomousPostingService:
     """Service for autonomous social media posting"""
     
     def __init__(self):
-        self.research_service = ResearchAutomationService()
-        self.platform_clients = {
-            'twitter': TwitterClient(),
-            'linkedin': LinkedInClient, 
-            'instagram': InstagramClient(),
-            'facebook': FacebookClient()
-        }
+        self.research_service = AutomatedResearchService()
+        self.publisher_service = get_connection_publisher_service()
         self.observability = get_observability_manager()
     
     async def execute_autonomous_cycle(self, user_id: int, db: Session) -> Dict[str, Any]:
@@ -50,24 +45,40 @@ class AutonomousPostingService:
                 data={"user_id": user_id}
             )
             
-            # Step 1: Conduct industry research
+            # Step 1: Conduct real industry research using AI insights
             research_start_time = time.time()
-            research_results = await self.research_service.conduct_research(
-                industry="AI Agent Products",
-                focus_areas=[
-                    "artificial intelligence trends",
-                    "automation software",
-                    "social media management",
-                    "business productivity tools"
-                ]
-            )
+            
+            # Get user's organization and industry context
+            user_obj = db.query(User).filter(User.id == user_id).first()
+            if not user_obj:
+                raise ValueError(f"User {user_id} not found")
+            
+            # Step 1.5: Determine user's industry dynamically
+            user_industry = await industry_classification_service.auto_classify_user_industry(user_id, db)
+            if not user_industry:
+                user_industry = "general"  # Fallback
+                
+            industry_display_name = industry_classification_service.get_industry_display_name(user_industry)
+            research_topics = industry_classification_service.get_industry_research_topics(user_industry)
+            
+            logger.info(f"Autonomous posting for user {user_id}: Industry={industry_display_name}, Topics={research_topics}")
+            
+            # Generate weekly insights using AI service
+            research_results = await ai_insights_service.generate_weekly_insights()
+            
+            if research_results.get("status") != "success":
+                # Fallback to web research with user's actual industry
+                research_results = await web_research_service.research_industry_trends(
+                    industry=industry_display_name,
+                    topics=research_topics
+                )
             
             # Track research performance
             research_duration = time.time() - research_start_time
             self.observability.track_ai_generation("research", "multi_platform", "success", research_duration)
             
-            # Step 2: Generate content ideas based on research
-            content_ideas = await self._generate_content_ideas(research_results)
+            # Step 2: Generate content ideas based on research and user's industry
+            content_ideas = await self._generate_content_ideas(research_results, user_industry)
             
             # Step 3: Create and post content to connected platforms
             posting_results = []
@@ -132,95 +143,121 @@ class AutonomousPostingService:
                 "cycle_attempted_at": datetime.now(timezone.utc)
             }
     
-    async def _generate_content_ideas(self, research_results: Dict) -> List[Dict]:
-        """Generate content ideas based on research results"""
+    async def _generate_content_ideas(self, research_results: Dict, user_industry: str = "general") -> List[Dict]:
+        """Generate content ideas based on research results using real AI"""
         
         generation_start_time = time.time()
         
         try:
-            insights = research_results.get("insights", [])
-            trends = research_results.get("trends", [])
+            # Extract insights from AI research results
+            insights = research_results.get("insights", {})
+            if isinstance(insights, dict):
+                trending_topics = insights.get("trending_topics", [])
+                market_insights = insights.get("market_insights", [])
+                content_opportunities = insights.get("content_opportunities", [])
+            else:
+                # Handle legacy format
+                trending_topics = research_results.get("trends", [])
+                market_insights = research_results.get("insights", [])
+                content_opportunities = research_results.get("content_opportunities", [])
             
-            # Create prompt for content generation
-            prompt = f"""Based on the following industry research, generate 5 engaging social media content ideas for AI Agent products:
-
-Research Insights:
-{chr(10).join(insights[:5])}
-
-Current Trends:
-{chr(10).join(trends[:3])}
-
-For each content idea, provide:
-1. A compelling hook/opening
-2. Main content body (keep platform-appropriate lengths in mind)
-3. Relevant hashtags
-4. Best platform recommendation (Twitter, LinkedIn, Instagram, Facebook)
-5. Content type (text, image+text, video concept)
-
-Focus on providing value, showcasing AI automation benefits, and engaging with the target audience of business owners and marketing professionals."""
-
-            response = openai_tool.generate_text(prompt, max_tokens=1000)
+            # Get industry-specific context
+            industry_display_name = industry_classification_service.get_industry_display_name(user_industry)
             
-            # Parse the response into structured content ideas
-            # This is a simplified version - in production, you'd parse more carefully
+            # Create sophisticated prompt based on real research data and user's industry
+            prompt = f"""You are a social media strategist specializing in {industry_display_name}. Based on this REAL market research data, create 3 high-value social media content ideas that will drive engagement and showcase expertise in {industry_display_name}.
+
+TRENDING TOPICS:
+{chr(10).join(trending_topics[:5]) if trending_topics else "AI automation and productivity tools are highly relevant"}
+
+MARKET INSIGHTS:
+{chr(10).join(market_insights[:3]) if market_insights else "Businesses are seeking automation solutions to improve efficiency"}
+
+CONTENT OPPORTUNITIES:
+{chr(10).join(content_opportunities[:3]) if content_opportunities else "Showcase AI automation benefits and case studies"}
+
+REQUIREMENTS:
+- Each idea must provide genuine value to professionals in {industry_display_name}
+- Focus on industry-specific trends, challenges, and opportunities
+- Include specific, actionable insights rather than generic content
+- Vary platforms (LinkedIn for B2B, Twitter for quick insights, Instagram for visual content)
+- Tailor content tone and topics specifically for {industry_display_name} audience
+
+FORMAT: Return a JSON array where each object contains:
+- "hook": Attention-grabbing opening line
+- "content": Main message (200-300 words)
+- "hashtags": Array of 3-5 relevant hashtags
+- "platform": Best platform (twitter, linkedin, instagram)
+- "content_type": Type (text, image+text, video_concept)
+- "value_proposition": Why this content provides value
+
+Generate content that demonstrates real expertise and actionable insights."""
+
+            response = await openai_tool.generate_text(prompt, max_tokens=1500)
+            
+            # Parse the AI response into structured content ideas
             content_ideas = []
             
-            # Create some default content ideas in case AI generation fails
-            default_ideas = [
-                {
-                    "hook": "🤖 AI is revolutionizing social media management",
-                    "content": "Discover how autonomous AI agents can manage your entire social media strategy, from research to posting, saving you 10+ hours per week while improving engagement rates by 300%.",
-                    "hashtags": ["#AIAutomation", "#SocialMediaManagement", "#ProductivityHack", "#AIAgent"],
-                    "platform": "linkedin",
-                    "content_type": "text"
-                },
-                {
-                    "hook": "💡 Pro tip for busy entrepreneurs",
-                    "content": "Stop manually researching content ideas. AI agents can analyze industry trends, competitor content, and audience preferences to generate perfectly timed posts that drive real engagement.",
-                    "hashtags": ["#EntrepreneurTips", "#AIProductivity", "#AutomationTools"],
-                    "platform": "twitter",
-                    "content_type": "text"
-                },
-                {
-                    "hook": "🚀 The future of content creation is here",
-                    "content": "From trend analysis to image generation to post scheduling - see how AI agents are transforming how businesses approach social media marketing.",
-                    "hashtags": ["#FutureOfWork", "#AIContent", "#MarketingAutomation", "#SocialMediaStrategy"],
-                    "platform": "instagram",
-                    "content_type": "image+text"
-                }
-            ]
-            
-            # Try to extract ideas from AI response using 2025 best practices
-            if response and len(response) > 100:
+            if response and len(response) > 50:
                 try:
-                    # Attempt to parse JSON response (OpenAI structured output format)
+                    # Parse JSON response from AI
                     import json
-                    if response.strip().startswith('{') or response.strip().startswith('['):
-                        parsed_response = json.loads(response)
-                        if isinstance(parsed_response, list):
-                            content_ideas = parsed_response
-                        elif isinstance(parsed_response, dict) and 'content_ideas' in parsed_response:
-                            content_ideas = parsed_response['content_ideas']
+                    
+                    # Clean the response to extract JSON
+                    response = response.strip()
+                    if response.startswith('```json'):
+                        response = response[7:]
+                    if response.endswith('```'):
+                        response = response[:-3]
+                    response = response.strip()
+                    
+                    if response.startswith('['):
+                        # Direct array
+                        content_ideas = json.loads(response)
+                    elif response.startswith('{'):
+                        # Object wrapper
+                        parsed = json.loads(response)
+                        if 'content_ideas' in parsed:
+                            content_ideas = parsed['content_ideas']
+                        elif isinstance(parsed, list):
+                            content_ideas = parsed
                         else:
-                            # Fallback to defaults only if parsing completely fails
-                            content_ideas = default_ideas
+                            content_ideas = [parsed]  # Single idea object
                     else:
-                        # If response is plain text, create structured content from it
+                        # Plain text response - create a single content idea
                         content_ideas = [{
-                            "hook": "AI-Generated Content",
-                            "content": response[:500],  # Truncate if needed
-                            "hashtags": ["#AIGenerated", "#SocialMedia"],
-                            "platform": preferred_platforms[0] if preferred_platforms else "twitter",
-                            "content_type": "text"
+                            "hook": "AI-Generated Insight",
+                            "content": response[:800],  # Reasonable length
+                            "hashtags": ["#AIInsights", "#Automation", "#Productivity"],
+                            "platform": "linkedin",
+                            "content_type": "text",
+                            "value_proposition": "AI-generated content based on current market research"
                         }]
-                except json.JSONDecodeError as e:
-                    logger.warning(f"Failed to parse AI response as JSON: {e}, using defaults")
-                    content_ideas = default_ideas
-                except Exception as e:
-                    logger.warning(f"Error processing AI response: {e}, using defaults") 
-                    content_ideas = default_ideas
-            else:
-                content_ideas = default_ideas
+                        
+                    # Validate and clean the content ideas
+                    validated_ideas = []
+                    for idea in content_ideas[:5]:  # Limit to 5 ideas
+                        if isinstance(idea, dict) and 'content' in idea:
+                            # Ensure required fields
+                            validated_idea = {
+                                "hook": idea.get("hook", "AI-Generated Content"),
+                                "content": idea.get("content", "")[:800],  # Limit length
+                                "hashtags": idea.get("hashtags", ["#AIAutomation"])[:5],  # Limit hashtags
+                                "platform": idea.get("platform", "linkedin").lower(),
+                                "content_type": idea.get("content_type", "text"),
+                                "value_proposition": idea.get("value_proposition", "AI-generated content")
+                            }
+                            validated_ideas.append(validated_idea)
+                    
+                    content_ideas = validated_ideas if validated_ideas else []
+                    
+                except (json.JSONDecodeError, KeyError, TypeError) as e:
+                    logger.error(f"Failed to parse AI content generation response: {e}")
+                    content_ideas = []
+                    
+            if not content_ideas:
+                logger.error("AI content generation failed - no valid content ideas generated")
+                raise ValueError("Content generation failed: AI service did not produce valid content ideas")
             
             # Track content generation success
             generation_duration = time.time() - generation_start_time
@@ -236,23 +273,37 @@ Focus on providing value, showcasing AI automation benefits, and engaging with t
             self.observability.track_ai_generation("content_ideas", "multi_platform", "failed", generation_duration)
             self.observability.capture_exception(e, {"step": "content_idea_generation"})
             
-            # Return basic default ideas
-            return [
-                {
-                    "hook": "🤖 AI automation is changing the game",
-                    "content": "Experience the power of autonomous social media management with AI agents that work 24/7 to grow your online presence.",
-                    "hashtags": ["#AIAutomation", "#SocialMedia"],
-                    "platform": "twitter",
-                    "content_type": "text"
-                }
-            ]
+            # Re-raise the exception - no fallback to dummy content
+            raise
     
     async def _get_connected_platforms(self, user_id: int, db: Session) -> List[str]:
         """Get list of connected social media platforms for user"""
         
-        # In a real implementation, this would check user's connected accounts
-        # For now, return all available platforms
-        return ["twitter", "linkedin"]  # Start with these two
+        try:
+            # Get user's organization ID
+            user_obj = db.query(User).filter(User.id == user_id).first()
+            if not user_obj or not user_obj.default_organization_id:
+                logger.warning(f"User {user_id} has no organization")
+                return []
+            
+            # Query for active social connections
+            connections = db.query(SocialConnection).filter(
+                SocialConnection.organization_id == user_obj.default_organization_id,
+                SocialConnection.is_active == True,
+                SocialConnection.connection_status == "active"
+            ).all()
+            
+            platforms = []
+            for conn in connections:
+                if conn.platform and conn.platform not in platforms:
+                    platforms.append(conn.platform)
+            
+            logger.info(f"Found {len(platforms)} connected platforms for user {user_id}: {platforms}")
+            return platforms
+            
+        except Exception as e:
+            logger.error(f"Error getting connected platforms for user {user_id}: {e}")
+            return []
     
     async def _create_and_post_content(
         self, 
@@ -288,55 +339,50 @@ Focus on providing value, showcasing AI automation benefits, and engaging with t
                 if image_result.get("status") == "success":
                     image_url = image_result.get("image_url")
             
-            # Post to platform
-            platform_client = self.platform_clients.get(platform)
-            if platform_client:
-                # Format content for platform
-                formatted_content = self._format_content_for_platform(
-                    platform, content_idea, image_url
-                )
+            # Format content for platform
+            formatted_content = self._format_content_for_platform(
+                platform, content_idea, image_url
+            )
+            
+            # Use real connection publisher service to post content
+            post_result = await self.publisher_service.publish_content(
+                user_id=user_id,
+                platform=platform,
+                content=formatted_content,
+                content_type=content_idea.get("content_type", "text"),
+                image_url=image_url
+            )
                 
-                # Attempt to post (this would use real API in production)
-                post_result = await self._simulate_platform_post(
-                    platform, formatted_content, image_url
-                )
+            if post_result.get("success"):
+                # Update content record as published
+                content_record.status = "published"
+                content_record.published_at = datetime.now(timezone.utc)
+                content_record.engagement_data["platform_post_id"] = post_result.get("post_id")
                 
-                if post_result.get("success"):
-                    # Update content record as published
-                    content_record.status = "published"
-                    content_record.published_at = datetime.now(timezone.utc)
-                    content_record.engagement_data["platform_post_id"] = post_result.get("post_id")
-                    
-                    db.commit()
-                    
-                    # Track successful post
-                    self.observability.track_social_post(platform, "success")
-                    
-                    return {
-                        "status": "success",
-                        "platform": platform,
-                        "content_id": content_record.id,
-                        "post_id": post_result.get("post_id"),
-                        "content_preview": content_idea["content"][:100] + "..."
-                    }
-                else:
-                    content_record.status = "failed"
-                    db.commit()
-                    
-                    # Track failed post
-                    self.observability.track_social_post(platform, "failed")
-                    
-                    return {
-                        "status": "failed",
-                        "platform": platform,
-                        "error": post_result.get("error"),
-                        "content_id": content_record.id
-                    }
+                db.commit()
+                
+                # Track successful post
+                self.observability.track_social_post(platform, "success")
+                
+                return {
+                    "status": "success",
+                    "platform": platform,
+                    "content_id": content_record.id,
+                    "post_id": post_result.get("post_id"),
+                    "content_preview": content_idea["content"][:100] + "..."
+                }
             else:
+                content_record.status = "failed"
+                db.commit()
+                
+                # Track failed post
+                self.observability.track_social_post(platform, "failed")
+                
                 return {
                     "status": "failed",
                     "platform": platform,
-                    "error": f"Platform client not available for {platform}"
+                    "error": post_result.get("error"),
+                    "content_id": content_record.id
                 }
                 
         except Exception as e:
@@ -373,24 +419,6 @@ Focus on providing value, showcasing AI automation benefits, and engaging with t
         
         return f"{base_content}\n\n{hashtags}"
     
-    async def _simulate_platform_post(self, platform: str, content: str, image_url: str = None) -> Dict:
-        """Simulate posting to platform (replace with real API calls in production)"""
-        
-        # Simulate successful posting
-        import random
-        import uuid
-        
-        if random.random() > 0.1:  # 90% success rate
-            return {
-                "success": True,
-                "post_id": f"{platform}_{uuid.uuid4().hex[:8]}",
-                "posted_at": datetime.now(timezone.utc)
-            }
-        else:
-            return {
-                "success": False,
-                "error": f"Platform API error for {platform}"
-            }
     
     async def _schedule_future_posts(self, user_id: int, remaining_ideas: List[Dict], db: Session):
         """Schedule remaining content ideas for future posting"""
