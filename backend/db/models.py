@@ -1342,3 +1342,39 @@ class SocialAudit(Base):
         Index('idx_social_audit_created', created_at),
         {'extend_existing': True}
     )
+
+
+class UsageRecord(Base):
+    """Track usage for subscription enforcement"""
+    __tablename__ = "usage_records"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    # Usage details
+    usage_type = Column(String(50), nullable=False)  # image_generation, posts, api_calls, etc.
+    resource = Column(String(50))  # specific resource used (grok2, dalle3, twitter_post, etc.)
+    quantity = Column(Integer, default=1)  # amount used
+    
+    # Cost and billing information
+    cost_credits = Column(Numeric(10, 4), default=0.0)  # Cost in internal credits
+    cost_usd = Column(Numeric(10, 4), default=0.0)  # Cost in USD
+    
+    # Additional context  
+    usage_metadata = Column(JSON)  # Additional context (prompt, platform, quality, etc.)
+    
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    billing_period = Column(String(7), nullable=False, index=True)  # YYYY-MM for monthly aggregation
+    
+    # Relationships
+    user = relationship("User")
+    organization = relationship("Organization")
+    
+    __table_args__ = (
+        Index('idx_usage_user_period', user_id, billing_period),
+        Index('idx_usage_org_period', organization_id, billing_period),
+        Index('idx_usage_type_period', usage_type, billing_period),
+        Index('idx_usage_created', created_at.desc()),
+    )

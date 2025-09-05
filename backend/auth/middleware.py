@@ -14,6 +14,7 @@ from functools import lru_cache
 # Auth0 removed - using local JWT authentication only
 from backend.auth.jwt_handler import JWTHandler
 from backend.core.config import get_settings
+from backend.services.redis_cache import redis_cache
 
 # Get logger (use application's logging configuration)
 logger = logging.getLogger(__name__)
@@ -35,67 +36,70 @@ class JWTValidationMiddleware:
     """
     
     def __init__(self):
-        self.token_cache = {}  # Simple in-memory cache for validated tokens
         self.cache_ttl = 300  # 5 minutes cache TTL
-        self.blacklisted_tokens = set()  # Token blacklist
-        self.user_request_counts = {}  # Rate limiting per user
         self.rate_limit_window = 300  # 5 minutes
         self.max_requests_per_window = 1000  # Max requests per user per window
         
-        logger.info("JWTValidationMiddleware initialized with caching and rate limiting")
+        logger.info("JWTValidationMiddleware initialized with Redis caching and rate limiting")
     
-    def _is_token_cached_and_valid(self, token: str) -> Optional[Dict[str, Any]]:
+    async def _is_token_cached_and_valid(self, token: str) -> Optional[Dict[str, Any]]:
         """Check if token is cached and still valid"""
-        if token in self.token_cache:
-            cached_data = self.token_cache[token]
-            if time.time() < cached_data['expires_at']:
-                return cached_data['payload']
-            else:
-                # Remove expired token from cache
-                del self.token_cache[token]
+        try:
+            cached_data = await redis_cache.get("auth", "token_validation", resource_id=token)
+            if cached_data:
+                return cached_data
+        except Exception as e:
+            logger.warning(f"Redis token cache check failed: {e}")
         return None
     
-    def _cache_token(self, token: str, payload: Dict[str, Any]):
+    async def _cache_token(self, token: str, payload: Dict[str, Any]):
         """Cache validated token with TTL"""
-        self.token_cache[token] = {
-            'payload': payload,
-            'expires_at': time.time() + self.cache_ttl
-        }
-        
-        # Clean up cache periodically (simple cleanup)
-        if len(self.token_cache) > 1000:
-            current_time = time.time()
-            expired_tokens = [
-                token for token, data in self.token_cache.items() 
-                if current_time >= data['expires_at']
-            ]
-            for expired_token in expired_tokens:
-                del self.token_cache[expired_token]
+        try:
+            await redis_cache.set("auth", "token_validation", payload, resource_id=token, ttl=self.cache_ttl)
+        except Exception as e:
+            logger.warning(f"Failed to cache token in Redis: {e}")
     
-    def _is_token_blacklisted(self, token: str) -> bool:
+    async def _is_token_blacklisted(self, token: str) -> bool:
         """Check if token is blacklisted"""
-        return token in self.blacklisted_tokens
-    
-    def _check_rate_limit(self, user_id: str) -> bool:
-        """Check if user has exceeded rate limit"""
-        current_time = time.time()
-        
-        if user_id not in self.user_request_counts:
-            self.user_request_counts[user_id] = []
-        
-        # Clean up old entries
-        self.user_request_counts[user_id] = [
-            timestamp for timestamp in self.user_request_counts[user_id]
-            if current_time - timestamp < self.rate_limit_window
-        ]
-        
-        # Check if user has exceeded limit
-        if len(self.user_request_counts[user_id]) >= self.max_requests_per_window:
+        try:
+            blacklisted = await redis_cache.get("auth", "blacklist", resource_id=token)
+            return blacklisted is not None
+        except Exception as e:
+            logger.warning(f"Redis blacklist check failed: {e}")
             return False
-        
-        # Add current request
-        self.user_request_counts[user_id].append(current_time)
-        return True
+    
+    async def _check_rate_limit(self, user_id: str) -> bool:
+        """Check if user has exceeded rate limit using Redis"""
+        try:
+            current_time = time.time()
+            key = f"rate_limit:{user_id}"
+            
+            # Get current request timestamps from Redis
+            request_timestamps = await redis_cache.get("auth", "rate_limit", resource_id=key)
+            if request_timestamps is None:
+                request_timestamps = []
+            
+            # Clean up old entries
+            request_timestamps = [
+                timestamp for timestamp in request_timestamps
+                if current_time - timestamp < self.rate_limit_window
+            ]
+            
+            # Check if user has exceeded limit
+            if len(request_timestamps) >= self.max_requests_per_window:
+                return False
+            
+            # Add current request timestamp
+            request_timestamps.append(current_time)
+            
+            # Store updated timestamps in Redis
+            await redis_cache.set("auth", "rate_limit", request_timestamps, resource_id=key, ttl=self.rate_limit_window)
+            
+            return True
+            
+        except Exception as e:
+            logger.warning(f"Redis rate limit check failed: {e}, allowing request")
+            return True  # Fail open for availability
     
     def _extract_token_from_request(self, request: Request) -> Optional[str]:
         """Extract JWT token from request headers"""
@@ -108,42 +112,33 @@ class JWTValidationMiddleware:
         
         return auth_header[7:]  # Remove "Bearer " prefix
     
-    def _validate_token(self, token: str) -> Dict[str, Any]:
-        """Validate JWT token using Auth0 or local validation"""
+    async def _validate_token(self, token: str) -> Dict[str, Any]:
+        """Validate JWT token using local JWT validation"""
         # Check cache first
-        cached_payload = self._is_token_cached_and_valid(token)
+        cached_payload = await self._is_token_cached_and_valid(token)
         if cached_payload:
             return cached_payload
         
         # Check blacklist
-        if self._is_token_blacklisted(token):
+        if await self._is_token_blacklisted(token):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token has been revoked"
             )
         
-        # Try Auth0 validation first
+        # Local JWT validation only
         try:
-            payload = auth0_verifier.verify_token(token)
-            self._cache_token(token, payload)
-            logger.info(f"Successfully validated Auth0 token for user: {payload.get('sub')}")
+            payload = jwt_handler.verify_token(token)
+            await self._cache_token(token, payload)
+            logger.info(f"Successfully validated local JWT token for user: {payload.get('sub')}")
             return payload
-        except HTTPException as auth0_error:
-            logger.warning(f"Auth0 validation failed: {auth0_error.detail}")
-            
-            # Fallback to local JWT validation
-            try:
-                payload = jwt_handler.verify_token(token)
-                self._cache_token(token, payload)
-                logger.info(f"Successfully validated local JWT token for user: {payload.get('sub')}")
-                return payload
-            except HTTPException as local_error:
-                logger.error(f"Both Auth0 and local JWT validation failed. Auth0: {auth0_error.detail}, Local: {local_error.detail}")
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid authentication token",
-                    headers={"WWW-Authenticate": "Bearer"}
-                )
+        except HTTPException as local_error:
+            logger.error(f"Local JWT validation failed: {local_error.detail}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication token",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
     
     def _create_error_response(self, status_code: int, detail: str, headers: Optional[Dict[str, str]] = None) -> JSONResponse:
         """Create standardized error response"""
@@ -202,7 +197,7 @@ class JWTValidationMiddleware:
                 )
             
             # Validate token
-            payload = self._validate_token(token)
+            payload = await self._validate_token(token)
             user_id = payload.get("sub")
             
             if not user_id:
@@ -213,7 +208,7 @@ class JWTValidationMiddleware:
                 )
             
             # Check rate limit
-            if not self._check_rate_limit(user_id):
+            if not await self._check_rate_limit(user_id):
                 logger.warning(f"Rate limit exceeded for user: {user_id}")
                 return self._create_error_response(
                     status.HTTP_429_TOO_MANY_REQUESTS,
@@ -224,7 +219,7 @@ class JWTValidationMiddleware:
             request.state.user_id = user_id
             request.state.user_email = payload.get("email")
             request.state.user_payload = payload
-            request.state.auth_method = "auth0" if "@" in user_id else "local"
+            request.state.auth_method = "local"
             
             # Process request
             response = await call_next(request)
@@ -249,41 +244,47 @@ class JWTValidationMiddleware:
                 "Internal authentication error"
             )
     
-    def blacklist_token(self, token: str):
+    async def blacklist_token(self, token: str):
         """Add token to blacklist"""
-        self.blacklisted_tokens.add(token)
-        # Remove from cache if present
-        if token in self.token_cache:
-            del self.token_cache[token]
-        logger.info("Token added to blacklist")
+        try:
+            # Add to Redis blacklist with long TTL (24 hours)
+            await redis_cache.set("auth", "blacklist", True, resource_id=token, ttl=86400)
+            # Remove from token cache if present
+            await redis_cache.delete("auth", "token_validation", resource_id=token)
+            logger.info("Token added to blacklist")
+        except Exception as e:
+            logger.error(f"Failed to blacklist token: {e}")
     
-    def clear_user_cache(self, user_id: str):
+    async def clear_user_cache(self, user_id: str):
         """Clear cached tokens for a specific user"""
-        tokens_to_remove = []
-        for token, data in self.token_cache.items():
-            if data['payload'].get('sub') == user_id:
-                tokens_to_remove.append(token)
-        
-        for token in tokens_to_remove:
-            del self.token_cache[token]
-        
-        logger.info(f"Cleared cache for user: {user_id}")
+        try:
+            # Clear rate limit cache for the user
+            await redis_cache.delete("auth", "rate_limit", resource_id=f"rate_limit:{user_id}")
+            
+            # Note: We can't easily iterate through all tokens to find user-specific ones in Redis
+            # This would require storing a user->token mapping or using Redis patterns
+            # For now, we'll log that the rate limit cache was cleared
+            logger.info(f"Cleared rate limit cache for user: {user_id}")
+        except Exception as e:
+            logger.error(f"Failed to clear user cache: {e}")
     
-    def get_middleware_stats(self) -> Dict[str, Any]:
+    async def get_middleware_stats(self) -> Dict[str, Any]:
         """Get middleware performance statistics"""
-        current_time = time.time()
-        active_cache_count = sum(
-            1 for data in self.token_cache.values() 
-            if current_time < data['expires_at']
-        )
-        
-        return {
-            "cached_tokens": active_cache_count,
-            "blacklisted_tokens": len(self.blacklisted_tokens),
-            "active_users": len(self.user_request_counts),
-            "cache_hit_ratio": "Not implemented",  # Could be added with counters
-            "total_cache_size": len(self.token_cache)
-        }
+        try:
+            redis_stats = await redis_cache.get_cache_stats()
+            return {
+                "redis_connected": redis_stats.get("redis_connected", False),
+                "redis_cache_stats": redis_stats,
+                "middleware_type": "redis_distributed",
+                "note": "Token and rate limit data stored in Redis for distributed access"
+            }
+        except Exception as e:
+            logger.error(f"Failed to get middleware stats: {e}")
+            return {
+                "error": str(e),
+                "middleware_type": "redis_distributed",
+                "redis_connected": False
+            }
 
 # Singleton middleware instance
 jwt_middleware = JWTValidationMiddleware()
@@ -302,16 +303,17 @@ async def validate_jwt_token(request: Request) -> Dict[str, Any]:
             headers={"WWW-Authenticate": "Bearer"}
         )
     
-    return jwt_middleware._validate_token(token)
+    return await jwt_middleware._validate_token(token)
 
 @lru_cache(maxsize=100)
-def get_jwks_cache_status():
-    """Get JWKS cache status for monitoring"""
+def get_jwt_cache_status():
+    """Get JWT cache status for monitoring"""
     try:
-        jwks = auth0_verifier.get_jwks()
+        # Check if JWT handler is functional
+        jwt_handler.get_algorithm()  # Simple check
         return {
             "status": "healthy",
-            "keys_count": len(jwks.get("keys", [])),
+            "handler_type": "local_jwt",
             "last_updated": time.time()
         }
     except Exception as e:

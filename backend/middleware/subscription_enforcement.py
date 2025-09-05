@@ -16,6 +16,7 @@ from backend.services.subscription_service import (
     SubscriptionTier,
     InsufficientTierError
 )
+from backend.services.usage_tracking_service import get_usage_tracking_service
 
 logger = logging.getLogger(__name__)
 
@@ -109,30 +110,28 @@ class SubscriptionDependencies:
         return dependency
     
     @staticmethod
-    def check_usage_limit(limit_type: str):
+    def check_usage_limit(usage_type: str, limit_key: str):
         """
-        FastAPI dependency factory to check usage limits
+        FastAPI dependency factory to check usage limits with actual tracking
         
         Usage:
             @router.post("/api/generate-image")
             async def generate_image(
                 user: AuthUser = Depends(get_current_user),
-                _: None = Depends(check_usage_limit("max_image_generations_per_day"))
+                _: None = Depends(check_usage_limit("image_generation", "max_image_generations_per_month"))
             ):
                 ...
         """
-        def dependency(
+        async def dependency(
             current_user: AuthUser = Depends(get_current_user),
-            subscription_service: SubscriptionService = Depends(SubscriptionDependencies.get_subscription_service_dep)
+            subscription_service: SubscriptionService = Depends(SubscriptionDependencies.get_subscription_service_dep),
+            db: Session = Depends(get_db)
         ):
             user_id = int(current_user.user_id)
             
-            # This is a placeholder - in production you'd track actual usage
-            # For now, we'll assume usage is within limits
-            # TODO: Implement usage tracking in a separate service
-            
+            # Get user tier limits
             limits = subscription_service.get_tier_limits(user_id)
-            limit_value = limits.get(limit_type, 0)
+            limit_value = limits.get(limit_key, 0)
             
             if limit_value == 0:
                 user_tier = subscription_service.get_user_tier(user_id)
@@ -146,7 +145,23 @@ class SubscriptionDependencies:
                     }
                 )
             
-            # For now, always pass - actual usage tracking will be implemented later
+            # Check actual usage
+            usage_service = get_usage_tracking_service(db)
+            usage_status = await usage_service.check_usage_limit(user_id, usage_type, limit_value)
+            
+            if usage_status["exceeded"]:
+                user_tier = subscription_service.get_user_tier(user_id)
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail={
+                        "error": "usage_limit_exceeded",
+                        "message": f"Monthly {usage_type.replace('_', ' ')} limit exceeded ({usage_status['current_usage']}/{usage_status['limit']})",
+                        "current_tier": user_tier.value,
+                        "usage": usage_status,
+                        "upgrade_required": True
+                    }
+                )
+            
             return None
         
         return dependency
@@ -172,6 +187,49 @@ class SubscriptionDependencies:
             }
         
         return dependency
+    
+    @staticmethod 
+    async def track_usage_after_operation(
+        user_id: int,
+        organization_id: str,
+        usage_type: str,
+        resource: Optional[str] = None,
+        quantity: int = 1,
+        metadata: Optional[Dict[str, Any]] = None,
+        db: Session = None
+    ) -> bool:
+        """
+        Helper function to track usage after an operation
+        
+        Args:
+            user_id: User ID
+            organization_id: Organization ID
+            usage_type: Type of usage (image_generation, post_creation, etc.)
+            resource: Specific resource used
+            quantity: Amount used
+            metadata: Additional context
+            db: Database session
+            
+        Returns:
+            Success status
+        """
+        if not db:
+            logger.warning("Database session not provided for usage tracking")
+            return False
+            
+        try:
+            usage_service = get_usage_tracking_service(db)
+            return await usage_service.track_usage(
+                user_id=user_id,
+                organization_id=organization_id,
+                usage_type=usage_type,
+                resource=resource,
+                quantity=quantity,
+                metadata=metadata
+            )
+        except Exception as e:
+            logger.error(f"Failed to track usage: {e}")
+            return False
 
 # Convenience instances
 require_feature = SubscriptionDependencies.require_feature

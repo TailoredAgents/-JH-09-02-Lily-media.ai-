@@ -8,10 +8,22 @@ suppress_third_party_warnings()
 
 import asyncio
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, List, Optional
 from celery import Celery
 from sqlalchemy.orm import Session
+
+# Try to use zoneinfo (Python 3.9+) or fallback to pytz
+try:
+    from zoneinfo import ZoneInfo
+    TIMEZONE_AVAILABLE = True
+except ImportError:
+    try:
+        import pytz
+        ZoneInfo = pytz.timezone
+        TIMEZONE_AVAILABLE = True
+    except ImportError:
+        TIMEZONE_AVAILABLE = False
 
 from backend.db.database import get_db
 from backend.db.models import User, UserSetting, WorkflowExecution
@@ -29,22 +41,58 @@ class AutonomousScheduler:
     def __init__(self):
         self.research_service = ProductionResearchAutomationService()
     
-    def get_active_users_for_autonomous_mode(self, db: Session) -> List[Dict[str, Any]]:
-        """Get users with autonomous mode enabled"""
+    def _get_user_datetime(self, user_timezone: str = 'UTC') -> datetime:
+        """Get current datetime in user's timezone"""
+        try:
+            if user_timezone == 'UTC' or not user_timezone or not TIMEZONE_AVAILABLE:
+                return datetime.now(timezone.utc)
+            
+            user_tz = ZoneInfo(user_timezone)
+            return datetime.now(user_tz)
+        except Exception as e:
+            logger.warning(f"Invalid timezone {user_timezone}, using UTC: {e}")
+            return datetime.now(timezone.utc)
+    
+    def _convert_to_user_timezone(self, dt: datetime, user_timezone: str = 'UTC') -> datetime:
+        """Convert UTC datetime to user timezone"""
+        try:
+            if user_timezone == 'UTC' or not user_timezone or not TIMEZONE_AVAILABLE:
+                return dt
+            
+            user_tz = ZoneInfo(user_timezone)
+            
+            # Ensure dt is timezone aware (assume UTC if naive)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            
+            return dt.astimezone(user_tz)
+        except Exception as e:
+            logger.warning(f"Timezone conversion failed for {user_timezone}, using UTC: {e}")
+            return dt
+    
+    def get_active_users_for_autonomous_mode(self, db: Session, organization_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Get users with autonomous mode enabled for a specific organization or all organizations"""
         try:
             # Query users with autonomous settings enabled
-            users_with_settings = db.query(User, UserSetting).join(
+            query = db.query(User, UserSetting).join(
                 UserSetting, User.id == UserSetting.user_id
             ).filter(
                 User.is_active == True,
                 UserSetting.enable_autonomous_mode == True  # This field needs to be added to UserSetting
-            ).all()
+            )
+            
+            # Add organization filter for tenant isolation
+            if organization_id:
+                query = query.filter(User.default_organization_id == organization_id)
+            
+            users_with_settings = query.all()
             
             user_configs = []
             for user, settings in users_with_settings:
                 user_configs.append({
                     'user_id': user.id,
                     'email': user.email,
+                    'organization_id': user.default_organization_id,  # Include for tenant tracking
                     'timezone': getattr(settings, 'timezone', 'UTC'),
                     'preferred_platforms': settings.preferred_platforms or ['twitter', 'instagram'],
                     'content_frequency': settings.content_frequency or 3,
@@ -53,7 +101,10 @@ class AutonomousScheduler:
                     'creativity_level': settings.creativity_level or 0.7
                 })
             
-            logger.info(f"Found {len(user_configs)} users with autonomous mode enabled")
+            if organization_id:
+                logger.info(f"Found {len(user_configs)} users with autonomous mode enabled for organization {organization_id}")
+            else:
+                logger.info(f"Found {len(user_configs)} users with autonomous mode enabled across all organizations")
             return user_configs
             
         except Exception as e:
@@ -124,14 +175,24 @@ def daily_content_generation(self):
                         # Determine posting time for this platform
                         posting_time = user_config['posting_times'].get(platform, '09:00')
                         
-                        # Schedule for tomorrow at the specified time
-                        tomorrow = datetime.utcnow() + timedelta(days=1)
-                        scheduled_time = tomorrow.replace(
+                        # Schedule for tomorrow at the specified time in user's timezone
+                        user_timezone = user_config.get('timezone', 'UTC')
+                        user_now = self._get_user_datetime(user_timezone)
+                        tomorrow_user_tz = user_now + timedelta(days=1)
+                        
+                        # Set the posting time in user's timezone
+                        scheduled_time = tomorrow_user_tz.replace(
                             hour=int(posting_time.split(':')[0]),
                             minute=int(posting_time.split(':')[1]),
                             second=0,
                             microsecond=0
                         )
+                        
+                        # Convert to UTC for storage if needed
+                        if user_timezone != 'UTC' and hasattr(scheduled_time, 'tzinfo') and scheduled_time.tzinfo:
+                            scheduled_time_utc = scheduled_time.astimezone(timezone.utc)
+                        else:
+                            scheduled_time_utc = scheduled_time
                         
                         # Generate platform-specific content
                         content_text = f"Daily insight for {platform}: Based on today's research, here's what's trending..."
@@ -222,7 +283,7 @@ def weekly_report_generation(self):
                 user_id = user_config['user_id']
                 
                 # Get past week's workflow executions
-                week_ago = datetime.utcnow() - timedelta(days=7)
+                week_ago = datetime.now(timezone.utc) - timedelta(days=7)
                 workflows = db.query(WorkflowExecution).filter(
                     WorkflowExecution.user_id == user_id,
                     WorkflowExecution.created_at >= week_ago,
@@ -245,7 +306,7 @@ def weekly_report_generation(self):
                 # Generate weekly summary
                 weekly_summary = {
                     'user_id': user_id,
-                    'week_ending': datetime.utcnow().isoformat(),
+                    'week_ending': datetime.now(timezone.utc).isoformat(),
                     'content_generated': total_content,
                     'successful_workflows': successful_workflows,
                     'failed_workflows': failed_workflows,
@@ -269,7 +330,7 @@ def weekly_report_generation(self):
                 memory_service = ProductionMemoryService(db)
                 memory_service.store_insight_memory(
                     user_id=user_id,
-                    title=f"Weekly Autonomous Report - {datetime.utcnow().strftime('%Y-%m-%d')}",
+                    title=f"Weekly Autonomous Report - {datetime.now(timezone.utc).strftime('%Y-%m-%d')}",
                     insight_content=f"Weekly performance summary: {total_content} content items generated, {weekly_summary['success_rate']:.1f}% success rate",
                     insight_type='weekly_report',
                     metadata=weekly_summary
@@ -285,7 +346,7 @@ def weekly_report_generation(self):
         return {
             'status': 'completed',
             'reports_generated': reports_generated,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }
         
     except Exception as e:
@@ -309,7 +370,7 @@ def nightly_metrics_collection(self):
         for user in active_users:
             try:
                 # Get published content from the past day
-                yesterday = datetime.utcnow() - timedelta(days=1)
+                yesterday = datetime.now(timezone.utc) - timedelta(days=1)
                 content_service = ContentPersistenceService(db)
                 
                 recent_content = content_service.get_content_list(
@@ -355,7 +416,7 @@ def nightly_metrics_collection(self):
             'status': 'completed',
             'metrics_collected': metrics_collected,
             'users_processed': len(active_users),
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }
         
     except Exception as e:
@@ -372,7 +433,7 @@ def process_scheduled_content(self):
             content_service = ContentPersistenceService(db)
         
         # Get content scheduled for posting now (within the next hour)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         posting_window = now + timedelta(hours=1)
         
         scheduled_content = content_service.get_scheduled_content(
@@ -422,7 +483,7 @@ def process_scheduled_content(self):
             'posts_processed': posts_processed,
             'successful_posts': successful_posts,
             'failed_posts': failed_posts,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }
         
     except Exception as e:
