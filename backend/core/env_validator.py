@@ -52,32 +52,12 @@ class EnvironmentValidator:
                 "example": "your-serper-api-key"
             },
             
-            # Authentication settings
-            "AUTH0_DOMAIN": {
-                "level": ValidationLevel.RECOMMENDED,
-                "description": "Auth0 domain for enterprise authentication",
-                "example": "your-domain.us.auth0.com"
-            },
-            "AUTH0_CLIENT_ID": {
-                "level": ValidationLevel.OPTIONAL,
-                "description": "Auth0 client ID",
-                "dependency": "AUTH0_DOMAIN"
-            },
-            "AUTH0_CLIENT_SECRET": {
-                "level": ValidationLevel.OPTIONAL,
-                "description": "Auth0 client secret",
-                "dependency": "AUTH0_DOMAIN"
-            },
-            "AUTH0_AUDIENCE": {
-                "level": ValidationLevel.OPTIONAL,
-                "description": "Auth0 API audience",
-                "dependency": "AUTH0_DOMAIN"
-            },
-            "AUTH0_CALLBACK_URL": {
-                "level": ValidationLevel.OPTIONAL,
-                "description": "Auth0 callback URL",
-                "dependency": "AUTH0_DOMAIN",
-                "default": "http://localhost:8000/api/auth/auth0/callback"
+            # Security and Token Encryption
+            "TOKEN_ENCRYPTION_KEY": {
+                "level": ValidationLevel.REQUIRED,
+                "description": "32-character encryption key for partner OAuth tokens",
+                "min_length": 32,
+                "example": "your-secure-32-char-encryption-key-here"
             },
             
             # Redis configuration
@@ -135,6 +115,34 @@ class EnvironmentValidator:
             "SENTRY_DSN": {
                 "level": ValidationLevel.OPTIONAL,
                 "description": "Sentry DSN for error tracking"
+            },
+            
+            # Security Headers and Production Settings
+            "FORCE_HTTPS": {
+                "level": ValidationLevel.RECOMMENDED,
+                "description": "Force HTTPS in production",
+                "type": "boolean",
+                "allowed_values": ["true", "false"],
+                "default": "false"
+            },
+            "SECURE_COOKIES": {
+                "level": ValidationLevel.RECOMMENDED,
+                "description": "Enable secure cookie flags",
+                "type": "boolean",
+                "allowed_values": ["true", "false"],
+                "default": "false"
+            },
+            "SECURE_HEADERS": {
+                "level": ValidationLevel.RECOMMENDED,
+                "description": "Enable security headers (CSP, HSTS, etc)",
+                "type": "boolean",
+                "allowed_values": ["true", "false"],
+                "default": "false"
+            },
+            "CORS_ORIGINS": {
+                "level": ValidationLevel.RECOMMENDED,
+                "description": "Allowed CORS origins for production",
+                "example": "https://your-domain.com,https://www.your-domain.com"
             },
             
             # Performance and scaling
@@ -258,8 +266,12 @@ class EnvironmentValidator:
         if not os.getenv("REDIS_URL"):
             recommendations.append("Set up Redis for improved caching and performance")
         
-        if not os.getenv("AUTH0_DOMAIN") and os.getenv("ENVIRONMENT") == "production":
-            recommendations.append("Consider setting up Auth0 for enterprise authentication in production")
+        # Security-specific recommendations
+        if not os.getenv("TOKEN_ENCRYPTION_KEY"):
+            recommendations.append("CRITICAL: Generate a secure TOKEN_ENCRYPTION_KEY for partner OAuth tokens")
+        
+        if os.getenv("TOKEN_ENCRYPTION_KEY") == "your-secure-32-char-encryption-key-here":
+            recommendations.append("SECURITY RISK: Change TOKEN_ENCRYPTION_KEY from default example value")
         
         # Environment-specific recommendations
         env = os.getenv("ENVIRONMENT", "development")
@@ -269,6 +281,27 @@ class EnvironmentValidator:
             
             if os.getenv("LOG_LEVEL") == "DEBUG":
                 recommendations.append("Consider using INFO or WARNING log level in production")
+            
+            # Production security hardening recommendations
+            if not os.getenv("FORCE_HTTPS") or os.getenv("FORCE_HTTPS").lower() != "true":
+                recommendations.append("SECURITY: Enable FORCE_HTTPS=true for production")
+            
+            if not os.getenv("SECURE_HEADERS") or os.getenv("SECURE_HEADERS").lower() != "true":
+                recommendations.append("SECURITY: Enable SECURE_HEADERS=true for security headers (CSP, HSTS, etc)")
+            
+            if not os.getenv("SECURE_COOKIES") or os.getenv("SECURE_COOKIES").lower() != "true":
+                recommendations.append("SECURITY: Enable SECURE_COOKIES=true for production")
+            
+            if not os.getenv("CORS_ORIGINS"):
+                recommendations.append("SECURITY: Set specific CORS_ORIGINS instead of allowing all origins")
+            
+            # Strong secret key validation
+            secret_key = os.getenv("SECRET_KEY", "")
+            if len(secret_key) < 32:
+                recommendations.append("SECURITY RISK: SECRET_KEY should be at least 32 characters long")
+            
+            if secret_key == "your-super-secret-key-change-this":
+                recommendations.append("CRITICAL: Change SECRET_KEY from default example value")
         
         return {
             "validation_passed": len(errors) == 0,

@@ -40,6 +40,7 @@ from . import (
     dashboard_metrics,  # Dashboard metrics API for frontend consumption
     websockets,  # WebSocket endpoints for real-time status updates
     multi_tenant,  # Multi-tenant organization and RBAC management
+    billing,  # Stripe billing and subscription management
 )
 
 # All routers to be registered with the FastAPI app
@@ -83,4 +84,5 @@ ROUTERS = [
     dashboard_metrics.router,  # Dashboard metrics API for frontend consumption
     websockets.router,  # WebSocket endpoints for real-time status updates
     multi_tenant.router,  # Multi-tenant organization and RBAC management
+    billing.router,  # Stripe billing and subscription management
 ]

@@ -5,7 +5,7 @@ Provides RESTful API for managing multi-tenancy features
 import logging
 from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
 from backend.db.database import get_db
@@ -19,11 +19,12 @@ router = APIRouter(prefix="/api/organizations", tags=["Multi-Tenancy"])
 # Request/Response models
 class CreateOrganizationRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
-    slug: str = Field(..., min_length=3, max_length=50, regex=r'^[a-z0-9\-]+$')
+    slug: str = Field(..., min_length=3, max_length=50, pattern=r'^[a-z0-9\-]+$')
     description: Optional[str] = Field(None, max_length=500)
-    plan_type: str = Field("starter", regex=r'^(starter|professional|enterprise)$')
+    plan_type: str = Field("starter", pattern=r'^(starter|professional|enterprise)$')
 
-    @validator('slug')
+    @field_validator('slug')
+    @classmethod
     def slug_must_be_lowercase(cls, v):
         if v != v.lower():
             raise ValueError('Slug must be lowercase')
