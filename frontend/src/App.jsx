@@ -1,5 +1,10 @@
 import React from 'react'
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { HelmetProvider } from 'react-helmet-async'
 
@@ -8,6 +13,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import { AdminAuthProvider } from './contexts/AdminAuthContext'
 import { WebSocketProvider } from './contexts/WebSocketContext'
 import { ThemeProvider } from './contexts/ThemeContext'
+import { PlanProvider } from './contexts/PlanContext'
 
 // Error handling
 import { ErrorBoundary } from './utils/errorReporter.jsx'
@@ -37,9 +43,10 @@ import Settings from './pages/Settings'
 import ErrorLogs from './components/ErrorLogs'
 
 // Conditionally import Integrations page if feature is enabled
-const Integrations = import.meta.env.VITE_FEATURE_PARTNER_OAUTH === 'true' 
-  ? React.lazy(() => import('./pages/Integrations'))
-  : null
+const Integrations =
+  import.meta.env.VITE_FEATURE_PARTNER_OAUTH === 'true'
+    ? React.lazy(() => import('./pages/Integrations'))
+    : null
 
 // Admin Pages
 import AdminLogin from './pages/admin/AdminLogin'
@@ -56,9 +63,9 @@ const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
       refetchOnReconnect: false, // Don't refetch when reconnecting
       refetchInterval: false, // Disable automatic refetching
-      enabled: true // Can be controlled per query
-    }
-  }
+      enabled: true, // Can be controlled per query
+    },
+  },
 })
 
 // No authentication configuration needed
@@ -69,48 +76,80 @@ function AppRoutes() {
       <Routes>
         {/* Admin Routes */}
         <Route path="/admin/login" element={<AdminLogin />} />
-        <Route 
-          path="/admin/dashboard" 
+        <Route
+          path="/admin/dashboard"
           element={
             <AdminProtectedRoute>
               <AdminLayout>
                 <AdminDashboard />
               </AdminLayout>
             </AdminProtectedRoute>
-          } 
+          }
         />
-        <Route 
-          path="/admin/users" 
+        <Route
+          path="/admin/users"
           element={
             <AdminProtectedRoute>
               <AdminLayout>
                 <UserManagement />
               </AdminLayout>
             </AdminProtectedRoute>
-          } 
+          }
         />
-        <Route 
-          path="/admin/*" 
+        <Route
+          path="/admin/*"
           element={
             <AdminProtectedRoute>
               <AdminLayout>
                 <div className="text-center py-12">
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Page Under Development</h3>
-                  <p className="text-sm text-gray-500">This admin feature is coming soon.</p>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    Page Under Development
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    This admin feature is coming soon.
+                  </p>
                 </div>
               </AdminLayout>
             </AdminProtectedRoute>
-          } 
+          }
         />
 
         {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-        <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+        <Route
+          path="/login"
+          element={
+            <PublicRoute>
+              <Login />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <PublicRoute>
+              <Register />
+            </PublicRoute>
+          }
+        />
         <Route path="/email-verification" element={<EmailVerification />} />
-        <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
-        <Route path="/reset-password" element={<PublicRoute><ResetPassword /></PublicRoute>} />
-        
+        <Route
+          path="/forgot-password"
+          element={
+            <PublicRoute>
+              <ForgotPassword />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/reset-password"
+          element={
+            <PublicRoute>
+              <ResetPassword />
+            </PublicRoute>
+          }
+        />
+
         {/* Protected User Routes */}
         <Route
           path="/dashboard"
@@ -173,6 +212,29 @@ function AppRoutes() {
           }
         />
         <Route
+          path="/billing"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <React.Suspense
+                  fallback={
+                    <div className="flex items-center justify-center min-h-screen">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                      <span className="ml-3 text-gray-600">
+                        Loading Billing...
+                      </span>
+                    </div>
+                  }
+                >
+                  {React.createElement(
+                    React.lazy(() => import('./pages/Billing'))
+                  )}
+                </React.Suspense>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/settings"
           element={
             <ProtectedRoute>
@@ -183,25 +245,30 @@ function AppRoutes() {
           }
         />
         {/* Integrations Route - Feature Flag Gated */}
-        {import.meta.env.VITE_FEATURE_PARTNER_OAUTH === 'true' && Integrations && (
-          <Route
-            path="/integrations"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <React.Suspense fallback={
-                    <div className="flex items-center justify-center min-h-screen">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                      <span className="ml-3 text-gray-600">Loading Integrations...</span>
-                    </div>
-                  }>
-                    <Integrations />
-                  </React.Suspense>
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-        )}
+        {import.meta.env.VITE_FEATURE_PARTNER_OAUTH === 'true' &&
+          Integrations && (
+            <Route
+              path="/integrations"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <React.Suspense
+                      fallback={
+                        <div className="flex items-center justify-center min-h-screen">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                          <span className="ml-3 text-gray-600">
+                            Loading Integrations...
+                          </span>
+                        </div>
+                      }
+                    >
+                      <Integrations />
+                    </React.Suspense>
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+          )}
         <Route
           path="/error-logs"
           element={
@@ -214,7 +281,7 @@ function AppRoutes() {
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      
+
       {/* Real-time Notification System */}
       <RealTimeNotificationContainer />
     </div>
@@ -229,11 +296,13 @@ function App() {
           <ThemeProvider>
             <AdminAuthProvider>
               <AuthProvider>
-                <WebSocketProvider>
-                  <Router>
-                    <AppRoutes />
-                  </Router>
-                </WebSocketProvider>
+                <PlanProvider>
+                  <WebSocketProvider>
+                    <Router>
+                      <AppRoutes />
+                    </Router>
+                  </WebSocketProvider>
+                </PlanProvider>
               </AuthProvider>
             </AdminAuthProvider>
           </ThemeProvider>
