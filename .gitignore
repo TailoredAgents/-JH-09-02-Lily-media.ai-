@@ -30,6 +30,38 @@ env.bak/
 venv.bak/
 .venv/
 
+# SECURITY: Never commit secrets or credentials
+.env
+.env.local
+.env.production
+.env.staging
+.env.development
+.secrets
+secrets.txt
+credentials.txt
+keys.txt
+config.ini
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+
+# Database credentials and URLs
+database_url.txt
+db_credentials.txt
+
+# API Keys and tokens
+api_keys.txt
+tokens.txt
+*.token
+
+# SSH keys
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+
 # PyCharm
 .idea/
 

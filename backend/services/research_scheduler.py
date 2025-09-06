@@ -17,6 +17,7 @@ from celery.schedules import crontab
 from backend.core.config import get_settings
 from backend.agents.deep_research_agent import deep_research_agent, ResearchTopic, IndustryIntelligence
 from backend.services.notification_service import notification_service
+from backend.services.plan_service import PlanService
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
@@ -33,8 +34,10 @@ class ResearchScheduler:
     - Performance metrics tracking
     """
     
-    def __init__(self):
+    def __init__(self, db=None):
         """Initialize Research Scheduler"""
+        self.db = db
+        self.plan_service = PlanService(db) if db else None
         project_root = Path(__file__).parent.parent.parent
         self.config_path = project_root / "data/research_config"
         self.schedules_path = project_root / "data/research_schedules"
@@ -54,6 +57,7 @@ class ResearchScheduler:
         logger.info("Research Scheduler initialized")
     
     async def setup_industry_research(self, 
+                                    user_id: int,
                                     industry: str, 
                                     business_context: Dict[str, Any],
                                     schedule_config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -61,6 +65,7 @@ class ResearchScheduler:
         Set up automated research for a specific industry
         
         Args:
+            user_id: User requesting the research setup
             industry: Target industry name
             business_context: Business-specific context and goals
             schedule_config: Custom schedule configuration
@@ -69,6 +74,18 @@ class ResearchScheduler:
             Setup confirmation with schedule details
         """
         try:
+            # PLAN VALIDATION: Check if user can access research automation
+            if self.plan_service:
+                capabilities = self.plan_service.get_user_capabilities(user_id)
+                if not capabilities.has_autopilot_research():
+                    return {
+                        "status": "access_denied",
+                        "error": f"Research automation not available on {capabilities.get_plan_name()} plan",
+                        "plan": capabilities.get_plan_name(),
+                        "feature_required": "autopilot_research_enabled",
+                        "upgrade_required": True,
+                        "suggested_plans": ["pro", "enterprise"]
+                    }
             # Initialize research topics
             research_topics = await deep_research_agent.initialize_research_topics(
                 industry, business_context
@@ -176,11 +193,12 @@ class ResearchScheduler:
         
         return next_run.isoformat()
     
-    async def execute_weekly_research(self, industry: str) -> Dict[str, Any]:
+    async def execute_weekly_research(self, user_id: int, industry: str) -> Dict[str, Any]:
         """
         Execute weekly research for an industry
         
         Args:
+            user_id: User requesting the research execution  
             industry: Target industry
             
         Returns:
@@ -189,6 +207,17 @@ class ResearchScheduler:
         start_time = datetime.utcnow()
         
         try:
+            # PLAN VALIDATION: Check if user can execute research automation
+            if self.plan_service:
+                capabilities = self.plan_service.get_user_capabilities(user_id)
+                if not capabilities.has_autopilot_research():
+                    logger.warning(f"Research execution blocked for user {user_id}: plan does not include research automation")
+                    return {
+                        "status": "access_denied",
+                        "error": f"Research automation not available on {capabilities.get_plan_name()} plan",
+                        "plan": capabilities.get_plan_name(),
+                        "execution_time": (datetime.utcnow() - start_time).total_seconds()
+                    }
             logger.info(f"Starting weekly research execution for {industry}")
             
             # Load research configuration
@@ -465,10 +494,10 @@ class ResearchScheduler:
             logger.error(f"Failed to update research schedule for {industry}: {e}")
             return {"status": "error", "industry": industry, "error": str(e)}
     
-    async def trigger_immediate_research(self, industry: str) -> Dict[str, Any]:
+    async def trigger_immediate_research(self, user_id: int, industry: str) -> Dict[str, Any]:
         """Trigger immediate research execution for an industry"""
-        logger.info(f"Triggering immediate research for {industry}")
-        return await self.execute_weekly_research(industry)
+        logger.info(f"Triggering immediate research for {industry} (user: {user_id})")
+        return await self.execute_weekly_research(user_id, industry)
     
     async def list_configured_industries(self) -> List[Dict[str, Any]]:
         """List all configured industries and their status"""

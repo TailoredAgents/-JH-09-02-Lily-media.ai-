@@ -38,7 +38,7 @@ class VectorStore:
     
     def __init__(
         self, 
-        dimension: int = 1536,
+        dimension: int = 3072,
         index_path: str = "data/faiss_indexes",
         index_type: str = "flat_ip",
         max_vectors_in_memory: int = 100000
@@ -47,7 +47,7 @@ class VectorStore:
         Initialize vector store.
         
         Args:
-            dimension: Embedding vector dimension (1536 for OpenAI ada-002)
+            dimension: Embedding vector dimension (3072 for OpenAI text-embedding-3-large)
             index_path: Directory to store index files
             index_type: FAISS index type ('flat_ip', 'hnsw', 'ivf')
             max_vectors_in_memory: Maximum vectors to keep in memory

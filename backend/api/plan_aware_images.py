@@ -25,7 +25,7 @@ class ImageGenerationRequest(BaseModel):
     prompt: str = Field(..., min_length=1, max_length=1000, description="Image description prompt")
     platform: str = Field(default="instagram", description="Target platform")
     quality_preset: Optional[str] = Field(default=None, description="Quality preset (draft, standard, premium)")
-    model: str = Field(default="auto", description="AI model (auto, grok2, dalle3, gpt_image_1)")
+    model: str = Field(default="auto", description="AI model (auto, grok2, gpt_image_1)")
     content_context: Optional[str] = Field(default=None, max_length=500, description="Content context")
     industry_context: Optional[str] = Field(default=None, max_length=200, description="Industry context")
     tone: str = Field(default="professional", description="Tone (professional, casual, creative)")
@@ -229,12 +229,6 @@ async def get_available_models(
                 "name": "Grok 2 Premium", 
                 "description": "Enhanced quality and detail",
                 "quality": "high",
-                "speed": "medium"
-            },
-            "dalle3": {
-                "name": "DALL-E 3",
-                "description": "OpenAI's advanced image model",
-                "quality": "premium",
                 "speed": "medium"
             },
             "gpt_image_1": {

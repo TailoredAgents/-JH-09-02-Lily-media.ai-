@@ -64,7 +64,7 @@ TIER_FEATURES = {
         "enterprise_analytics",
         "premium_image_generation",  # Image1 model
         "basic_image_generation",   # Also has basic
-        "enterprise_image_generation",  # DALL-E 3 animated
+        "enterprise_image_generation",  # Advanced image generation
         "autonomous_posting",
         "industry_research",
         "advanced_automation",

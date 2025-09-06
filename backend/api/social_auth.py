@@ -14,6 +14,7 @@ from backend.auth.dependencies import get_current_active_user
 from backend.auth.social_oauth import oauth_manager
 from backend.db.models import User, UserSetting
 from backend.core.config import get_settings
+from backend.services.plan_aware_social_service import get_plan_aware_social_service
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
@@ -61,10 +62,12 @@ class PlatformStatusResponse(BaseModel):
 @router.post("/connect", response_model=ConnectPlatformResponse)
 async def initiate_platform_connection(
     request: ConnectPlatformRequest,
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
 ) -> ConnectPlatformResponse:
     """
     Initiate OAuth connection to a social media platform
+    SECURITY: Now includes plan-aware validation to prevent subscription bypass
     """
     try:
         # Validate platform
@@ -73,6 +76,34 @@ async def initiate_platform_connection(
             raise HTTPException(
                 status_code=400,
                 detail=f"Unsupported platform. Must be one of: {', '.join(supported_platforms)}"
+            )
+        
+        # SECURITY FIX: Add plan-aware validation to prevent bypass
+        plan_service = get_plan_aware_social_service(db)
+        enforcement_result = await plan_service.enforce_connection_limit(
+            user_id=current_user.id,
+            platform=request.platform
+        )
+        
+        if not enforcement_result["allowed"]:
+            # Log the bypass attempt for security monitoring
+            logger.warning(
+                f"Connection attempt blocked for user {current_user.id} on {request.platform}: "
+                f"{enforcement_result['reason']} - {enforcement_result['message']}"
+            )
+            
+            # Return plan enforcement error with upgrade suggestions
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "error": "connection_not_allowed",
+                    "reason": enforcement_result["reason"],
+                    "message": enforcement_result["message"],
+                    "current_plan": enforcement_result.get("plan"),
+                    "suggested_plans": enforcement_result.get("suggested_plans", []),
+                    "current_usage": enforcement_result.get("current_usage"),
+                    "upgrade_required": True
+                }
             )
         
         # Generate OAuth authorization URL
@@ -112,6 +143,33 @@ async def handle_oauth_callback(
             redirect_uri=request.redirect_uri,
             state=request.state
         )
+        
+        # SECURITY FIX: Validate plan limits before completing connection
+        plan_service = get_plan_aware_social_service(db)
+        enforcement_result = await plan_service.enforce_connection_limit(
+            user_id=token_data["user_id"],
+            platform=request.platform
+        )
+        
+        if not enforcement_result["allowed"]:
+            # Log the callback bypass attempt
+            logger.warning(
+                f"OAuth callback blocked for user {token_data['user_id']} on {request.platform}: "
+                f"{enforcement_result['reason']} - {enforcement_result['message']}"
+            )
+            
+            # Return plan enforcement error
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "error": "connection_not_allowed",
+                    "reason": enforcement_result["reason"], 
+                    "message": enforcement_result["message"],
+                    "current_plan": enforcement_result.get("plan"),
+                    "suggested_plans": enforcement_result.get("suggested_plans", []),
+                    "upgrade_required": True
+                }
+            )
         
         # Get user profile from platform
         profile_data = await oauth_manager.get_user_profile(

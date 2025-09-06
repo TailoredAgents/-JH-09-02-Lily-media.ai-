@@ -32,7 +32,7 @@ target_metadata = Base.metadata
 
 def get_database_url():
     """Get database URL - ALWAYS POSTGRESQL"""
-    return "postgresql://socialmedia:BbsIYQtjBnhKwRL3F9kXbv1wrtsVxuTg@dpg-d2ln7eer433s739509lg-a.oregon-postgres.render.com/socialmedia_uq72"
+    return "postgresql://USER:PASS@HOST:PORT/DB"
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode."""

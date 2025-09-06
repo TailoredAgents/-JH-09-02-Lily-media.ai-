@@ -108,7 +108,7 @@ The Lily Media AI social media management platform has undergone extensive devel
 **Required Changes:**
 1. Create `backend/services/prompt_contract.py` with Pydantic models
 2. Add model templates in `backend/services/templates/` directory
-3. Implement `backend/services/model_router.py` with AUTO/DALLE3/GROK2/GPTIMG1 enum
+3. Implement `backend/services/model_router.py` with AUTO/GROK2/GPTIMG1 enum
 4. Integrate CLIP aesthetic scoring for quality validation
 5. Replace hard-coded prompts with contract-based rendering
 

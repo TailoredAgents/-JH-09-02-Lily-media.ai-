@@ -40,8 +40,8 @@ class PlanAwareImageService:
         self.plan_model_access = {
             "free": ["grok2_basic"],
             "starter": ["grok2_basic"],
-            "pro": ["grok2_basic", "grok2_premium", "dalle3"],
-            "enterprise": ["grok2_basic", "grok2_premium", "dalle3", "gpt_image_1"]
+            "pro": ["grok2_basic", "grok2_premium"],
+            "enterprise": ["grok2_basic", "grok2_premium", "gpt_image_1"]
         }
     
     async def generate_image_with_plan_gating(
@@ -67,7 +67,7 @@ class PlanAwareImageService:
             prompt: Base image description
             platform: Target social media platform
             quality_preset: Quality/size preset (overrides plan default if allowed)
-            model: AI model to use (auto, grok2, dalle3, gpt_image_1)
+            model: AI model to use (auto, grok2, gpt_image_1)
             content_context: Additional context about the content
             industry_context: Industry-specific context
             tone: Desired tone for the image
@@ -80,6 +80,49 @@ class PlanAwareImageService:
             Dict containing image data, usage info, and plan constraints
         """
         try:
+            # Step 1: Content moderation - validate prompt before generation
+            try:
+                from backend.services.content_moderation_service import moderate_content, ContentType, ModerationResult
+                
+                moderation_result = await moderate_content(
+                    content=prompt,
+                    content_type=ContentType.TEXT,
+                    user_id=user_id,
+                    organization_id=None,  # TODO: Get organization_id from user
+                    context={
+                        'type': 'image_generation_prompt',
+                        'platform': platform,
+                        'model': model,
+                        'quality': quality_preset
+                    }
+                )
+                
+                # Block generation if content is rejected
+                if moderation_result['result'] == ModerationResult.REJECTED.value:
+                    return {
+                        "status": "moderation_rejected",
+                        "error": f"Content rejected by moderation: {moderation_result['message']}",
+                        "moderation": {
+                            "result": moderation_result['result'],
+                            "confidence": moderation_result['confidence'],
+                            "categories": moderation_result['categories'],
+                            "processing_time_ms": moderation_result['processing_time_ms']
+                        }
+                    }
+                
+                # Log flagged content but allow generation with warning
+                if moderation_result['result'] == ModerationResult.FLAGGED.value:
+                    logger.warning(
+                        f"Flagged content approved for generation: user={user_id}, "
+                        f"confidence={moderation_result['confidence']:.2f}, "
+                        f"categories={moderation_result['categories']}"
+                    )
+                
+            except ImportError:
+                logger.warning("Content moderation service not available - proceeding without moderation")
+            except Exception as e:
+                logger.error(f"Content moderation error: {e} - proceeding with generation")
+            
             # Get user plan capabilities
             capabilities = self.plan_service.get_user_capabilities(user_id)
             plan_name = capabilities.get_plan_name()
@@ -145,6 +188,7 @@ class PlanAwareImageService:
                 prompt=prompt,
                 platform=platform,
                 quality_preset=effective_quality,
+                model=effective_model,
                 content_context=content_context,
                 industry_context=industry_context,
                 tone=tone,
@@ -230,16 +274,23 @@ class PlanAwareImageService:
             logger.info(f"Quality downgraded from {requested_quality} to {plan_max_quality} for plan {plan_name}")
             return plan_max_quality
     
+    def _validate_model_policy(self, model: str) -> None:
+        """Validate model against content policy - prevent DALL-E usage"""
+        prohibited_models = ["dalle", "dall-e", "dalle3", "dall_e", "dalle_3"]
+        if any(prohibited in model.lower() for prohibited in prohibited_models):
+            raise ValueError(f"Model '{model}' violates content policy. DALL-E models are prohibited.")
+    
     def _get_effective_model(self, requested_model: str, plan_name: str) -> Optional[str]:
         """Determine the effective model based on plan restrictions"""
+        # First validate against content policy
+        self._validate_model_policy(requested_model)
+        
         available_models = self.plan_model_access.get(plan_name, ["grok2_basic"])
         
         if requested_model == "auto":
             # Return best available model for the plan
             if "gpt_image_1" in available_models:
                 return "gpt_image_1"
-            elif "dalle3" in available_models:
-                return "dalle3"
             elif "grok2_premium" in available_models:
                 return "grok2_premium"
             else:

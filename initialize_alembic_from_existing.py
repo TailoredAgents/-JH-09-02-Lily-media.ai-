@@ -17,7 +17,7 @@ from sqlalchemy import create_engine, text
 from alembic import command
 from alembic.config import Config
 
-DATABASE_URL = "postgresql://socialmedia:BbsIYQtjBnhKwRL3F9kXbv1wrtsVxuTg@dpg-d2ln7eer433s739509lg-a.oregon-postgres.render.com/socialmedia_uq72"
+DATABASE_URL = "os.getenv("DATABASE_URL")
 
 def initialize_alembic_baseline():
     """Initialize Alembic with current database as baseline."""

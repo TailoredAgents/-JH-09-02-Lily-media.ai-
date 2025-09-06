@@ -51,7 +51,7 @@ class UsageTrackingService:
             user_id: User ID
             organization_id: Organization ID
             usage_type: Type of usage (image_generation, post_creation, etc.)
-            resource: Specific resource used (grok2, dalle3, etc.)
+            resource: Specific resource used (grok2, gpt_image_1, etc.)
             quantity: Amount used (default 1)
             cost_credits: Cost in internal credits
             cost_usd: Cost in USD

@@ -56,6 +56,25 @@ class ImageGenerationService:
                 self.client = None
                 self.async_client = None
         
+        # Model-to-API mapping for multi-model support
+        self.model_mapping = {
+            "grok2": "grok-2-image",
+            "grok2_basic": "grok-2-image",
+            "grok2_premium": "grok-2-image", 
+            "gpt_image_1": "dall-e-3"  # This will use OpenAI client
+        }
+        
+        # Initialize OpenAI client for GPT Image 1 model
+        self.openai_client = None
+        self.openai_async_client = None
+        if settings.openai_api_key:
+            try:
+                self.openai_client = OpenAI(api_key=settings.openai_api_key)
+                self.openai_async_client = AsyncOpenAI(api_key=settings.openai_api_key)
+                logger.info("OpenAI client initialized for GPT Image 1 model")
+            except Exception as e:
+                logger.error(f"Failed to initialize OpenAI client: {e}")
+        
         # Platform-specific optimization prompts
         self.platform_styles = {
             "twitter": "modern, clean, minimalist design suitable for Twitter posts, 16:9 or square aspect ratio",
@@ -317,6 +336,7 @@ class ImageGenerationService:
                            prompt: str,
                            platform: str = "instagram",
                            quality_preset: str = "standard",
+                           model: str = "grok2",
                            content_context: Optional[str] = None,
                            industry_context: Optional[str] = None,
                            tone: str = "professional",
@@ -337,6 +357,7 @@ class ImageGenerationService:
             prompt: Base image description
             platform: Target social media platform
             quality_preset: Quality/size preset (draft, standard, premium, story, banner)
+            model: AI model to use (grok2, grok2_basic, grok2_premium, gpt_image_1)
             content_context: Additional context about the content
             industry_context: Industry-specific context
             tone: Desired tone for the image
@@ -381,11 +402,12 @@ class ImageGenerationService:
             if custom_options:
                 tool_options.update(custom_options)
             
-            # Use xAI for image generation
-            # xAI API only supports: model, prompt, n, response_format
-            # Does NOT support: size (defaults to 1024x768), quality, or other parameters
-            response = await self.async_client.images.generate(
-                model="grok-2-image",
+            # Model routing: Select appropriate API client and model based on requested model
+            selected_model, client_to_use = self._select_model_and_client(model)
+            
+            # Generate image using the selected model
+            response = await client_to_use.images.generate(
+                model=selected_model,
                 prompt=enhanced_prompt,
                 n=1,
                 response_format="b64_json"  # Get base64 directly to avoid extra download step
@@ -1008,6 +1030,31 @@ class ImageGenerationService:
             "general_guidelines": "follow platform community standards",
             "quality_focus": "high-resolution, engaging content"
         })
+
+    def _select_model_and_client(self, model: str) -> Tuple[str, Any]:
+        """
+        Select the appropriate API client and model name based on requested model
+        
+        Args:
+            model: Requested model (grok2, grok2_basic, grok2_premium, gpt_image_1)
+            
+        Returns:
+            Tuple of (actual_model_name, api_client_to_use)
+        """
+        # Map to actual model name
+        actual_model = self.model_mapping.get(model, "grok-2-image")
+        
+        # Select client based on model
+        if model == "gpt_image_1":
+            if self.openai_async_client is None:
+                logger.warning("OpenAI client not available, falling back to Grok-2")
+                return "grok-2-image", self.async_client
+            return actual_model, self.openai_async_client
+        else:
+            # Use xAI Grok client for all grok variants
+            if self.async_client is None:
+                raise Exception("xAI client not initialized. Image generation unavailable.")
+            return actual_model, self.async_client
 
     def save_image_to_file(self, image_base64: str, filepath: str) -> bool:
         """Save base64 image data to file."""

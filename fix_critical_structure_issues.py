@@ -15,8 +15,12 @@ import sqlalchemy as sa
 from sqlalchemy import create_engine, text
 import uuid
 
-# Database connection
-DATABASE_URL = "postgresql://socialmedia:BbsIYQtjBnhKwRL3F9kXbv1wrtsVxuTg@dpg-d2ln7eer433s739509lg-a.oregon-postgres.render.com/socialmedia_uq72"
+# Database connection - CRITICAL: Get from environment for security
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    print("❌ CRITICAL: DATABASE_URL environment variable must be set")
+    print("   Contact administrator for production database credentials")
+    sys.exit(1)
 
 def get_database_connection():
     """Create database connection."""

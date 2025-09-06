@@ -15,7 +15,7 @@ from sqlalchemy import text
 
 # revision identifiers
 revision = '021_fix_foreign_key_relationships'
-down_revision = '020_add_social_inbox_settings'
+down_revision = '020_social_inbox_settings'
 branch_labels = None
 depends_on = None
 

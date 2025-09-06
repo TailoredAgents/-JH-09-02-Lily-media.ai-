@@ -18,8 +18,11 @@ logger = logging.getLogger(__name__)
 def fix_social_inbox_schema():
     """Drop and recreate social inbox tables with correct UUID schema"""
     
-    # Use production database URL
-    database_url = "postgresql://socialmedia:BbsIYQtjBnhKwRL3F9kXbv1wrtsVxuTg@dpg-d2ln7eer433s739509lg-a/socialmedia_uq72?sslmode=require"
+    # Get database URL from environment - CRITICAL: Never hard-code credentials
+    database_url = os.getenv("DATABASE_URL")
+    if not database_url:
+        print("❌ CRITICAL: DATABASE_URL environment variable must be set")
+        sys.exit(1)
     
     try:
         engine = create_engine(database_url)

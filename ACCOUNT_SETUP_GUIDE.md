@@ -8,10 +8,10 @@ The platform uses an **open SaaS authentication system**. New users can sign up 
 ### 1. Admin Account (Backend Management)
 - **Purpose**: System administration, user management, registration key generation
 - **Login URL**: `/admin/login` on your backend
-- **Default Credentials** (from `create_admin_simple.py`):
-  - Username: `superadmin`
-  - Email: `jeffrey@tailoredagents.com`
-  - Password: `Admin053103`
+- **Setup Required**: Set environment variables before running admin creation scripts:
+  - `ADMIN_USERNAME` (default: superadmin)
+  - `ADMIN_EMAIL` (required)
+  - `ADMIN_PASSWORD` (required - use a strong password)
 
 ### 2. Regular User Account (Platform Users)
 - **Purpose**: Using the social media automation features
@@ -26,15 +26,19 @@ The platform uses an **open SaaS authentication system**. New users can sign up 
 1. Go to your Render dashboard
 2. Navigate to your backend web service
 3. Click on "Shell" tab
-4. Run:
+4. Set environment variables and run:
 ```bash
+export ADMIN_EMAIL="your-admin@company.com"
+export ADMIN_PASSWORD="your-secure-admin-password"
 python create_admin_simple.py
 ```
 
 #### Option B: Local Setup (if you have database access)
 ```bash
-# Set your production database URL
+# Set your production database URL and admin credentials
 export DATABASE_URL="your-database-url-here"
+export ADMIN_EMAIL="your-admin@company.com"
+export ADMIN_PASSWORD="your-secure-admin-password"
 
 # Run the admin creation script
 python create_admin_simple.py

@@ -31,7 +31,7 @@ Successfully implemented comprehensive plan-based feature gating system for the 
 - **Functionality**:
   - Monthly usage limits (Free: 5, Starter: 10, Pro: 50, Enterprise: 200)
   - Quality restrictions (draft/standard/premium by plan)
-  - Model access control (grok2_basic → grok2_premium → dalle3 → gpt_image_1)
+  - Model access control (grok2_basic → grok2_premium → gpt_image_1)
   - Feature restrictions (post-processing, custom sizes, batch generation)
 - **Testing**: ✅ Verified via `test_plan_aware_images.py`
 
@@ -201,7 +201,7 @@ class Plan:
 3. **Advanced Analytics** - Plan-tiered reporting capabilities
 
 ### Future Enhancements (Phase 4)
-1. **Multi-model AI Routing** - AUTO/DALLE3/GROK2/GPT-IMG1 selection
+1. **Multi-model AI Routing** - AUTO/GROK2/GPT-IMG1 selection
 2. **Style Vault System** - User personalization features  
 3. **CLIP Quality Scoring** - Enhanced image quality assessment
 

@@ -118,7 +118,7 @@ class Plan(Base):
     
     # AI model access
     basic_ai_only = Column(Boolean, default=True)  # Restrict to basic AI models
-    premium_ai_models = Column(Boolean, default=False)  # Access to DALL-E, GPT-4o
+    premium_ai_models = Column(Boolean, default=False)  # Access to GPT-4o, GPT Image 1
     image_generation_limit = Column(Integer, default=10)  # Images per day
     
     # Autopilot capabilities
@@ -1354,7 +1354,7 @@ class UsageRecord(Base):
     
     # Usage details
     usage_type = Column(String(50), nullable=False)  # image_generation, posts, api_calls, etc.
-    resource = Column(String(50))  # specific resource used (grok2, dalle3, twitter_post, etc.)
+    resource = Column(String(50))  # specific resource used (grok2, gpt_image_1, twitter_post, etc.)
     quantity = Column(Integer, default=1)  # amount used
     
     # Cost and billing information

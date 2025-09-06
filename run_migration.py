@@ -14,7 +14,7 @@ from sqlalchemy.dialects import postgresql
 import uuid
 
 # Database connection
-DATABASE_URL = "postgresql://socialmedia:BbsIYQtjBnhKwRL3F9kXbv1wrtsVxuTg@dpg-d2ln7eer433s739509lg-a.oregon-postgres.render.com/socialmedia_uq72"
+DATABASE_URL = "os.getenv("DATABASE_URL")
 
 def get_database_connection():
     """Create database connection."""

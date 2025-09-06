@@ -31,7 +31,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Production database URL
-DATABASE_URL = "postgresql://socialmedia:BbsIYQtjBnhKwRL3F9kXbv1wrtsVxuTg@dpg-d2ln7eer433s739509lg-a.oregon-postgres.render.com/socialmedia_uq72?sslmode=require"
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    print("❌ CRITICAL: DATABASE_URL environment variable must be set")
+    sys.exit(1)
 
 class DatabaseDeepScanner:
     """Comprehensive database scanner and validator"""

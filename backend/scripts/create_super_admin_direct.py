@@ -27,10 +27,15 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 def create_super_admin():
     """Create the super admin account"""
     
-    # Super admin credentials
-    username = "superadmin"
-    email = "jeffrey@tailoredagents.com"
-    password = "Admin053103"
+    # Super admin credentials - GET FROM ENVIRONMENT FOR SECURITY
+    username = os.getenv("ADMIN_USERNAME", "superadmin")
+    email = os.getenv("ADMIN_EMAIL", "admin@company.com") 
+    password = os.getenv("ADMIN_PASSWORD")
+    
+    if not password:
+        print("❌ CRITICAL: ADMIN_PASSWORD environment variable must be set")
+        print("   Example: export ADMIN_PASSWORD='your_secure_admin_password'")
+        sys.exit(1)
     
     # Get database URL from environment
     database_url = os.environ['DATABASE_URL'].replace("postgresql+asyncpg://", "postgresql://")

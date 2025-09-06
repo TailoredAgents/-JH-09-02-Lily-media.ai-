@@ -39,18 +39,25 @@ class AdminUser(Base):
     last_login = Column(DateTime, nullable=True)
 
 def create_admin():
-    # Get database URL
+    # Get database URL from environment - NEVER hard-code credentials
     db_url = os.getenv('DATABASE_URL')
     if not db_url:
-        db_url = "postgresql://ai_social_media_user:Of9TEnT1XFGIKVYy4cJrQQSZy20JrNZC@dpg-d25qurili9vc73euk6cg-a/ai_social_media"
+        print("❌ CRITICAL: DATABASE_URL environment variable must be set")
+        print("   Example: export DATABASE_URL='postgresql://user:password@host:port/database'")
+        sys.exit(1)
     
     # Initialize password context
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
     
-    # Admin credentials
-    username = "superadmin"
-    email = "jeffrey@tailoredagents.com"
-    password = "Admin053103"
+    # Admin user details - GET FROM ENVIRONMENT FOR SECURITY
+    username = os.getenv("ADMIN_USERNAME", "superadmin")
+    email = os.getenv("ADMIN_EMAIL", "admin@company.com")
+    password = os.getenv("ADMIN_PASSWORD")
+    
+    if not password:
+        print("❌ CRITICAL: ADMIN_PASSWORD environment variable must be set")
+        print("   Example: export ADMIN_PASSWORD='your_secure_admin_password'")
+        sys.exit(1)
     
     # Create engine
     engine = create_engine(db_url.replace("postgresql+asyncpg://", "postgresql://"))

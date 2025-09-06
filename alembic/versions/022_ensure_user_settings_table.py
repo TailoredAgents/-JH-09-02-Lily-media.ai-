@@ -12,7 +12,7 @@ from sqlalchemy import text
 
 # revision identifiers
 revision = '022_ensure_user_settings'
-down_revision = '2025_08_20_1420-f42f94c7a129_add_two_factor_authentication_fields_to_'
+down_revision = 'f42f94c7a129'
 branch_labels = None
 depends_on = None
 
