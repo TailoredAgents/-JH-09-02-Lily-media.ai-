@@ -48,6 +48,7 @@ from . import (
     monitoring_metrics,  # Prometheus and Sentry monitoring integration
     sre_dashboard,  # SRE dashboard for enhanced observability and operations
     observability,  # OpenTelemetry observability and metrics endpoints
+    plan_management,  # Plan management and quota enforcement API
 )
 
 # Import CSRF router
@@ -107,6 +108,7 @@ ROUTERS = [
     monitoring_metrics.router,  # Prometheus and Sentry monitoring integration
     sre_dashboard.router,  # SRE dashboard for enhanced observability and operations
     observability.router,  # OpenTelemetry observability and metrics endpoints
+    plan_management.router,  # Plan management and quota enforcement API
 ]
 
 # Add CSRF router if available

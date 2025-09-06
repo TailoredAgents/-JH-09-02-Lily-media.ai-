@@ -102,6 +102,17 @@ try:
 except Exception as e:
     logger.error("Failed to setup observability middleware: {}".format(e))
 
+# Setup plan enforcement middleware
+try:
+    from backend.core.plan_enforcement import setup_plan_enforcement_middleware
+    plan_enforcement_success = setup_plan_enforcement_middleware(app)
+    if plan_enforcement_success:
+        logger.info("Plan enforcement middleware configured successfully")
+    else:
+        logger.warning("Plan enforcement middleware setup failed")
+except Exception as e:
+    logger.error("Failed to setup plan enforcement middleware: {}".format(e))
+
 # Only add fallback CORS if security middleware failed
 if not security_middleware_success:
     logger.warning("Using fallback CORS configuration")
