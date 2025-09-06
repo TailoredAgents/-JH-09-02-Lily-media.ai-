@@ -12,6 +12,7 @@ from celery.exceptions import Retry
 
 from backend.core.config import get_settings
 from backend.services.meta_webhook_service import get_meta_webhook_service
+from backend.core.dlq import handle_task_failure, get_dlq_manager, TaskFailureReason
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,16 @@ DLQ_MAX_RETRIES = 5
 DLQ_RETRY_DELAYS = [60, 300, 900, 3600, 14400]  # 1m, 5m, 15m, 1h, 4h
 
 
-@celery_app.task(bind=True, name='backend.tasks.webhook_tasks.process_meta_event')
+@celery_app.task(
+    bind=True,
+    name='backend.tasks.webhook_tasks.process_meta_event',
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    retry_jitter=True,
+    max_retries=5,
+    acks_late=True,
+    reject_on_worker_lost=True
+)
 def process_meta_event(self, entry: Dict[str, Any], event_info: Dict[str, Any]) -> Dict[str, Any]:
     """
     Process a single Meta webhook entry
@@ -111,12 +121,23 @@ def process_meta_event(self, entry: Dict[str, Any], event_info: Dict[str, Any]) 
             # Retry with exponential backoff
             raise self.retry(countdown=retry_delay, exc=e)
         else:
-            # Send to Dead Letter Queue
-            asyncio.run(_send_to_dlq(entry, event_info, str(e), self.request.retries))
+            # Send to Dead Letter Queue using our comprehensive DLQ system
+            handle_task_failure(
+                task_id=self.request.id,
+                task_name="process_meta_event",
+                queue_name=getattr(self.request, 'delivery_info', {}).get('routing_key', 'webhook_processing'),
+                error=e,
+                traceback_str="",  # Could get full traceback if needed
+                retry_count=self.request.retries,
+                organization_id=entry.get('organization_id'),  # Extract from entry if available
+                user_id=entry.get('user_id'),  # Extract from entry if available
+                task_args=(entry, event_info),
+                task_kwargs={}
+            )
             
             logger.error(
                 f"Meta webhook processing failed permanently: task_id={self.request.id}, "
-                f"retries={self.request.retries}, error={e}"
+                f"retries={self.request.retries}, error={e}, sent_to_dlq=True"
             )
             
             return {
@@ -380,42 +401,85 @@ def _is_retryable_error(error: Exception) -> bool:
     return False
 
 
-async def _send_to_dlq(entry: Dict[str, Any], event_info: Dict[str, Any], error: str, retries: int) -> bool:
+async def _send_webhook_to_dlq(
+    entry: Dict[str, Any], 
+    event_info: Dict[str, Any], 
+    error: str, 
+    retries: int,
+    task_id: str = None,
+    organization_id: int = None,
+    user_id: int = None
+) -> bool:
     """
-    Send failed webhook event to Dead Letter Queue
+    Send failed webhook event to Dead Letter Queue using our comprehensive DLQ system
     
     Args:
         entry: Original webhook entry
         event_info: Event information
         error: Error message
         retries: Number of retries attempted
+        task_id: Celery task ID
+        organization_id: Organization ID for tenant isolation
+        user_id: User ID if applicable
         
     Returns:
         True if successfully sent to DLQ, False otherwise
     """
     try:
-        dlq_entry = {
-            "original_entry": entry,
-            "event_info": event_info,
-            "error": error,
-            "retries_attempted": retries,
-            "failed_at": datetime.now(timezone.utc).isoformat(),
-            "dlq_status": "pending"
-        }
+        # Determine failure reason based on error
+        if 'rate limit' in error.lower():
+            failure_reason = TaskFailureReason.RATE_LIMIT
+        elif 'timeout' in error.lower():
+            failure_reason = TaskFailureReason.TIMEOUT
+        elif 'auth' in error.lower() or 'unauthorized' in error.lower():
+            failure_reason = TaskFailureReason.AUTH_ERROR
+        elif 'network' in error.lower() or 'connection' in error.lower():
+            failure_reason = TaskFailureReason.NETWORK_ERROR
+        else:
+            failure_reason = TaskFailureReason.EXTERNAL_API_ERROR
         
-        # TODO: Implement actual DLQ storage (Redis, database, etc.)
-        # For now, log the DLQ entry
-        logger.error(f"DLQ Entry: {json.dumps(dlq_entry, indent=2)}")
+        # Use our comprehensive DLQ manager
+        with get_dlq_manager() as dlq:
+            dlq.record_task_failure(
+                task_id=task_id or f"webhook_{int(datetime.now(timezone.utc).timestamp())}",
+                task_name="process_meta_event",
+                queue_name="webhook_processing",
+                failure_reason=failure_reason,
+                error_message=error,
+                args=(entry, event_info),
+                kwargs={},
+                organization_id=organization_id,
+                user_id=user_id,
+                retry_count=retries,
+                metadata={
+                    "platform": "meta",
+                    "event_type": event_info.get("event_type"),
+                    "entry_id": event_info.get("entry_id"),
+                    "failed_at": datetime.now(timezone.utc).isoformat()
+                }
+            )
         
+        logger.info(f"Successfully sent webhook event to DLQ: task_id={task_id}, retries={retries}")
         return True
         
-    except Exception as e:
-        logger.error(f"Failed to send to DLQ: {e}")
+    except Exception as dlq_error:
+        logger.error(f"Failed to send webhook to DLQ: {dlq_error}")
+        # Still log the original failure even if DLQ fails
+        logger.error(f"Original webhook failure: {json.dumps({
+            'entry': entry,
+            'event_info': event_info,
+            'error': error,
+            'retries': retries
+        }, indent=2)}")
         return False
 
 
-@celery_app.task(name='backend.tasks.webhook_tasks.watchdog_scan')
-def watchdog_scan() -> Dict[str, Any]:
+@celery_app.task(
+    bind=True,
+    name='backend.tasks.webhook_tasks.watchdog_scan',
+    acks_late=True
+)
+def watchdog_scan(self) -> Dict[str, Any]:
     """
     Scan Dead Letter Queue and retry/alert on failures
     
@@ -427,15 +491,48 @@ def watchdog_scan() -> Dict[str, Any]:
         
         scan_time = datetime.now(timezone.utc)
         
-        # TODO: Implement actual DLQ scanning
-        # For now, return basic status
+        # Use our comprehensive DLQ system to scan for failed webhooks
+        with get_dlq_manager() as dlq:
+            # Get webhook-related failed tasks
+            failed_webhooks = dlq.get_failed_tasks(
+                queue_name="webhook_processing",
+                requires_manual_review=True,
+                limit=50
+            )
+            
+            # Get recent failures (last 24 hours)
+            recent_failures = dlq.get_failed_tasks(
+                queue_name="webhook_processing",
+                limit=100
+            )
+            
+            # Get DLQ health statistics
+            health_stats = dlq.get_queue_health_stats()
+            
+            entries_requiring_review = len(failed_webhooks)
+            recent_failure_count = len([f for f in recent_failures if 
+                (datetime.now(timezone.utc) - f.moved_to_dlq_at).days < 1])
+            
+            # Log critical webhook failures
+            if entries_requiring_review > 0:
+                logger.warning(f"Found {entries_requiring_review} webhook entries requiring manual review")
+                
+                # Alert if too many recent failures
+                if recent_failure_count > 10:
+                    logger.error(f"ALERT: {recent_failure_count} webhook failures in last 24 hours")
+            
+            # TODO: Add alerting integration (email, Slack, PagerDuty, etc.)
+            # For now, log the critical issues
         
         result = {
             "scan_time": scan_time.isoformat(),
-            "dlq_entries_found": 0,
-            "entries_reprocessed": 0,
-            "alerts_sent": 0,
-            "status": "completed"
+            "dlq_entries_found": entries_requiring_review,
+            "recent_failures_24h": recent_failure_count,
+            "total_webhook_failures": health_stats.get("failures_by_queue", {}).get("webhook_processing", 0),
+            "entries_reprocessed": 0,  # TODO: Implement reprocessing logic
+            "alerts_sent": 1 if recent_failure_count > 10 else 0,
+            "status": "completed",
+            "health_stats": health_stats
         }
         
         logger.info(f"Webhook watchdog scan completed: {result}")

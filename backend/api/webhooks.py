@@ -378,6 +378,26 @@ async def twitter_webhook_handler(
     
     payload = await request.body()
     
+    # Verify signature first using enhanced security
+    try:
+        is_valid, error_msg = verify_webhook_signature(
+            platform="twitter",
+            payload=payload,
+            signature=signature,
+            headers=dict(request.headers)
+        )
+        
+        if not is_valid:
+            logger.warning(f"Twitter webhook signature verification failed: {error_msg}")
+            raise HTTPException(status_code=403, detail="Invalid signature")
+            
+    except (InvalidSignatureError, MissingSignatureError) as e:
+        logger.warning(f"Twitter webhook signature error: {e}")
+        raise HTTPException(status_code=403, detail=str(e))
+    except ExpiredWebhookError as e:
+        logger.warning(f"Twitter webhook expired: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    
     # Verify user and Twitter connection
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -419,6 +439,26 @@ async def twitter_v2_webhook_handler(
         raise HTTPException(status_code=400, detail="Missing signature header")
     
     payload = await request.body()
+    
+    # Verify signature first using enhanced security
+    try:
+        is_valid, error_msg = verify_webhook_signature(
+            platform="twitter_v2",
+            payload=payload,
+            signature=signature,
+            headers=dict(request.headers)
+        )
+        
+        if not is_valid:
+            logger.warning(f"Twitter v2 webhook signature verification failed: {error_msg}")
+            raise HTTPException(status_code=403, detail="Invalid signature")
+            
+    except (InvalidSignatureError, MissingSignatureError) as e:
+        logger.warning(f"Twitter v2 webhook signature error: {e}")
+        raise HTTPException(status_code=403, detail=str(e))
+    except ExpiredWebhookError as e:
+        logger.warning(f"Twitter v2 webhook expired: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
     
     # Verify user and Twitter connection
     user = db.query(User).filter(User.id == user_id).first()
