@@ -30,6 +30,13 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 import os
 
+# Import CSRF protection
+try:
+    from backend.core.csrf_protection import CSRFProtectionMiddleware
+    CSRF_AVAILABLE = True
+except ImportError:
+    CSRF_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -574,14 +581,28 @@ def setup_security_middleware(app, environment: str = "production"):
     logger.info(f"Setting up security middleware for {environment} environment")
     
     try:
-        # 1. Request validation (first layer)
+        # 1. CSRF Protection (first layer for state-changing requests)
+        try:
+            if CSRF_AVAILABLE:
+                csrf_enabled = os.getenv("CSRF_PROTECTION_ENABLED", "true").lower() == "true"
+                if csrf_enabled:
+                    app.add_middleware(CSRFProtectionMiddleware)
+                    logger.info("✅ CSRF protection middleware added")
+                else:
+                    logger.warning("⚠️  CSRF protection disabled via configuration")
+            else:
+                logger.warning("⚠️  CSRF protection middleware not available")
+        except Exception as e:
+            logger.error(f"❌ Failed to add CSRF protection middleware: {e}")
+        
+        # 2. Request validation (second layer)
         try:
             app.add_middleware(RequestValidationMiddleware)
             logger.info("✅ Request validation middleware added")
         except Exception as e:
             logger.error(f"❌ Failed to add request validation middleware: {e}")
         
-        # 2. Rate limiting with production-ready defaults
+        # 3. Rate limiting with production-ready defaults
         try:
             # More generous defaults for SaaS applications
             default_per_minute = str(PRODUCTION_RATE_LIMIT_PER_MINUTE) if environment == "production" else str(DEFAULT_RATE_LIMIT_PER_MINUTE)
@@ -602,14 +623,14 @@ def setup_security_middleware(app, environment: str = "production"):
         except Exception as e:
             logger.error(f"❌ Failed to add rate limiting middleware: {e}")
         
-        # 3. Security headers
+        # 4. Security headers
         try:
             app.add_middleware(SecurityHeadersMiddleware, environment=environment)
             logger.info("✅ Security headers middleware added")
         except Exception as e:
             logger.error(f"❌ Failed to add security headers middleware: {e}")
         
-        # 4. CORS (if needed)
+        # 5. CORS (if needed)
         try:
             cors_config = get_cors_middleware_config(environment)
             if cors_config:
@@ -620,7 +641,7 @@ def setup_security_middleware(app, environment: str = "production"):
         except Exception as e:
             logger.error(f"❌ Failed to add CORS middleware: {e}")
         
-        # 5. Trusted hosts (production only)
+        # 6. Trusted hosts (production only)
         try:
             trusted_host_config = get_trusted_host_middleware(environment)
             if trusted_host_config:

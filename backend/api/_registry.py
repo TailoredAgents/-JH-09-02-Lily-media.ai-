@@ -49,6 +49,14 @@ from . import (
     sre_dashboard,  # SRE dashboard for enhanced observability and operations
 )
 
+# Import CSRF router
+try:
+    from backend.core.csrf_protection import csrf_router
+    CSRF_ROUTER_AVAILABLE = True
+except ImportError:
+    CSRF_ROUTER_AVAILABLE = False
+    csrf_router = None
+
 # All routers to be registered with the FastAPI app
 ROUTERS = [
     auth_fastapi_users.router,  # FastAPI Users authentication (primary)
@@ -98,3 +106,7 @@ ROUTERS = [
     monitoring_metrics.router,  # Prometheus and Sentry monitoring integration
     sre_dashboard.router,  # SRE dashboard for enhanced observability and operations
 ]
+
+# Add CSRF router if available
+if CSRF_ROUTER_AVAILABLE and csrf_router:
+    ROUTERS.append(csrf_router)  # CSRF token generation and validation endpoints

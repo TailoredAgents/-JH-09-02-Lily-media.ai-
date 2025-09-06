@@ -18,6 +18,14 @@ from backend.services.email_service import email_methods
 from backend.core.config import get_settings
 from backend.core.api_version import create_versioned_router
 
+# Import CSRF protection
+try:
+    from backend.core.csrf_protection import generate_csrf_token
+    CSRF_AVAILABLE = True
+except ImportError:
+    CSRF_AVAILABLE = False
+    generate_csrf_token = None
+
 logger = logging.getLogger(__name__)
 settings = get_settings()
 jwt_handler = JWTHandler()
@@ -211,6 +219,28 @@ async def open_register(
         path="/",
         domain=None  # Let browser handle domain matching
     )
+    
+    # Generate and set CSRF token for authenticated session after registration
+    if CSRF_AVAILABLE and generate_csrf_token:
+        try:
+            csrf_token = generate_csrf_token(session_id=str(new_user.id))
+            
+            # Set CSRF token as cookie (accessible to JavaScript)
+            response.set_cookie(
+                key="csrftoken",
+                value=csrf_token,
+                httponly=False,  # Must be accessible to JavaScript
+                secure=settings.environment == "production",
+                samesite=samesite_mode,
+                max_age=3600,  # 1 hour
+                path="/"
+            )
+            
+            # Also add to response headers for immediate use
+            response.headers["X-CSRF-Token"] = csrf_token
+            
+        except Exception as e:
+            logger.warning(f"Failed to generate CSRF token during registration: {e}")
     
     logger.info(f"New user registered: {new_user.email} (First user: {is_first_user})")
     
@@ -443,6 +473,28 @@ async def login(
         path="/",
         domain=None  # Let browser handle domain matching
     )
+    
+    # Generate and set CSRF token for authenticated session after login
+    if CSRF_AVAILABLE and generate_csrf_token:
+        try:
+            csrf_token = generate_csrf_token(session_id=str(user.id))
+            
+            # Set CSRF token as cookie (accessible to JavaScript)
+            response.set_cookie(
+                key="csrftoken",
+                value=csrf_token,
+                httponly=False,  # Must be accessible to JavaScript
+                secure=settings.environment == "production",
+                samesite=samesite_mode,
+                max_age=3600,  # 1 hour
+                path="/"
+            )
+            
+            # Also add to response headers for immediate use
+            response.headers["X-CSRF-Token"] = csrf_token
+            
+        except Exception as e:
+            logger.warning(f"Failed to generate CSRF token during login: {e}")
     
     logger.info(f"User logged in: {user.email} (Verified: {user.email_verified})")
     
