@@ -46,6 +46,7 @@ from . import (
     plan_aware_images,  # Plan-aware image generation with usage tracking
     performance,  # Performance monitoring and optimization
     monitoring_metrics,  # Prometheus and Sentry monitoring integration
+    sre_dashboard,  # SRE dashboard for enhanced observability and operations
 )
 
 # All routers to be registered with the FastAPI app
@@ -95,4 +96,5 @@ ROUTERS = [
     plan_aware_images.router,  # Plan-aware image generation with usage tracking
     performance.router,  # Performance monitoring and optimization
     monitoring_metrics.router,  # Prometheus and Sentry monitoring integration
+    sre_dashboard.router,  # SRE dashboard for enhanced observability and operations
 ]

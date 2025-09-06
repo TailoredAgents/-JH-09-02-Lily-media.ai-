@@ -10,6 +10,13 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response as StarletteResponse
 
 from backend.core.monitoring import monitoring_service
+from backend.core.alerting import fire_critical_alert, fire_high_alert, fire_medium_alert
+from backend.core.runbooks import (
+    handle_database_performance_issues,
+    handle_high_memory_usage,
+    handle_service_unavailability,
+    handle_high_error_rate
+)
 
 logger = logging.getLogger(__name__)
 
@@ -82,9 +89,68 @@ class MonitoringMiddleware(BaseHTTPMiddleware):
                     duration=duration,
                     user_id=user_id
                 )
+                
+                # Intelligent alerting and automated remediation
+                await self._check_and_trigger_alerts(method, endpoint, status_code, duration)
+                
             except Exception as e:
                 # Don't let monitoring failures break the application
                 logger.error(f"Failed to record request metrics: {e}")
+    
+    async def _check_and_trigger_alerts(self, method: str, endpoint: str, status_code: int, duration: float):
+        """Check metrics and trigger alerts/runbooks if thresholds are exceeded"""
+        
+        try:
+            # Check for slow requests (> 5 seconds)
+            if duration > 5.0:
+                await fire_medium_alert(
+                    "Slow Request Detected",
+                    f"{method} {endpoint} took {duration:.2f}s (threshold: 5.0s)",
+                    "request_monitoring",
+                    labels={"method": method, "endpoint": endpoint},
+                    annotations={"duration": str(duration), "threshold": "5.0"}
+                )
+            
+            # Check for critical errors (5xx status codes)
+            if 500 <= status_code < 600:
+                await fire_high_alert(
+                    "Server Error Detected", 
+                    f"{method} {endpoint} returned {status_code}",
+                    "request_monitoring",
+                    labels={"method": method, "endpoint": endpoint, "status_code": str(status_code)}
+                )
+                
+                # Auto-trigger service health runbook for critical errors
+                if status_code in [500, 502, 503]:
+                    logger.info(f"Triggering service unavailability runbook due to {status_code} error")
+                    await handle_service_unavailability()
+            
+            # Check for authentication/authorization failures
+            if status_code in [401, 403]:
+                await fire_medium_alert(
+                    "Authentication/Authorization Failure",
+                    f"{method} {endpoint} returned {status_code}",
+                    "auth_monitoring",
+                    labels={"method": method, "endpoint": endpoint, "status_code": str(status_code)}
+                )
+            
+            # Database-related endpoints get special monitoring
+            if "/api/db" in endpoint or "/api/monitoring" in endpoint:
+                if duration > 2.0:  # Lower threshold for database endpoints
+                    await fire_medium_alert(
+                        "Database Endpoint Slow Response",
+                        f"Database endpoint {endpoint} took {duration:.2f}s",
+                        "database_monitoring",
+                        labels={"endpoint": endpoint},
+                        annotations={"duration": str(duration)}
+                    )
+                    
+                    # Auto-trigger database performance runbook
+                    logger.info("Triggering database performance runbook due to slow response")
+                    await handle_database_performance_issues()
+        
+        except Exception as e:
+            logger.error(f"Error in alert checking: {e}")
 
 class DatabaseMonitoringMiddleware:
     """
