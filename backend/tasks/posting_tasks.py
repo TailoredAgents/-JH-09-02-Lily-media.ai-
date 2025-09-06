@@ -7,22 +7,33 @@ from backend.agents.tools import twitter_tool
 from backend.db.database import get_db
 from backend.db.models import ContentLog
 from backend.core.feature_flags import ff
+from backend.core.dlq import handle_task_failure, TaskFailureReason
 import logging
 import hashlib
+import traceback
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
 @celery_app.task(
+    bind=True,
     autoretry_for=(Exception,),
     retry_backoff=2,
     retry_jitter=True,
-    max_retries=5
+    max_retries=5,
+    acks_late=True,
+    reject_on_worker_lost=True
 )
-def schedule_post(content, platform, scheduled_time=None, user_id=None, idempotency_key=None):
+def schedule_post(self, content, platform, scheduled_time=None, user_id=None, organization_id=None, idempotency_key=None):
     """Schedule a post for a specific platform with idempotency"""
     try:
+        # CRITICAL: Validate tenant isolation
+        if not user_id:
+            raise ValueError("user_id is required for tenant isolation")
+        if not organization_id:
+            raise ValueError("organization_id is required for tenant isolation")
+            
         if scheduled_time is None:
             scheduled_time = datetime.utcnow() + timedelta(hours=1)
         
@@ -34,8 +45,21 @@ def schedule_post(content, platform, scheduled_time=None, user_id=None, idempote
         # Check for existing post with same idempotency key
         db = next(get_db())
         try:
+            # SECURITY: Validate user belongs to organization before proceeding
+            from backend.db.models import UserOrganizationRole
+            membership = db.query(UserOrganizationRole).filter(
+                UserOrganizationRole.user_id == user_id,
+                UserOrganizationRole.organization_id == organization_id
+            ).first()
+            
+            if not membership:
+                logger.error(f"SECURITY VIOLATION: User {user_id} attempted to schedule post for org {organization_id} without membership")
+                raise ValueError(f"User {user_id} does not belong to organization {organization_id}")
+            
+            # Check for existing post with same idempotency key AND user
             existing = db.query(ContentLog).filter(
-                ContentLog.external_post_id == idempotency_key
+                ContentLog.external_post_id == idempotency_key,
+                ContentLog.user_id == user_id  # Additional security: scope to user
             ).first()
             
             if existing:
@@ -80,17 +104,46 @@ def schedule_post(content, platform, scheduled_time=None, user_id=None, idempote
         
     except Exception as exc:
         logger.error(f"Post scheduling failed: {str(exc)}")
+        
+        # Record failure in DLQ if max retries exceeded
+        if self.request.retries >= self.max_retries:
+            handle_task_failure(
+                task_id=self.request.id,
+                task_name="schedule_post",
+                queue_name=getattr(self.request, 'delivery_info', {}).get('routing_key', 'posting'),
+                error=exc,
+                traceback_str=traceback.format_exc(),
+                retry_count=self.request.retries,
+                organization_id=organization_id,
+                user_id=user_id,
+                task_args=(content, platform, scheduled_time),
+                task_kwargs={
+                    'user_id': user_id,
+                    'organization_id': organization_id,
+                    'idempotency_key': idempotency_key
+                }
+            )
+        
         raise
 
 @celery_app.task(
+    bind=True,
     autoretry_for=(Exception,),
     retry_backoff=2,
     retry_jitter=True,
-    max_retries=5
+    max_retries=5,
+    acks_late=True,
+    reject_on_worker_lost=True
 )
-def publish_post(content, platform, post_id=None, user_id=None, idempotency_key=None):
+def publish_post(self, content, platform, post_id=None, user_id=None, organization_id=None, idempotency_key=None):
     """Publish a post immediately to the specified platform with idempotency"""
     try:
+        # CRITICAL: Validate tenant isolation
+        if not user_id:
+            raise ValueError("user_id is required for tenant isolation")
+        if not organization_id:
+            raise ValueError("organization_id is required for tenant isolation")
+            
         # Create idempotency key if not provided
         if not idempotency_key:
             content_hash = hashlib.sha256(f"{user_id}_{platform}_{content}".encode()).hexdigest()[:16]
@@ -179,10 +232,31 @@ def publish_post(content, platform, post_id=None, user_id=None, idempotency_key=
             
     except Exception as exc:
         logger.error(f"Post publishing failed: {str(exc)}")
+        
+        # Record failure in DLQ if max retries exceeded
+        if self.request.retries >= self.max_retries:
+            handle_task_failure(
+                task_id=self.request.id,
+                task_name="publish_post",
+                queue_name=getattr(self.request, 'delivery_info', {}).get('routing_key', 'posting'),
+                error=exc,
+                traceback_str=traceback.format_exc(),
+                retry_count=self.request.retries,
+                organization_id=organization_id,
+                user_id=user_id,
+                task_args=(content, platform),
+                task_kwargs={
+                    'post_id': post_id,
+                    'user_id': user_id,
+                    'organization_id': organization_id,
+                    'idempotency_key': idempotency_key
+                }
+            )
+        
         raise
 
-@celery_app.task
-def batch_publish_posts(posts):
+@celery_app.task(bind=True, acks_late=True)
+def batch_publish_posts(self, posts):
     """Publish multiple posts across different platforms"""
     try:
         results = []
@@ -212,8 +286,8 @@ def batch_publish_posts(posts):
             'message': f'Batch publishing failed: {str(exc)}'
         }
 
-@celery_app.task
-def validate_post_content(content, platform):
+@celery_app.task(bind=True, acks_late=True)
+def validate_post_content(self, content, platform):
     """Validate post content against platform requirements"""
     try:
         issues = []
@@ -261,8 +335,8 @@ def validate_post_content(content, platform):
             'message': f'Content validation failed: {str(exc)}'
         }
 
-@celery_app.task
-def get_optimal_posting_time(platform, timezone='UTC'):
+@celery_app.task(bind=True, acks_late=True)
+def get_optimal_posting_time(self, platform, timezone='UTC'):
     """Get optimal posting time for a platform"""
     try:
         # Default optimal times (these would ideally come from analytics)

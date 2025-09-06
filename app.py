@@ -91,6 +91,17 @@ try:
 except Exception as e:
     logger.error("Failed to setup security middleware: {}".format(e))
 
+# Setup observability middleware with OpenTelemetry
+try:
+    from backend.core.observability_middleware import setup_observability_middleware
+    observability_success = setup_observability_middleware(app)
+    if observability_success:
+        logger.info("OpenTelemetry observability middleware configured successfully")
+    else:
+        logger.warning("OpenTelemetry observability middleware setup failed")
+except Exception as e:
+    logger.error("Failed to setup observability middleware: {}".format(e))
+
 # Only add fallback CORS if security middleware failed
 if not security_middleware_success:
     logger.warning("Using fallback CORS configuration")

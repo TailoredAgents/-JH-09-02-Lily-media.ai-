@@ -56,9 +56,17 @@ class UserCredentials(Base):
     def get_encryption_key(cls) -> bytes:
         """Get or generate encryption key for credentials"""
         if cls._encryption_key is None:
-            # Use a combination of SECRET_KEY and a static salt for deterministic encryption
+            # SECURITY: Use environment-specific salt for user credential encryption
             secret_key = os.getenv("SECRET_KEY", "development-key-change-in-production")
-            salt = b"user_credentials_salt_v1"
+            
+            # Get salt from environment or derive from secret key for uniqueness
+            salt_env = os.getenv("USER_CREDENTIALS_SALT")
+            if salt_env:
+                salt = salt_env.encode('utf-8')
+            else:
+                # Fallback: derive salt from secret key to ensure per-deployment uniqueness
+                import hashlib
+                salt = hashlib.sha256(f"creds_salt_{secret_key[:16]}".encode()).digest()[:16]
             
             # Create a deterministic key from the secret
             import hashlib

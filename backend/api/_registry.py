@@ -47,6 +47,7 @@ from . import (
     performance,  # Performance monitoring and optimization
     monitoring_metrics,  # Prometheus and Sentry monitoring integration
     sre_dashboard,  # SRE dashboard for enhanced observability and operations
+    observability,  # OpenTelemetry observability and metrics endpoints
 )
 
 # Import CSRF router
@@ -105,6 +106,7 @@ ROUTERS = [
     performance.router,  # Performance monitoring and optimization
     monitoring_metrics.router,  # Prometheus and Sentry monitoring integration
     sre_dashboard.router,  # SRE dashboard for enhanced observability and operations
+    observability.router,  # OpenTelemetry observability and metrics endpoints
 ]
 
 # Add CSRF router if available

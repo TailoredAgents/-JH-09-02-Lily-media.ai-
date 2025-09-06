@@ -89,8 +89,9 @@ class ProductionSettings(Settings):
     
     # CORS Configuration
     cors_allowed_origins: List[str] = Field([
-        "https://app.aisocialagent.com",
-        "https://dashboard.aisocialagent.com"
+        "https://lilymedia.ai",
+        "https://www.lilymedia.ai",
+        "https://app.lilymedia.ai"
     ], env="CORS_ALLOWED_ORIGINS")
     cors_allow_credentials: bool = Field(True, env="CORS_ALLOW_CREDENTIALS")
     cors_allowed_methods: List[str] = Field(["GET", "POST", "PUT", "DELETE", "PATCH"], env="CORS_ALLOWED_METHODS")

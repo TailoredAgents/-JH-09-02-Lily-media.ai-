@@ -45,8 +45,15 @@ class TokenEncryptionService:
     def _create_fernet_key(self, master_key: str) -> Fernet:
         """Create Fernet encryption key from master key"""
         try:
-            # Use a fixed salt for key derivation (in production, consider per-user salts)
-            salt = b"social_media_agent_salt_v1"
+            # SECURITY: Use environment-specific salt to prevent cross-deployment attacks
+            salt_env = os.getenv("TOKEN_ENCRYPTION_SALT")
+            if salt_env:
+                salt = salt_env.encode('utf-8')
+            else:
+                # Fallback: generate salt from master key to ensure uniqueness per deployment
+                import hashlib
+                salt = hashlib.sha256(f"token_salt_{self._master_key[:16]}".encode()).digest()[:16]
+                logger.warning("TOKEN_ENCRYPTION_SALT not set, using derived salt. Set TOKEN_ENCRYPTION_SALT for better security.")
             
             # Derive key using PBKDF2
             kdf = PBKDF2HMAC(

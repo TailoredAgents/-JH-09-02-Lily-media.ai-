@@ -107,6 +107,15 @@ def setup_middleware(app: FastAPI, config: AppConfig) -> None:
         # Fallback to basic CORS
         _setup_fallback_cors(app, config)
     
+    # Add tenant isolation middleware (CRITICAL for multi-tenant security)
+    try:
+        from backend.middleware.tenant_isolation import TenantIsolationMiddleware
+        app.add_middleware(TenantIsolationMiddleware)
+        logger.info("✅ SECURITY: Tenant isolation middleware enabled - prevents cross-tenant data leaks")
+    except ImportError as e:
+        logger.error(f"❌ CRITICAL: Tenant isolation middleware failed to load: {e}")
+        logger.error("⚠️  Multi-tenant data isolation is NOT enforced!")
+    
     # Add error tracking middleware
     try:
         from backend.middleware.error_tracking import error_tracking_middleware, log_404_errors

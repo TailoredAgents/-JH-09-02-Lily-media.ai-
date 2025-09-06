@@ -69,3 +69,4 @@
 - Create a Handoff document for Codex to review all of your fixes after performing them and source the original guiding doc
 - When i say "v3" read '/Users/jeffreyhacker/Downloads/Audit prompt creation.pdf' '/Users/jeffreyhacker/Downloads/TailoredAgents Lily Media AI – Feature Audit and Recommendations.pdf'\
 and '/Users/jeffreyhacker/Downloads/Git project review.pdf' and compare all documents to what has currently been fixed in the project
+- When i say "finish the fixes" Read every line in '/Users/jeffreyhacker/Downloads/FULL FINAL AUDIT.pdf' and determine what still needs to be done
