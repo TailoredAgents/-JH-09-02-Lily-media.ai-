@@ -1,0 +1,43 @@
+# Core Web Framework
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+gunicorn>=21.2.0
+
+# Configuration & Environment
+python-dotenv>=1.1.0
+pydantic>=2.11.0
+pydantic-settings>=2.10.0
+
+# AI/ML Libraries
+openai>=1.58.0
+numpy>=2.3.0
+
+# Vector Search
+faiss-cpu>=1.12.0
+
+# CrewAI for multi-agent system
+crewai>=0.148.0
+crewai-tools>=0.47.0
+
+# Database & ORM
+sqlalchemy>=2.0.36
+alembic>=1.14.0
+psycopg2-binary>=2.9.10
+
+# Task Queue
+celery>=5.4.0
+redis>=5.2.0
+
+# Additional tools
+beautifulsoup4>=4.12.0
+requests>=2.32.0
+tweepy>=4.14.0
+aiohttp>=3.10.0
+
+# Authentication & Security
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+python-multipart>=0.0.9
+
+# Optional: AWS SES email (uncomment if using AWS SES)
+# boto3>=1.34.162

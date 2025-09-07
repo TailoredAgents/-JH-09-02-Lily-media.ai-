@@ -1,0 +1,18 @@
+{
+  "low": true,
+  "moderate": true,
+  "high": true,
+  "critical": true,
+  "report-type": "full",
+  "retry": {
+    "count": 3,
+    "delay": 5000
+  },
+  "allowlist": [],
+  "whitelist": [],
+  "skip-dev": false,
+  "package-manager": "npm",
+  "path": "./frontend",
+  "output-format": "json",
+  "summary-format": "json"
+}
