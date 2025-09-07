@@ -38,6 +38,7 @@ class ValidationCategory(Enum):
     COMPLIANCE = "compliance"
     DOCUMENTATION = "documentation"
     PERFORMANCE = "performance"
+    INTEGRATION = "integration"
 
 @dataclass
 class ValidationIssue:
@@ -199,12 +200,11 @@ class TemplateValidationService:
         requirements = self.model_requirements.get(model_name)
         if not requirements:
             issues.append(ValidationIssue(
-                severity=ValidationSeverity.WARNING,
                 category=ValidationCategory.COVERAGE,
-                template_name=template_class.__name__,
-                issue_type="no_requirements",
+                level=ValidationLevel.WARNING,
                 message=f"No requirements defined for model '{model_name}'",
-                fix_suggestion="Add model requirements to template validation service"
+                details={"model_name": model_name, "template_class": template_class.__name__},
+                recommendations=["Add model requirements to template validation service"]
             ))
             required_methods = self.required_interface_methods
             required_attrs = self.required_attributes
@@ -216,24 +216,22 @@ class TemplateValidationService:
         for method_name in required_methods:
             if not hasattr(template_class, method_name):
                 issues.append(ValidationIssue(
-                    severity=ValidationSeverity.ERROR,
                     category=ValidationCategory.INTERFACE,
-                    template_name=template_class.__name__,
-                    issue_type="missing_method",
+                    level=ValidationLevel.CRITICAL,
                     message=f"Missing required method: {method_name}",
-                    fix_suggestion=f"Implement {method_name} method in {template_class.__name__}"
+                    details={"method_name": method_name, "template_class": template_class.__name__},
+                    recommendations=[f"Implement {method_name} method in {template_class.__name__}"]
                 ))
             else:
                 # Check if method is callable
                 method = getattr(template_class, method_name)
                 if not callable(method):
                     issues.append(ValidationIssue(
-                        severity=ValidationSeverity.ERROR,
                         category=ValidationCategory.INTERFACE,
-                        template_name=template_class.__name__,
-                        issue_type="non_callable_method", 
+                        level=ValidationLevel.CRITICAL,
                         message=f"Method {method_name} exists but is not callable",
-                        fix_suggestion=f"Ensure {method_name} is a proper method"
+                        details={"method_name": method_name, "template_class": template_class.__name__},
+                        recommendations=[f"Ensure {method_name} is a proper method"]
                     ))
         
         # Check required attributes (by trying to instantiate if possible)
@@ -244,27 +242,24 @@ class TemplateValidationService:
             for attr_name in required_attrs:
                 if not hasattr(instance, attr_name):
                     issues.append(ValidationIssue(
-                        severity=ValidationSeverity.WARNING,
                         category=ValidationCategory.INTERFACE,
-                        template_name=template_class.__name__,
-                        issue_type="missing_attribute",
+                        level=ValidationLevel.WARNING,
                         message=f"Missing expected attribute: {attr_name}",
-                        fix_suggestion=f"Add {attr_name} attribute to template"
+                        details={"attribute_name": attr_name, "template_class": template_class.__name__},
+                        recommendations=[f"Add {attr_name} attribute to template"]
                     ))
                     
         except Exception as e:
             issues.append(ValidationIssue(
-                severity=ValidationSeverity.WARNING,
                 category=ValidationCategory.FUNCTIONALITY,
-                template_name=template_class.__name__,
-                issue_type="instantiation_failed",
+                level=ValidationLevel.WARNING,
                 message=f"Could not instantiate template to check attributes: {str(e)}",
-                details={"error": str(e)}
+                details={"error": str(e), "template_class": template_class.__name__}
             ))
         
         return issues
     
-    def validate_template_functionality(self, template_class: Type,
+    def validate_template_functionality_for_class(self, template_class: Type,
                                       model_name: str) -> List[ValidationIssue]:
         """Validate template functionality and behavior"""
         issues = []
@@ -279,21 +274,18 @@ class TemplateValidationService:
                     is_available = instance.is_available()
                     if not isinstance(is_available, bool):
                         issues.append(ValidationIssue(
-                            severity=ValidationSeverity.WARNING,
                             category=ValidationCategory.FUNCTIONALITY,
-                            template_name=template_class.__name__,
-                            issue_type="invalid_return_type",
+                            level=ValidationLevel.WARNING,
                             message="is_available() should return boolean",
-                            fix_suggestion="Ensure is_available() returns True or False"
+                            details={"method": "is_available", "template_class": template_class.__name__},
+                            recommendations=["Ensure is_available() returns True or False"]
                         ))
                 except Exception as e:
                     issues.append(ValidationIssue(
-                        severity=ValidationSeverity.ERROR,
                         category=ValidationCategory.FUNCTIONALITY,
-                        template_name=template_class.__name__,
-                        issue_type="method_execution_failed",
+                        level=ValidationLevel.CRITICAL,
                         message=f"is_available() method failed: {str(e)}",
-                        details={"error": str(e)}
+                        details={"error": str(e), "method": "is_available", "template_class": template_class.__name__}
                     ))
             
             # Test get_model_info method
@@ -302,12 +294,11 @@ class TemplateValidationService:
                     model_info = instance.get_model_info()
                     if not isinstance(model_info, dict):
                         issues.append(ValidationIssue(
-                            severity=ValidationSeverity.ERROR,
                             category=ValidationCategory.FUNCTIONALITY,
-                            template_name=template_class.__name__,
-                            issue_type="invalid_return_type",
+                            level=ValidationLevel.CRITICAL,
                             message="get_model_info() should return dictionary",
-                            fix_suggestion="Ensure get_model_info() returns Dict[str, Any]"
+                            details={"method": "get_model_info", "template_class": template_class.__name__},
+                            recommendations=["Ensure get_model_info() returns Dict[str, Any]"]
                         ))
                     else:
                         # Check required fields in model info
@@ -315,22 +306,19 @@ class TemplateValidationService:
                         for field in required_info_fields:
                             if field not in model_info:
                                 issues.append(ValidationIssue(
-                                    severity=ValidationSeverity.WARNING,
                                     category=ValidationCategory.FUNCTIONALITY,
-                                    template_name=template_class.__name__,
-                                    issue_type="missing_model_info_field",
+                                    level=ValidationLevel.WARNING,
                                     message=f"Model info missing field: {field}",
-                                    fix_suggestion=f"Add {field} to get_model_info() return"
+                                    details={"missing_field": field, "template_class": template_class.__name__},
+                                    recommendations=[f"Add {field} to get_model_info() return"]
                                 ))
                                 
                 except Exception as e:
                     issues.append(ValidationIssue(
-                        severity=ValidationSeverity.ERROR,
                         category=ValidationCategory.FUNCTIONALITY,
-                        template_name=template_class.__name__,
-                        issue_type="method_execution_failed",
+                        level=ValidationLevel.CRITICAL,
                         message=f"get_model_info() method failed: {str(e)}",
-                        details={"error": str(e)}
+                        details={"error": str(e), "method": "get_model_info", "template_class": template_class.__name__}
                     ))
             
             # Test validate_parameters method if generation params class exists
@@ -342,12 +330,11 @@ class TemplateValidationService:
                     validation_result = instance.validate_parameters(None)
                     if not isinstance(validation_result, tuple) or len(validation_result) != 2:
                         issues.append(ValidationIssue(
-                            severity=ValidationSeverity.WARNING,
                             category=ValidationCategory.FUNCTIONALITY,
-                            template_name=template_class.__name__,
-                            issue_type="invalid_validation_return",
+                            level=ValidationLevel.WARNING,
                             message="validate_parameters() should return (bool, str) tuple",
-                            fix_suggestion="Return (is_valid: bool, message: str) from validate_parameters()"
+                            details={"method": "validate_parameters", "template_class": template_class.__name__},
+                            recommendations=["Return (is_valid: bool, message: str) from validate_parameters()"]
                         ))
                 except Exception:
                     # Expected to fail with None params, that's OK
@@ -355,13 +342,11 @@ class TemplateValidationService:
                     
         except Exception as e:
             issues.append(ValidationIssue(
-                severity=ValidationSeverity.CRITICAL,
                 category=ValidationCategory.FUNCTIONALITY,
-                template_name=template_class.__name__,
-                issue_type="template_instantiation_failed",
+                level=ValidationLevel.CRITICAL,
                 message=f"Cannot instantiate template: {str(e)}",
-                details={"error": str(e)},
-                fix_suggestion="Fix template initialization issues"
+                details={"error": str(e), "template_class": template_class.__name__},
+                recommendations=["Fix template initialization issues"]
             ))
         
         return issues
@@ -378,12 +363,11 @@ class TemplateValidationService:
             if requirements.is_critical:
                 if model_name not in available_templates:
                     issues.append(ValidationIssue(
-                        severity=ValidationSeverity.CRITICAL,
                         category=ValidationCategory.COVERAGE,
-                        template_name="N/A",
-                        issue_type="missing_critical_template",
+                        level=ValidationLevel.CRITICAL,
                         message=f"Missing critical template for model: {model_name}",
-                        fix_suggestion=f"Create {requirements.template_class_name} for {model_name}"
+                        details={"model_name": model_name, "required_class": requirements.template_class_name},
+                        recommendations=[f"Create {requirements.template_class_name} for {model_name}"]
                     ))
                 else:
                     # Template exists, validate it
@@ -393,20 +377,19 @@ class TemplateValidationService:
                     interface_issues = self.validate_template_interface(template_class, model_name)
                     issues.extend(interface_issues)
                     
-                    # Validate functionality
-                    functionality_issues = self.validate_template_functionality(template_class, model_name)
+                    # Validate functionality  
+                    functionality_issues = self.validate_template_functionality_for_class(template_class, model_name)
                     issues.extend(functionality_issues)
                     
         # Check for orphaned templates (templates without requirements)
         for template_name, template_class in available_templates.items():
             if template_name not in self.model_requirements:
                 issues.append(ValidationIssue(
-                    severity=ValidationSeverity.INFO,
                     category=ValidationCategory.COVERAGE,
-                    template_name=template_class.__name__,
-                    issue_type="orphaned_template",
+                    level=ValidationLevel.INFO,
                     message=f"Template exists but no requirements defined: {template_name}",
-                    fix_suggestion="Add requirements for this template or remove if unused"
+                    details={"template_name": template_name, "template_class": template_class.__name__},
+                    recommendations=["Add requirements for this template or remove if unused"]
                 ))
         
         return issues
@@ -422,12 +405,11 @@ class TemplateValidationService:
                 is_valid=False,
                 coverage_score=0.0,
                 issues=[ValidationIssue(
-                    severity=ValidationSeverity.CRITICAL,
                     category=ValidationCategory.COVERAGE,
-                    template_name=template_name,
-                    issue_type="template_not_found",
+                    level=ValidationLevel.CRITICAL,
                     message=f"Template not found: {template_name}",
-                    fix_suggestion=f"Create template for {template_name}"
+                    details={"template_name": template_name},
+                    recommendations=[f"Create template for {template_name}"]
                 )],
                 required_methods=[],
                 missing_methods=[],
@@ -478,9 +460,8 @@ class TemplateValidationService:
         coverage_score = (required_score + optional_score) * 100
         
         # Determine validity
-        critical_issues = [i for i in issues if i.severity == ValidationSeverity.CRITICAL]
-        error_issues = [i for i in issues if i.severity == ValidationSeverity.ERROR]
-        is_valid = len(critical_issues) == 0 and len(error_issues) == 0
+        critical_issues = [i for i in issues if i.level == ValidationLevel.CRITICAL]
+        is_valid = len(critical_issues) == 0
         
         # Gather metadata
         metadata = {
@@ -490,9 +471,8 @@ class TemplateValidationService:
             "required_methods_count": len(required_methods),
             "optional_methods_count": len(optional_methods),
             "critical_issues": len(critical_issues),
-            "error_issues": len(error_issues),
-            "warning_issues": len([i for i in issues if i.severity == ValidationSeverity.WARNING]),
-            "info_issues": len([i for i in issues if i.severity == ValidationSeverity.INFO])
+            "warning_issues": len([i for i in issues if i.level == ValidationLevel.WARNING]),
+            "info_issues": len([i for i in issues if i.level == ValidationLevel.INFO])
         }
         
         return TemplateValidationResult(
@@ -520,12 +500,10 @@ class TemplateValidationService:
         coverage_issues = self.validate_template_coverage()
         report["coverage_issues"] = [
             {
-                "severity": issue.severity.value,
+                "level": issue.level.value,
                 "category": issue.category.value,
-                "template": issue.template_name,
-                "type": issue.issue_type,
                 "message": issue.message,
-                "fix_suggestion": issue.fix_suggestion,
+                "recommendations": issue.recommendations,
                 "details": issue.details
             }
             for issue in coverage_issues
@@ -546,11 +524,10 @@ class TemplateValidationService:
                 "metadata": result.metadata,
                 "issues": [
                     {
-                        "severity": issue.severity.value,
+                        "level": issue.level.value,
                         "category": issue.category.value,
-                        "type": issue.issue_type,
                         "message": issue.message,
-                        "fix_suggestion": issue.fix_suggestion,
+                        "recommendations": issue.recommendations,
                         "details": issue.details
                     }
                     for issue in result.issues
@@ -564,8 +541,8 @@ class TemplateValidationService:
         valid_templates = sum(1 for r in template_results.values() if r["is_valid"])
         avg_coverage = sum(r["coverage_score"] for r in template_results.values()) / max(total_templates, 1)
         
-        critical_issues = len([i for i in coverage_issues if i.severity == ValidationSeverity.CRITICAL])
-        error_issues = len([i for i in coverage_issues if i.severity == ValidationSeverity.ERROR])
+        critical_issues = len([i for i in coverage_issues if i.level == ValidationLevel.CRITICAL])
+        warning_issues = len([i for i in coverage_issues if i.level == ValidationLevel.WARNING])
         
         report["summary"] = {
             "total_templates": total_templates,
@@ -573,8 +550,8 @@ class TemplateValidationService:
             "invalid_templates": total_templates - valid_templates,
             "average_coverage_score": round(avg_coverage, 2),
             "critical_issues": critical_issues,
-            "error_issues": error_issues,
-            "overall_status": "healthy" if critical_issues == 0 and error_issues == 0 else "needs_attention"
+            "warning_issues": warning_issues,
+            "overall_status": "healthy" if critical_issues == 0 else "needs_attention"
         }
         
         # Generate recommendations
@@ -583,8 +560,8 @@ class TemplateValidationService:
         if critical_issues > 0:
             recommendations.append("🚨 Address critical template issues immediately")
         
-        if error_issues > 0:
-            recommendations.append("❌ Fix template errors to ensure proper functionality")
+        if warning_issues > 0:
+            recommendations.append("⚠️ Review and fix template warnings to improve functionality")
         
         if avg_coverage < 80:
             recommendations.append("📈 Improve template coverage - current average is below 80%")
