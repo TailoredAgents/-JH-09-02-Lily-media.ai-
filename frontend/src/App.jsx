@@ -53,6 +53,10 @@ import AdminLogin from './pages/admin/AdminLogin'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import UserManagement from './pages/admin/UserManagement'
 
+// Error Pages
+import NotFound from './pages/errors/NotFound'
+import Forbidden from './pages/errors/Forbidden'
+
 // Create React Query client
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -279,7 +283,13 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
-        <Route path="*" element={<Navigate to="/" replace />} />
+
+        {/* Error Pages */}
+        <Route path="/403" element={<Forbidden />} />
+        <Route path="/forbidden" element={<Forbidden />} />
+
+        {/* 404 - Must be last */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
 
       {/* Real-time Notification System */}
