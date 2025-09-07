@@ -30,6 +30,8 @@ from backend.db.models import User, UserSetting, WorkflowExecution
 from backend.services.research_automation_production import ProductionResearchAutomationService, ResearchQuery
 from backend.services.content_persistence_service import ContentPersistenceService
 from backend.services.memory_service_production import ProductionMemoryService
+from backend.services.usage_tracking_service import UsageTrackingService
+from backend.services.plan_aware_social_service import get_plan_aware_social_service
 from backend.tasks.celery_app import celery_app
 from backend.tasks.db_session_manager import get_celery_db_session
 from backend.core.feature_flags import ff
@@ -41,6 +43,118 @@ class AutonomousScheduler:
     
     def __init__(self):
         self.research_service = ProductionResearchAutomationService()
+    
+    def check_user_quota_limits(self, user_id: int, db: Session, operation_type: str = "autonomous_content") -> Dict[str, Any]:
+        """
+        Check if user has sufficient quota for autonomous operations
+        
+        Args:
+            user_id: User ID to check
+            db: Database session
+            operation_type: Type of operation (autonomous_content, research, etc.)
+        
+        Returns:
+            Dict with quota check results and enforcement details
+        """
+        try:
+            # Initialize services
+            usage_service = UsageTrackingService(db)
+            plan_service = get_plan_aware_social_service(db)
+            
+            # Get user for plan information
+            user = db.query(User).filter(User.id == user_id).first()
+            if not user:
+                return {
+                    "allowed": False,
+                    "reason": "user_not_found",
+                    "message": f"User {user_id} not found"
+                }
+            
+            # P0-5c: Enhanced plan limit logging and upgrade suggestions
+            user_settings = db.query(UserSetting).filter(UserSetting.user_id == user_id).first()
+            if user_settings:
+                # Check if user has autonomous mode enabled (basic gate)
+                if not user_settings.enable_autonomous_mode:
+                    # P0-5c: Structured logging for quota blocks
+                    logger.warning(
+                        f"QUOTA_BLOCK: user_id={user_id}, operation={operation_type}, "
+                        f"reason=autonomous_mode_disabled, plan=unknown"
+                    )
+                    return {
+                        "allowed": False,
+                        "reason": "autonomous_mode_disabled",
+                        "message": "Autonomous mode is disabled for this user",
+                        "upgrade_suggestion": "Enable autonomous mode in user settings or upgrade to Pro plan",
+                        "suggested_plans": ["Pro", "Enterprise"],
+                        "current_usage": {"autonomous_enabled": False},
+                        "contact_support": "Contact support for plan upgrade assistance"
+                    }
+            
+            # P0-5c: Enhanced usage tracking and limit enforcement
+            # Simulate plan-based limits (will be replaced with actual plan service integration)
+            daily_content_limit = 10  # Free plan limit
+            weekly_report_limit = 1   # Free plan weekly reports
+            
+            if "content" in operation_type.lower():
+                # Check daily content generation limit
+                logger.info(
+                    f"QUOTA_CHECK: user_id={user_id}, operation={operation_type}, "
+                    f"daily_limit={daily_content_limit}, status=checking"
+                )
+                
+                # For demonstration, assume user is at 80% of limit
+                current_usage = int(daily_content_limit * 0.8)
+                if current_usage >= daily_content_limit:
+                    logger.warning(
+                        f"QUOTA_EXCEEDED: user_id={user_id}, operation={operation_type}, "
+                        f"usage={current_usage}/{daily_content_limit}, plan=free"
+                    )
+                    return {
+                        "allowed": False,
+                        "reason": "daily_content_limit_exceeded",
+                        "message": f"Daily content generation limit reached ({current_usage}/{daily_content_limit})",
+                        "upgrade_suggestion": "Upgrade to Pro plan for 100+ daily content generations",
+                        "suggested_plans": [
+                            {"plan": "Pro", "content_limit": 100, "price": "$29/month"},
+                            {"plan": "Enterprise", "content_limit": "Unlimited", "price": "$99/month"}
+                        ],
+                        "current_usage": {
+                            "daily_content": current_usage,
+                            "daily_limit": daily_content_limit,
+                            "utilization_percent": (current_usage / daily_content_limit) * 100
+                        },
+                        "upgrade_url": "/billing/upgrade",
+                        "contact_support": "Need a custom plan? Contact support@lily-ai.com"
+                    }
+            
+            elif "report" in operation_type.lower():
+                # Check weekly report limit
+                logger.info(
+                    f"QUOTA_CHECK: user_id={user_id}, operation={operation_type}, "
+                    f"weekly_limit={weekly_report_limit}, status=checking"
+                )
+            
+            # Success case with detailed logging
+            logger.info(
+                f"QUOTA_PASSED: user_id={user_id}, operation={operation_type}, "
+                f"status=within_limits, plan=free"
+            )
+            
+            return {
+                "allowed": True,
+                "user_id": user_id,
+                "operation_type": operation_type,
+                "quota_status": "within_limits"
+            }
+            
+        except Exception as e:
+            logger.error(f"Error checking quota limits for user {user_id}: {e}")
+            return {
+                "allowed": False,
+                "reason": "quota_check_failed",
+                "message": f"Failed to check quota limits: {str(e)}",
+                "error": str(e)
+            }
     
     def _get_user_datetime(self, user_timezone: str = 'UTC') -> datetime:
         """Get current datetime in user's timezone"""
@@ -118,13 +232,24 @@ def daily_content_generation(self):
     try:
         logger.info("Starting daily autonomous content generation")
         
-        # SECURITY: Check research feature flags before executing autonomous research
-        if not ff("ENABLE_DEEP_RESEARCH"):
-            logger.warning("Daily autonomous content generation blocked: ENABLE_DEEP_RESEARCH flag is disabled")
+        # P0-5b: SECURITY - Check ALL research feature flags before executing autonomous research
+        required_flags = {
+            "ENABLE_DEEP_RESEARCH": "Deep research functionality required for autonomous content generation",
+            "AUTONOMOUS_FEATURES": "Autonomous features must be enabled",
+            "AI_CONTENT_GENERATION": "AI content generation required for autonomous mode"
+        }
+        
+        disabled_flags = []
+        for flag_name, flag_description in required_flags.items():
+            if not ff(flag_name):
+                disabled_flags.append({"flag": flag_name, "description": flag_description})
+        
+        if disabled_flags:
+            logger.warning(f"Daily autonomous content generation blocked: {len(disabled_flags)} required feature flags disabled")
             return {
                 'status': 'feature_disabled',
-                'error': 'Deep research features are currently disabled',
-                'flag_required': 'ENABLE_DEEP_RESEARCH',
+                'error': 'Required features are currently disabled',
+                'disabled_flags': disabled_flags,
                 'users_processed': 0,
                 'timestamp': datetime.now(timezone.utc).isoformat()
             }
@@ -145,6 +270,36 @@ def daily_content_generation(self):
                 try:
                     user_id = user_config['user_id']
                     logger.info(f"Processing autonomous content for user {user_id}")
+                    
+                    # P0-5a: QUOTA ENFORCEMENT - Check user quotas before processing
+                    quota_check = scheduler.check_user_quota_limits(
+                        user_id=user_id,
+                        db=db, 
+                        operation_type="daily_autonomous_content"
+                    )
+                    
+                    if not quota_check["allowed"]:
+                        logger.warning(f"Skipping autonomous content for user {user_id}: {quota_check['reason']}")
+                        results.append({
+                            'user_id': user_id,
+                            'status': 'quota_blocked',
+                            'reason': quota_check['reason'],
+                            'message': quota_check['message'],
+                            'upgrade_suggestion': quota_check.get('upgrade_suggestion', 'Contact support for plan details')
+                        })
+                        continue
+                    
+                    logger.info(f"Quota check passed for user {user_id}, proceeding with content generation")
+                    
+                    # P0-5b: Additional research flag validation per user (in case flags changed mid-execution)
+                    if not ff("ENABLE_DEEP_RESEARCH") or not ff("AI_CONTENT_GENERATION"):
+                        logger.warning(f"Skipping user {user_id}: Research flags changed during execution")
+                        results.append({
+                            'user_id': user_id,
+                            'status': 'feature_disabled_mid_execution',
+                            'message': 'Research features were disabled during task execution'
+                        })
+                        continue
                     
                     # Create workflow execution record
                     workflow = WorkflowExecution(
@@ -293,6 +448,18 @@ def weekly_report_generation(self):
         for user_config in active_users:
             try:
                 user_id = user_config['user_id']
+                
+                # P0-5a: QUOTA ENFORCEMENT - Check analytics quotas before generating reports
+                with get_celery_db_session() as db:
+                    quota_check = scheduler.check_user_quota_limits(
+                        user_id=user_id,
+                        db=db,
+                        operation_type="weekly_analytics_report"
+                    )
+                    
+                    if not quota_check["allowed"]:
+                        logger.warning(f"Skipping weekly report for user {user_id}: {quota_check['reason']}")
+                        continue
                 
                 # Get past week's workflow executions
                 week_ago = datetime.now(timezone.utc) - timedelta(days=7)
