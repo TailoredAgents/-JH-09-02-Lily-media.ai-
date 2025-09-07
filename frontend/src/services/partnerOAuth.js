@@ -1,22 +1,18 @@
 /**
  * Partner OAuth API service
  * Handles social platform authentication flows
+ * 
+ * SECURITY UPDATE (P0-13a): Updated to use secure API service
+ * - No localStorage token access (XSS protection)
+ * - Uses secure API service with automatic token refresh
  */
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+import secureApiService from './secureApiService.js'
 
 class PartnerOAuthService {
   constructor() {
-    this.baseUrl = `${API_BASE}/api/oauth`;
-  }
-
-  // Helper method to get auth headers
-  getAuthHeaders() {
-    const token = localStorage.getItem('access_token');
-    return {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    };
+    // Use secure API service instead of direct fetch calls
+    this.apiService = secureApiService
   }
 
   // Check if feature is enabled
@@ -34,17 +30,7 @@ class PartnerOAuthService {
       throw new Error('Partner OAuth feature is not enabled');
     }
 
-    const response = await fetch(`${this.baseUrl}/${platform}/start`, {
-      method: 'GET',
-      headers: this.getAuthHeaders(),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail?.message || `Failed to start ${platform} OAuth flow`);
-    }
-
-    return await response.json();
+    return await this.apiService.request(`/api/oauth/${platform}/start`)
   }
 
   /**
@@ -57,17 +43,7 @@ class PartnerOAuthService {
       throw new Error('Partner OAuth feature is not enabled');
     }
 
-    const response = await fetch(`${this.baseUrl}/meta/assets?state=${encodeURIComponent(state)}`, {
-      method: 'GET',
-      headers: this.getAuthHeaders(),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail?.message || 'Failed to get Meta assets');
-    }
-
-    return await response.json();
+    return await this.apiService.request(`/api/oauth/meta/assets?state=${encodeURIComponent(state)}`)
   }
 
   /**
@@ -88,18 +64,10 @@ class PartnerOAuthService {
       ...(instagramId && { instagram_id: instagramId })
     };
 
-    const response = await fetch(`${this.baseUrl}/meta/connect`, {
+    return await this.apiService.request('/api/oauth/meta/connect', {
       method: 'POST',
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify(requestBody),
+      body: requestBody,
     });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail?.message || 'Failed to connect Meta account');
-    }
-
-    return await response.json();
   }
 
   /**
@@ -112,18 +80,10 @@ class PartnerOAuthService {
       throw new Error('Partner OAuth feature is not enabled');
     }
 
-    const response = await fetch(`${this.baseUrl}/x/connect`, {
+    return await this.apiService.request('/api/oauth/x/connect', {
       method: 'POST',
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify({ state }),
+      body: { state },
     });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail?.message || 'Failed to connect X account');
-    }
-
-    return await response.json();
   }
 
   /**
@@ -135,17 +95,7 @@ class PartnerOAuthService {
       throw new Error('Partner OAuth feature is not enabled');
     }
 
-    const response = await fetch(`${this.baseUrl}/connections`, {
-      method: 'GET',
-      headers: this.getAuthHeaders(),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail?.message || 'Failed to list connections');
-    }
-
-    return await response.json();
+    return await this.apiService.request('/api/oauth/connections');
   }
 
   /**
@@ -158,18 +108,10 @@ class PartnerOAuthService {
       throw new Error('Partner OAuth feature is not enabled');
     }
 
-    const response = await fetch(`${this.baseUrl}/${connectionId}`, {
+    return await this.apiService.request(`/api/oauth/${connectionId}`, {
       method: 'DELETE',
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify({ confirmation: true }),
+      body: { confirmation: true },
     });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail?.message || 'Failed to disconnect connection');
-    }
-
-    return await response.json();
   }
 
   /**

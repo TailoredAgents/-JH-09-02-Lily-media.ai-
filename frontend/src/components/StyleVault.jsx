@@ -16,7 +16,26 @@ import {
   PaintBrushIcon,
   SparklesIcon,
   AdjustmentsHorizontalIcon,
+  FolderIcon,
+  MagnifyingGlassIcon,
+  CloudArrowUpIcon,
+  ArrowDownTrayIcon,
+  TagIcon,
+  DocumentDuplicateIcon,
+  StarIcon,
+  ClockIcon,
+  UserIcon,
+  Squares2X2Icon,
+  ListBulletIcon,
+  FunnelIcon,
 } from '@heroicons/react/24/outline'
+
+// Import new components
+import AssetGrid from './StyleVault/AssetGrid'
+import AssetUploadModal from './StyleVault/AssetUploadModal'
+import FontAssetGrid from './StyleVault/FontAssetGrid'
+import FontUploadModal from './StyleVault/FontUploadModal'
+import EditableRulesList from './StyleVault/EditableRulesList'
 
 const StyleVault = ({ userId }) => {
   const { plan, hasAdvancedAnalytics } = usePlan()
@@ -72,6 +91,16 @@ const StyleVault = ({ userId }) => {
     description: '',
     tone: 'professional',
   })
+  const [uploadProgress, setUploadProgress] = useState({})
+  const [assetSearch, setAssetSearch] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState('all')
+  const [viewMode, setViewMode] = useState('grid') // grid or list
+  const [selectedAssets, setSelectedAssets] = useState([])
+  const [showUploadModal, setShowUploadModal] = useState(false)
+  const [assetFilter, setAssetFilter] = useState({ type: 'all', dateRange: 'all' })
+  const [showFontUpload, setShowFontUpload] = useState(false)
+  const [editingDos, setEditingDos] = useState(false)
+  const [editingDonts, setEditingDonts] = useState(false)
 
   useEffect(() => {
     loadStyleVault()
@@ -280,6 +309,263 @@ const StyleVault = ({ userId }) => {
       },
     }
     saveStyleVault(updatedVault)
+  }
+
+  const updateTypographySetting = (field, value) => {
+    const updatedVault = {
+      ...styleVault,
+      visual_guidelines: {
+        ...styleVault.visual_guidelines,
+        typography: {
+          ...styleVault.visual_guidelines?.typography,
+          [field]: value,
+        },
+      },
+    }
+    saveStyleVault(updatedVault)
+  }
+
+  const updatePrimaryColor = (index, color) => {
+    const updatedColors = [...(styleVault.visual_guidelines?.primary_colors || [])]
+    updatedColors[index] = color
+    updateVisualGuidelines('primary_colors', updatedColors)
+  }
+
+  const addPrimaryColor = () => {
+    const updatedColors = [...(styleVault.visual_guidelines?.primary_colors || []), '#000000']
+    updateVisualGuidelines('primary_colors', updatedColors)
+  }
+
+  const removePrimaryColor = (index) => {
+    const updatedColors = (styleVault.visual_guidelines?.primary_colors || []).filter((_, i) => i !== index)
+    updateVisualGuidelines('primary_colors', updatedColors)
+  }
+
+  const updateSecondaryColor = (index, color) => {
+    const updatedColors = [...(styleVault.visual_guidelines?.secondary_colors || [])]
+    updatedColors[index] = color
+    updateVisualGuidelines('secondary_colors', updatedColors)
+  }
+
+  const addSecondaryColor = () => {
+    const updatedColors = [...(styleVault.visual_guidelines?.secondary_colors || []), '#000000']
+    updateVisualGuidelines('secondary_colors', updatedColors)
+  }
+
+  const removeSecondaryColor = (index) => {
+    const updatedColors = (styleVault.visual_guidelines?.secondary_colors || []).filter((_, i) => i !== index)
+    updateVisualGuidelines('secondary_colors', updatedColors)
+  }
+
+  const handleAssetUpload = async (files, assetType, options = {}) => {
+    const formData = new FormData()
+    files.forEach(file => formData.append('files', file))
+    formData.append('asset_type', assetType)
+    
+    if (options.tags) {
+      formData.append('tags', JSON.stringify(options.tags))
+    }
+
+    try {
+      setUploadProgress({ [assetType]: 0 })
+      
+      // Simulate upload progress
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => ({
+          ...prev,
+          [assetType]: Math.min((prev[assetType] || 0) + Math.random() * 30, 90)
+        }))
+      }, 500)
+
+      const response = await api.request('/api/style-vault/assets/', {
+        method: 'POST',
+        body: formData,
+      })
+
+      clearInterval(progressInterval)
+      setUploadProgress({ [assetType]: 100 })
+
+      // Update the vault with new assets
+      const updatedVault = {
+        ...styleVault,
+        brand_assets: {
+          ...styleVault.brand_assets,
+          [assetType]: [...(styleVault.brand_assets?.[assetType] || []), ...response.assets],
+        },
+      }
+      
+      saveStyleVault(updatedVault)
+      showSuccess(`${files.length} asset${files.length > 1 ? 's' : ''} uploaded successfully`)
+      
+      setTimeout(() => {
+        setUploadProgress({})
+      }, 2000)
+
+    } catch (error) {
+      console.error('Asset upload failed:', error)
+      showError('Failed to upload assets')
+      setUploadProgress({})
+    }
+  }
+
+  const removeAsset = async (assetType, assetId) => {
+    try {
+      await api.request(`/api/style-vault/assets/${assetId}/`, {
+        method: 'DELETE',
+      })
+
+      const updatedVault = {
+        ...styleVault,
+        brand_assets: {
+          ...styleVault.brand_assets,
+          [assetType]: styleVault.brand_assets?.[assetType]?.filter(asset => asset.id !== assetId) || [],
+        },
+      }
+
+      saveStyleVault(updatedVault)
+      showSuccess('Asset deleted successfully')
+    } catch (error) {
+      console.error('Failed to delete asset:', error)
+      showError('Failed to delete asset')
+    }
+  }
+
+  const toggleAssetSelection = (assetId) => {
+    setSelectedAssets(prev => 
+      prev.includes(assetId)
+        ? prev.filter(id => id !== assetId)
+        : [...prev, assetId]
+    )
+  }
+
+  const downloadSelectedAssets = async () => {
+    try {
+      const response = await api.request('/api/style-vault/assets/download/', {
+        method: 'POST',
+        body: { asset_ids: selectedAssets },
+        responseType: 'blob'
+      })
+      
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', 'brand-assets.zip')
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+      
+      showSuccess('Assets downloaded successfully')
+      setSelectedAssets([])
+    } catch (error) {
+      console.error('Failed to download assets:', error)
+      showError('Failed to download assets')
+    }
+  }
+
+  const deleteSelectedAssets = async () => {
+    if (!window.confirm(`Delete ${selectedAssets.length} selected assets? This cannot be undone.`)) {
+      return
+    }
+
+    try {
+      await Promise.all(selectedAssets.map(assetId => 
+        api.request(`/api/style-vault/assets/${assetId}/`, { method: 'DELETE' })
+      ))
+
+      // Remove from all asset types
+      const updatedVault = {
+        ...styleVault,
+        brand_assets: {
+          logos: styleVault.brand_assets?.logos?.filter(asset => !selectedAssets.includes(asset.id)) || [],
+          images: styleVault.brand_assets?.images?.filter(asset => !selectedAssets.includes(asset.id)) || [],
+          fonts: styleVault.brand_assets?.fonts?.filter(asset => !selectedAssets.includes(asset.id)) || [],
+          color_palettes: styleVault.brand_assets?.color_palettes?.filter(asset => !selectedAssets.includes(asset.id)) || [],
+        },
+      }
+
+      saveStyleVault(updatedVault)
+      showSuccess(`${selectedAssets.length} assets deleted successfully`)
+      setSelectedAssets([])
+    } catch (error) {
+      console.error('Failed to delete assets:', error)
+      showError('Failed to delete selected assets')
+    }
+  }
+
+  const handleFontUpload = async (fontData) => {
+    try {
+      const response = await api.request('/api/style-vault/fonts/', {
+        method: 'POST',
+        body: fontData,
+      })
+
+      const updatedVault = {
+        ...styleVault,
+        brand_assets: {
+          ...styleVault.brand_assets,
+          fonts: [...(styleVault.brand_assets?.fonts || []), response.font],
+        },
+      }
+
+      saveStyleVault(updatedVault)
+      showSuccess('Font uploaded successfully')
+      setShowFontUpload(false)
+    } catch (error) {
+      console.error('Font upload failed:', error)
+      showError('Failed to upload font')
+    }
+  }
+
+  const updateFontAsset = async (fontId, updates) => {
+    try {
+      const response = await api.request(`/api/style-vault/fonts/${fontId}/`, {
+        method: 'PATCH',
+        body: updates,
+      })
+
+      const updatedVault = {
+        ...styleVault,
+        brand_assets: {
+          ...styleVault.brand_assets,
+          fonts: styleVault.brand_assets?.fonts?.map(font => 
+            font.id === fontId ? { ...font, ...response.font } : font
+          ) || [],
+        },
+      }
+
+      saveStyleVault(updatedVault)
+      showSuccess('Font updated successfully')
+    } catch (error) {
+      console.error('Font update failed:', error)
+      showError('Failed to update font')
+    }
+  }
+
+  const exportBrandGuidelines = async () => {
+    try {
+      const response = await api.request('/api/style-vault/export/', {
+        method: 'POST',
+        body: { format: 'pdf' },
+        responseType: 'blob'
+      })
+      
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', 'brand-guidelines.pdf')
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+      
+      showSuccess('Brand guidelines exported successfully')
+    } catch (error) {
+      console.error('Export failed:', error)
+      showError('Failed to export brand guidelines')
+    }
   }
 
   const tabs = [

@@ -8,9 +8,9 @@ import {
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { HelmetProvider } from 'react-helmet-async'
 
-// Context Providers
-import { AuthProvider } from './contexts/AuthContext'
-import { AdminAuthProvider } from './contexts/AdminAuthContext'
+// Context Providers - SECURE AUTHENTICATION (P0-13a: XSS Protection)
+import { AuthProvider } from './contexts/SecureAuthContext'
+import { AdminAuthProvider } from './contexts/SecureAdminAuthContext'
 import { WebSocketProvider } from './contexts/WebSocketContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { PlanProvider } from './contexts/PlanContext'

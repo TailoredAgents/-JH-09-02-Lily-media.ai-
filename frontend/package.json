@@ -45,6 +45,7 @@
     "react-calendar": "^4.8.0",
     "react-chartjs-2": "^5.2.0",
     "react-dom": "^18.3.1",
+    "react-dropzone": "^14.3.8",
     "react-helmet-async": "^2.0.4",
     "react-infinite-scroll-component": "^6.1.0",
     "react-router-dom": "^6.28.0",
