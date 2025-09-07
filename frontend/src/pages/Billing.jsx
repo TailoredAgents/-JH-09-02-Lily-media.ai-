@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { usePlan } from '../contexts/PlanContext'
 import { useAuth } from '../contexts/AuthContext'
 import { useNotifications } from '../hooks/useNotifications'
+import { usePlanConditionals } from '../hooks/usePlanConditionals'
+import BillingOverview from '../components/billing/BillingOverview'
 import api from '../services/api'
 import {
   CreditCardIcon,
@@ -18,13 +21,27 @@ import {
   DocumentTextIcon,
   EyeIcon,
   StarIcon,
+  ExclamationTriangleIcon,
+  CheckCircleIcon as CheckCircleIconOutline
 } from '@heroicons/react/24/outline'
 import { CheckCircleIcon } from '@heroicons/react/24/solid'
 
-const Billing = () => {
+/**
+ * Enhanced Billing Page with Stripe Customer Portal Integration
+ * 
+ * Comprehensive billing management including:
+ * - Plan selection and upgrade flows
+ * - Stripe checkout integration
+ * - Customer portal access
+ * - Usage monitoring and alerts
+ * - Billing history and invoice management
+ */
+const EnhancedBilling = () => {
+  const [searchParams, setSearchParams] = useSearchParams()
   const { plan, limits, refreshPlan, canUpgrade } = usePlan()
   const { user } = useAuth()
   const { showSuccess, showError, showInfo } = useNotifications()
+  const { canUpgrade: canUpgradeConditional } = usePlanConditionals()
 
   const [availablePlans, setAvailablePlans] = useState([])
   const [billingInfo, setBillingInfo] = useState(null)
@@ -32,17 +49,60 @@ const Billing = () => {
   const [checkoutLoading, setCheckoutLoading] = useState(null)
   const [portalLoading, setPortalLoading] = useState(false)
   const [annualBilling, setAnnualBilling] = useState(false)
+  const [showPlanSelector, setShowPlanSelector] = useState(false)
 
   useEffect(() => {
     loadBillingData()
+    handleUrlParams()
   }, [])
+
+  const handleUrlParams = async () => {
+    const success = searchParams.get('success')
+    const cancelled = searchParams.get('cancelled')
+    const sessionId = searchParams.get('session_id')
+    
+    if (success === 'true') {
+      showSuccess('Payment successful! Your subscription has been activated.')
+      await refreshPlan()
+      
+      // Track successful subscription
+      if (window.gtag) {
+        window.gtag('event', 'purchase', {
+          event_category: 'billing',
+          value: 1
+        })
+      }
+      
+      // Clean up URL parameters
+      setSearchParams({})
+    }
+    
+    if (cancelled === 'true') {
+      showInfo('Checkout was cancelled. You can try again anytime.')
+      setSearchParams({})
+    }
+    
+    // Handle Stripe session completion
+    if (sessionId) {
+      try {
+        const sessionResponse = await api.request(`/api/billing/checkout/session/${sessionId}`)
+        if (sessionResponse.status === 'complete') {
+          showSuccess('Subscription activated successfully!')
+          await refreshPlan()
+        }
+      } catch (error) {
+        console.error('Failed to verify session:', error)
+      }
+      setSearchParams({})
+    }
+  }
 
   const loadBillingData = async () => {
     try {
       setLoading(true)
       const [plansResponse, billingResponse] = await Promise.all([
         api.request('/api/billing/plans'),
-        api.request('/api/billing/info').catch(() => ({ data: null })),
+        api.getBillingInfo().catch(() => ({ data: null })),
       ])
 
       setAvailablePlans(plansResponse.plans || [])
@@ -67,16 +127,28 @@ const Billing = () => {
           annual_billing: annualBilling,
           success_url: `${window.location.origin}/billing?success=true`,
           cancel_url: `${window.location.origin}/billing?cancelled=true`,
+          metadata: {
+            upgrade_from: plan?.plan_name || 'free',
+            user_id: user?.id
+          }
         },
       })
+
+      // Track checkout initiation
+      if (window.gtag) {
+        window.gtag('event', 'begin_checkout', {
+          event_category: 'billing',
+          event_label: planName,
+          value: response.amount / 100
+        })
+      }
 
       // Redirect to Stripe checkout
       window.location.href = response.checkout_url
     } catch (error) {
       console.error('Failed to create checkout session:', error)
-      showError(
-        error.response?.data?.detail || 'Failed to start checkout process'
-      )
+      const errorMessage = error.response?.data?.detail || 'Failed to start checkout process'
+      showError(errorMessage)
     } finally {
       setCheckoutLoading(null)
     }
@@ -93,6 +165,14 @@ const Billing = () => {
           return_url: window.location.href,
         },
       })
+
+      // Track portal access
+      if (window.gtag) {
+        window.gtag('event', 'billing_portal_access', {
+          event_category: 'billing',
+          event_label: plan?.plan_name || 'unknown'
+        })
+      }
 
       window.location.href = response.portal_url
     } catch (error) {
@@ -208,16 +288,21 @@ const Billing = () => {
     )
   }
 
+  // Show enhanced billing overview by default
+  if (!showPlanSelector && plan) {
+    return <BillingOverview />
+  }
+
   return (
     <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-          Plans & Billing
+          Choose Your Plan
         </h1>
         <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-          Choose the perfect plan for your social media management needs.
-          Upgrade or downgrade anytime.
+          Scale your social media management with the perfect plan for your needs.
+          Upgrade or downgrade anytime with full Stripe protection.
         </p>
       </div>
 
@@ -245,16 +330,26 @@ const Billing = () => {
               </div>
             </div>
 
-            {billingInfo?.stripe_customer_id && (
+            <div className="flex items-center space-x-4">
               <button
-                onClick={handleManageSubscription}
-                disabled={portalLoading}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                onClick={() => setShowPlanSelector(false)}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
               >
-                <CreditCardIcon className="w-4 h-4 mr-2" />
-                {portalLoading ? 'Loading...' : 'Manage Subscription'}
+                <ChartBarIcon className="w-4 h-4 mr-2" />
+                View Usage & Billing
               </button>
-            )}
+
+              {billingInfo?.stripe_customer_id && (
+                <button
+                  onClick={handleManageSubscription}
+                  disabled={portalLoading}
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-colors"
+                >
+                  <CreditCardIcon className="w-4 h-4 mr-2" />
+                  {portalLoading ? 'Loading...' : 'Manage Subscription'}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -429,53 +524,51 @@ const Billing = () => {
         })}
       </div>
 
-      {/* Usage overview */}
-      {limits && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Current Usage & Limits
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center">
-              <div className="bg-blue-100 dark:bg-blue-900 p-3 rounded-lg w-12 h-12 mx-auto mb-3 flex items-center justify-center">
-                <DocumentTextIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                {limits.posts?.daily_limit || 0}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                Posts per day
-              </div>
+      {/* Trust Indicators */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 text-center">
+          Secure & Protected
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+          <div className="flex flex-col items-center">
+            <div className="bg-green-100 dark:bg-green-900 p-3 rounded-lg mb-3">
+              <ShieldCheckIcon className="h-6 w-6 text-green-600 dark:text-green-400" />
             </div>
-
-            <div className="text-center">
-              <div className="bg-green-100 dark:bg-green-900 p-3 rounded-lg w-12 h-12 mx-auto mb-3 flex items-center justify-center">
-                <CloudIcon className="w-6 h-6 text-green-600 dark:text-green-400" />
-              </div>
-              <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                {limits.images?.monthly_limit || 0}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                Images per month
-              </div>
+            <h4 className="font-medium text-gray-900 dark:text-white mb-1">
+              Stripe Protected
+            </h4>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Industry-leading payment security and compliance
+            </p>
+          </div>
+          
+          <div className="flex flex-col items-center">
+            <div className="bg-blue-100 dark:bg-blue-900 p-3 rounded-lg mb-3">
+              <CheckCircleIconOutline className="h-6 w-6 text-blue-600 dark:text-blue-400" />
             </div>
-
-            <div className="text-center">
-              <div className="bg-purple-100 dark:bg-purple-900 p-3 rounded-lg w-12 h-12 mx-auto mb-3 flex items-center justify-center">
-                <UserIcon className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-              </div>
-              <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                {limits.social_profiles?.max || 1}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                Social profiles
-              </div>
+            <h4 className="font-medium text-gray-900 dark:text-white mb-1">
+              Cancel Anytime
+            </h4>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              No contracts or hidden fees. Cancel with one click
+            </p>
+          </div>
+          
+          <div className="flex flex-col items-center">
+            <div className="bg-purple-100 dark:bg-purple-900 p-3 rounded-lg mb-3">
+              <DocumentTextIcon className="h-6 w-6 text-purple-600 dark:text-purple-400" />
             </div>
+            <h4 className="font-medium text-gray-900 dark:text-white mb-1">
+              Full Access
+            </h4>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Instant access to all features upon upgrade
+            </p>
           </div>
         </div>
-      )}
+      </div>
     </div>
   )
 }
 
-export default Billing
+export default EnhancedBilling
