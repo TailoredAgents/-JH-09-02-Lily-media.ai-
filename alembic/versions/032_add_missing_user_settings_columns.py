@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = '032_add_missing_user_settings_columns'
-down_revision = '031_add_usage_record_table'
+down_revision = '031'
 branch_labels = None
 depends_on = None
 

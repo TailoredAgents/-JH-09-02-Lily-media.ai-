@@ -21,6 +21,7 @@ celery_app = Celery(
         "backend.tasks.x_polling_tasks",  # X mentions polling
         "backend.tasks.webhook_watchdog_tasks",  # GA Checklist: DLQ watchdog
         "backend.tasks.subscription_cleanup_tasks",  # P1-5c: Subscription cleanup jobs
+        "backend.tasks.ftc_compliance_tasks",  # P1-10b: FTC compliance disclosures
         # Disabled heavy tasks to prevent memory issues
         # "backend.tasks.content_tasks",  # CrewAI - uses 500MB+
         # "backend.tasks.research_tasks",  # CrewAI - uses 500MB+ 
@@ -73,6 +74,7 @@ celery_app.conf.update(
         'backend.tasks.lightweight_research_tasks.*': {'queue': 'research', 'priority': 5},
         'backend.tasks.autonomous_scheduler.*': {'queue': 'autonomous', 'priority': 4},
         'backend.tasks.subscription_cleanup_tasks.*': {'queue': 'subscription_cleanup', 'priority': 6},
+        'backend.tasks.ftc_compliance_tasks.*': {'queue': 'ftc_compliance', 'priority': 8},
     },
     
     # Dead Letter Queue configuration
@@ -139,6 +141,12 @@ celery_app.conf.task_queues = {
     'subscription_cleanup': {
         'exchange': 'subscription_cleanup',
         'routing_key': 'subscription_cleanup',
+        'durable': True,
+        'auto_delete': False,
+    },
+    'ftc_compliance': {
+        'exchange': 'ftc_compliance',
+        'routing_key': 'ftc_compliance',
         'durable': True,
         'auto_delete': False,
     },
@@ -236,5 +244,27 @@ celery_app.conf.beat_schedule = {
         'task': 'backend.tasks.subscription_cleanup_tasks.handle_overdue_subscriptions',
         'schedule': 60.0 * 60.0 * 12,  # Every 12 hours
         'options': {'queue': 'subscription_cleanup', 'expires': 3600},  # 1 hour expiry
+    },
+    
+    # P1-10b: FTC-compliant trial and renewal disclosures
+    # Daily FTC compliance checks - runs all consumer protection notifications at 10 AM UTC
+    'daily-ftc-compliance': {
+        'task': 'backend.tasks.ftc_compliance_tasks.daily_ftc_compliance_checks',
+        'schedule': 60.0 * 60.0 * 24,  # Daily
+        'options': {'queue': 'ftc_compliance', 'expires': 7200},  # 2 hour expiry
+    },
+    
+    # Trial reminder notifications - every 6 hours for coverage
+    'ftc-trial-reminders': {
+        'task': 'backend.tasks.ftc_compliance_tasks.send_ftc_trial_reminders',
+        'schedule': 60.0 * 60.0 * 6,  # Every 6 hours
+        'options': {'queue': 'ftc_compliance', 'expires': 3600},  # 1 hour expiry
+    },
+    
+    # Renewal notice notifications - every 6 hours for coverage
+    'ftc-renewal-notices': {
+        'task': 'backend.tasks.ftc_compliance_tasks.send_ftc_renewal_notices',
+        'schedule': 60.0 * 60.0 * 6,  # Every 6 hours
+        'options': {'queue': 'ftc_compliance', 'expires': 3600},  # 1 hour expiry
     },
 }

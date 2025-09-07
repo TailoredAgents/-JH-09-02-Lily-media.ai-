@@ -1,0 +1,376 @@
+# Prometheus Alerting Rules Configuration
+# Production-ready alerting with proper thresholds and escalation
+# Addresses P0-11b: Configure alerting rules with proper thresholds and escalation
+
+groups:
+  # ============================================================================
+  # Critical System Health Alerts (P0 - Immediate Response)
+  # ============================================================================
+  - name: system_critical
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 30s
+        labels:
+          severity: critical
+          team: platform
+          escalation_level: p0
+        annotations:
+          summary: "Service {{ $labels.instance }} is down"
+          description: "Service {{ $labels.instance }} has been down for more than 30 seconds"
+          runbook_url: "https://runbooks.lilymedia.ai/service-down"
+          escalation_policy: "immediate"
+
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+          team: platform
+          escalation_level: p0
+        annotations:
+          summary: "High error rate on {{ $labels.instance }}"
+          description: "Error rate is {{ $value | humanizePercentage }} for {{ $labels.instance }}"
+          runbook_url: "https://runbooks.lilymedia.ai/high-error-rate"
+
+      - alert: DatabaseConnectionPoolExhausted
+        expr: database_connection_pool_status{metric_type="pool_utilization_percent"} > 95
+        for: 1m
+        labels:
+          severity: critical
+          team: platform
+          escalation_level: p0
+        annotations:
+          summary: "Database connection pool nearly exhausted"
+          description: "Connection pool {{ $labels.pool_name }} utilization is {{ $value }}%"
+          runbook_url: "https://runbooks.lilymedia.ai/database-pool-exhaustion"
+
+  # ============================================================================
+  # Plan Enforcement and Business Logic Alerts (P1 - High Priority)
+  # ============================================================================
+  - name: plan_enforcement
+    rules:
+      - alert: HighPlanLimitViolationRate
+        expr: rate(plan_limit_violations_total[5m]) > 10
+        for: 3m
+        labels:
+          severity: warning
+          team: billing
+          escalation_level: p1
+        annotations:
+          summary: "High rate of plan limit violations"
+          description: "Plan violations rate is {{ $value }} violations/sec for {{ $labels.plan_tier }}"
+          runbook_url: "https://runbooks.lilymedia.ai/plan-violations"
+
+      - alert: PlanQuotaUtilizationCritical
+        expr: plan_quota_utilization_percent_current{utilization_bucket="critical"} > 0
+        for: 5m
+        labels:
+          severity: warning
+          team: billing
+          escalation_level: p1
+        annotations:
+          summary: "Users approaching plan quota limits"
+          description: "{{ $value }} users have >90% quota utilization for {{ $labels.feature }}"
+          runbook_url: "https://runbooks.lilymedia.ai/quota-critical"
+
+      - alert: PlanUpgradeConversionDrop
+        expr: rate(plan_upgrade_triggers_total{conversion_result="declined"}[1h]) / rate(plan_upgrade_triggers_total[1h]) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+          team: growth
+          escalation_level: p1
+        annotations:
+          summary: "High plan upgrade decline rate"
+          description: "Upgrade conversion rate dropped to {{ $value | humanizePercentage }}"
+          runbook_url: "https://runbooks.lilymedia.ai/conversion-drop"
+
+  # ============================================================================
+  # Webhook Reliability Alerts (P1 - High Priority)
+  # ============================================================================
+  - name: webhook_reliability
+    rules:
+      - alert: WebhookDeliveryFailureRate
+        expr: rate(webhook_deliveries_total{delivery_status="failed"}[5m]) / rate(webhook_deliveries_total[5m]) > 0.05
+        for: 3m
+        labels:
+          severity: warning
+          team: integrations
+          escalation_level: p1
+        annotations:
+          summary: "High webhook delivery failure rate"
+          description: "Webhook failure rate is {{ $value | humanizePercentage }} for {{ $labels.event_type }}"
+          runbook_url: "https://runbooks.lilymedia.ai/webhook-failures"
+
+      - alert: WebhookDeliveryLatencyHigh
+        expr: histogram_quantile(0.95, rate(webhook_delivery_latency_seconds_bucket[5m])) > 30
+        for: 5m
+        labels:
+          severity: warning
+          team: integrations
+          escalation_level: p1
+        annotations:
+          summary: "High webhook delivery latency"
+          description: "95th percentile latency is {{ $value }}s for {{ $labels.event_type }}"
+          runbook_url: "https://runbooks.lilymedia.ai/webhook-latency"
+
+      - alert: WebhookSignatureValidationFailures
+        expr: rate(webhook_signature_validations_total{validation_result="failed"}[5m]) > 1
+        for: 2m
+        labels:
+          severity: critical
+          team: security
+          escalation_level: p0
+        annotations:
+          summary: "Webhook signature validation failures detected"
+          description: "{{ $value }} signature validation failures/sec for {{ $labels.provider }}"
+          runbook_url: "https://runbooks.lilymedia.ai/webhook-security"
+
+      - alert: WebhookDLQBacklog
+        expr: webhook_dlq_operations_total{operation="enqueue"} - webhook_dlq_operations_total{operation="process"} > 1000
+        for: 10m
+        labels:
+          severity: warning
+          team: integrations
+          escalation_level: p1
+        annotations:
+          summary: "Large webhook dead letter queue backlog"
+          description: "DLQ has {{ $value }} unprocessed webhook events"
+          runbook_url: "https://runbooks.lilymedia.ai/webhook-dlq"
+
+  # ============================================================================
+  # Content Quality and Safety Alerts (P1 - High Priority)
+  # ============================================================================
+  - name: content_quality
+    rules:
+      - alert: ContentQualityDegraded
+        expr: histogram_quantile(0.50, rate(content_generation_quality_scores_bucket[10m])) < 50
+        for: 5m
+        labels:
+          severity: warning
+          team: content
+          escalation_level: p1
+        annotations:
+          summary: "Content generation quality degraded"
+          description: "Median quality score dropped to {{ $value }} for {{ $labels.content_type }}"
+          runbook_url: "https://runbooks.lilymedia.ai/quality-degradation"
+
+      - alert: HighContentSafetyViolations
+        expr: rate(content_safety_actions_total{enforcement_level="block"}[5m]) > 5
+        for: 2m
+        labels:
+          severity: warning
+          team: safety
+          escalation_level: p1
+        annotations:
+          summary: "High rate of content safety violations"
+          description: "{{ $value }} content blocks/sec due to {{ $labels.safety_violation }}"
+          runbook_url: "https://runbooks.lilymedia.ai/content-safety"
+
+      - alert: ImageGenerationFailureSpike
+        expr: rate(image_generation_requests_total{status="failed"}[5m]) > 2
+        for: 3m
+        labels:
+          severity: warning
+          team: content
+          escalation_level: p1
+        annotations:
+          summary: "Image generation failure spike detected"
+          description: "{{ $value }} image generation failures/sec for {{ $labels.model }}"
+          runbook_url: "https://runbooks.lilymedia.ai/image-gen-failures"
+
+  # ============================================================================
+  # Research System Alerts (P1 - High Priority)
+  # ============================================================================
+  - name: research_system
+    rules:
+      - alert: ResearchSystemDown
+        expr: research_scheduler_health_score{component="scheduler"} < 50
+        for: 2m
+        labels:
+          severity: critical
+          team: research
+          escalation_level: p0
+        annotations:
+          summary: "Research scheduler unhealthy"
+          description: "Research scheduler health score is {{ $value }}"
+          runbook_url: "https://runbooks.lilymedia.ai/research-scheduler"
+
+      - alert: VectorStorePerformanceDegraded
+        expr: histogram_quantile(0.95, rate(vector_store_operation_latency_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          team: research
+          escalation_level: p1
+        annotations:
+          summary: "Vector store performance degraded"
+          description: "95th percentile latency is {{ $value }}s for {{ $labels.operation }}"
+          runbook_url: "https://runbooks.lilymedia.ai/vector-performance"
+
+      - alert: ResearchQuotaExceededFrequent
+        expr: rate(research_quota_exceeded_total[5m]) > 10
+        for: 3m
+        labels:
+          severity: warning
+          team: research
+          escalation_level: p1
+        annotations:
+          summary: "Frequent research quota violations"
+          description: "{{ $value }} quota violations/sec for {{ $labels.feature }}"
+          runbook_url: "https://runbooks.lilymedia.ai/research-quotas"
+
+  # ============================================================================
+  # Security and Authentication Alerts (P0/P1 - Critical/High)
+  # ============================================================================
+  - name: security
+    rules:
+      - alert: HighAuthenticationFailureRate
+        expr: rate(authentication_events_total{success="false"}[5m]) > 50
+        for: 2m
+        labels:
+          severity: critical
+          team: security
+          escalation_level: p0
+        annotations:
+          summary: "High authentication failure rate detected"
+          description: "{{ $value }} auth failures/sec using {{ $labels.auth_method }}"
+          runbook_url: "https://runbooks.lilymedia.ai/auth-attacks"
+
+      - alert: SecurityEnforcementActionsSpike
+        expr: rate(security_enforcement_actions_total[5m]) > 10
+        for: 1m
+        labels:
+          severity: warning
+          team: security
+          escalation_level: p1
+        annotations:
+          summary: "Security enforcement actions spike"
+          description: "{{ $value }} security actions/sec for {{ $labels.threat_type }}"
+          runbook_url: "https://runbooks.lilymedia.ai/security-enforcement"
+
+      - alert: SuspiciousAuthenticationPattern
+        expr: rate(authentication_events_total{risk_level="high"}[5m]) > 5
+        for: 3m
+        labels:
+          severity: warning
+          team: security
+          escalation_level: p1
+        annotations:
+          summary: "Suspicious authentication patterns detected"
+          description: "{{ $value }} high-risk auth events/sec"
+          runbook_url: "https://runbooks.lilymedia.ai/suspicious-auth"
+
+  # ============================================================================
+  # Performance and Resource Utilization (P2 - Medium Priority)
+  # ============================================================================
+  - name: performance
+    rules:
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 5
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+          escalation_level: p2
+        annotations:
+          summary: "High API response times"
+          description: "95th percentile response time is {{ $value }}s"
+          runbook_url: "https://runbooks.lilymedia.ai/slow-responses"
+
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+          escalation_level: p2
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value | humanizePercentage }} on {{ $labels.instance }}"
+          runbook_url: "https://runbooks.lilymedia.ai/memory-usage"
+
+      - alert: HighCacheEvictionRate
+        expr: rate(cache_operations_total{result="evicted"}[5m]) > 100
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+          escalation_level: p2
+        annotations:
+          summary: "High cache eviction rate"
+          description: "Cache eviction rate is {{ $value }}/sec for {{ $labels.cache_type }}"
+          runbook_url: "https://runbooks.lilymedia.ai/cache-evictions"
+
+      - alert: BackgroundTaskQueueBacklog
+        expr: background_task_queue_health{metric_type="pending_tasks"} > 10000
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+          escalation_level: p2
+        annotations:
+          summary: "Large background task queue backlog"
+          description: "{{ $value }} pending tasks in {{ $labels.queue_name }}"
+          runbook_url: "https://runbooks.lilymedia.ai/task-backlog"
+
+  # ============================================================================
+  # Business Metrics and Growth Alerts (P2 - Medium Priority)
+  # ============================================================================
+  - name: business_metrics
+    rules:
+      - alert: UserEngagementDrop
+        expr: rate(http_requests_total{path=~"/api/content/.*"}[1h]) < 100
+        for: 30m
+        labels:
+          severity: warning
+          team: growth
+          escalation_level: p2
+        annotations:
+          summary: "User engagement significantly dropped"
+          description: "Content API requests dropped to {{ $value }}/hour"
+          runbook_url: "https://runbooks.lilymedia.ai/engagement-drop"
+
+      - alert: LowContentGenerationVolume
+        expr: rate(content_generation_quality_scores_count[1h]) < 50
+        for: 1h
+        labels:
+          severity: warning
+          team: growth
+          escalation_level: p2
+        annotations:
+          summary: "Content generation volume is low"
+          description: "Only {{ $value }} content pieces generated per hour"
+          runbook_url: "https://runbooks.lilymedia.ai/low-generation"
+
+# ============================================================================
+# Escalation Configuration Notes
+# ============================================================================
+# 
+# Escalation Levels:
+# - P0 (Critical): Immediate response required, pages on-call engineer
+#   * System down, security incidents, data loss
+#   * Response time: <5 minutes
+#   * Escalation: Primary → Secondary → Manager (15 min intervals)
+#
+# - P1 (High): Response within 1 hour during business hours
+#   * Performance degradation, business logic issues
+#   * Response time: <1 hour (business hours), <4 hours (off-hours)
+#   * Escalation: Primary → Secondary (2 hour intervals)
+#
+# - P2 (Medium): Response within 24 hours
+#   * Minor performance issues, growth metrics
+#   * Response time: <24 hours
+#   * Escalation: Slack notification only
+#
+# Integration with PagerDuty/OpsGenie:
+# - Critical alerts (P0) trigger immediate pages
+# - High priority (P1) create incidents with escalation
+# - Medium priority (P2) create low-priority incidents
+#
+# Notification Channels:
+# - Slack: #alerts-critical, #alerts-high, #alerts-medium
+# - Email: on-call-engineers@lilymedia.ai
+# - PagerDuty: Production incident response team
+# - Teams: Platform, Security, Growth, Content, Research, Integrations

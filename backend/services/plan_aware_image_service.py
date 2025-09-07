@@ -275,10 +275,10 @@ class PlanAwareImageService:
             return plan_max_quality
     
     def _validate_model_policy(self, model: str) -> None:
-        """Validate model against content policy - prevent DALL-E usage"""
+        """Validate model against content policy - prevent prohibited models"""
         prohibited_models = ["dalle", "dall-e", "dalle3", "dall_e", "dalle_3"]
         if any(prohibited in model.lower() for prohibited in prohibited_models):
-            raise ValueError(f"Model '{model}' violates content policy. DALL-E models are prohibited.")
+            raise ValueError(f"Model '{model}' violates content policy. Prohibited model usage not allowed.")
     
     def _get_effective_model(self, requested_model: str, plan_name: str) -> Optional[str]:
         """Determine the effective model based on plan restrictions"""

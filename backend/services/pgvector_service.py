@@ -32,8 +32,8 @@ class PgVectorService:
     
     def __init__(self, db_session: Session):
         self.db = db_session
-        self.embedding_model = "text-embedding-3-small"  # 1536 dimensions
-        self.embedding_dimensions = 1536
+        self.embedding_model = "text-embedding-3-large"  # 3072 dimensions
+        self.embedding_dimensions = 3072
         
     async def ensure_extension(self):
         """Ensure pgvector extension is enabled"""

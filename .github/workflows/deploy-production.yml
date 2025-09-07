@@ -139,10 +139,37 @@ jobs:
           
         echo "✅ Application state backed up"
 
-  deploy-backend-blue-green:
+  safe-migration:
     runs-on: ubuntu-latest
     needs: create-backup
-    if: inputs.deploy_backend == true && inputs.deployment_strategy == 'blue-green'
+    if: inputs.run_migrations == true
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ inputs.version }}
+        
+    - name: Run safe database migration
+      uses: ./.github/workflows/safe-migration.yml
+      with:
+        environment: 'production'
+        target_revision: 'head'
+        dry_run: false
+      secrets:
+        DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+        POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+        
+    - name: Migration success notification
+      run: |
+        echo "🎉 Database migration completed successfully"
+        echo "✅ Production database is up to date"
+        echo "🔄 Backup created and available for rollback if needed"
+
+  deploy-backend-blue-green:
+    runs-on: ubuntu-latest
+    needs: [create-backup, safe-migration]
+    if: inputs.deploy_backend == true && inputs.deployment_strategy == 'blue-green' && (always() && (needs.safe-migration.result == 'success' || needs.safe-migration.result == 'skipped'))
     
     steps:
     - name: Checkout code

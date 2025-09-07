@@ -38,7 +38,7 @@ async def get_metrics():
                 "total_platforms": total_platforms,
                 "connection_rate": round((connected_platforms / total_platforms) * 100, 1),
                 "ai_services_active": {
-                    "openai_image_generation": True,
+                    "xai_image_generation": True,
                     "openai_content_generation": True,
                     "ai_insights_generation": True,
                     "twitter_posting": twitter_connected

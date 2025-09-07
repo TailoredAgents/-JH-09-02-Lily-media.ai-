@@ -116,6 +116,17 @@ def setup_middleware(app: FastAPI, config: AppConfig) -> None:
         logger.error(f"❌ CRITICAL: Tenant isolation middleware failed to load: {e}")
         logger.error("⚠️  Multi-tenant data isolation is NOT enforced!")
     
+    # Add content safety middleware (CRITICAL for brand protection)
+    try:
+        from backend.middleware.content_safety_middleware import setup_content_safety_middleware
+        if setup_content_safety_middleware(app):
+            logger.info("✅ SECURITY: Content safety middleware enabled - protects against brand damage")
+        else:
+            logger.error("❌ CRITICAL: Content safety middleware failed to initialize")
+    except ImportError as e:
+        logger.error(f"❌ CRITICAL: Content safety middleware not available: {e}")
+        logger.error("⚠️  Brand protection and content safety is NOT enforced!")
+    
     # Add error tracking middleware
     try:
         from backend.middleware.error_tracking import error_tracking_middleware, log_404_errors

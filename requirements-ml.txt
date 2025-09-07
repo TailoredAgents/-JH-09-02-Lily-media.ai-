@@ -1,0 +1,23 @@
+# Optional ML dependencies for advanced image quality scoring
+# Install with: pip install -r requirements-ml.txt
+
+# CLIP for semantic image-text alignment scoring
+git+https://github.com/openai/CLIP.git
+
+# PyTorch for CLIP and other ML models
+torch>=1.9.0
+torchvision>=0.10.0
+
+# Transformers for LAION-based aesthetic scoring
+transformers>=4.20.0
+
+# Additional ML utilities
+numpy>=1.21.0
+Pillow>=9.0.0
+
+# Optional: For enhanced aesthetic scoring models
+# laion-aesthetic-predictor (if available)
+# clip-by-openai
+
+# Note: These dependencies are optional and the system will fall back
+# to basic quality scoring if they are not available.

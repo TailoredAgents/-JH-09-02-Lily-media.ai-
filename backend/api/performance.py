@@ -10,7 +10,8 @@ from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 
 from backend.db.database import get_db
-from backend.auth.dependencies import get_current_user, get_current_admin_user, AuthUser
+from backend.db.models import User
+from backend.auth.dependencies import get_current_user, get_admin_user, AuthUser
 from backend.core.performance import (
     performance_metrics,
     analyze_performance_bottlenecks,
@@ -75,7 +76,7 @@ class EndpointPerformanceResponse(BaseModel):
 
 @router.get("/metrics", response_model=PerformanceMetricsResponse)
 async def get_performance_metrics(
-    current_user: AuthUser = Depends(get_current_admin_user)
+    current_user: User = Depends(get_admin_user)
 ):
     """
     Get current performance metrics summary
@@ -102,7 +103,7 @@ async def get_performance_metrics(
 
 @router.get("/analysis", response_model=PerformanceAnalysisResponse)
 async def get_performance_analysis(
-    current_user: AuthUser = Depends(get_current_admin_user)
+    current_user: User = Depends(get_admin_user)
 ):
     """
     Get performance analysis with optimization recommendations
@@ -129,7 +130,7 @@ async def get_performance_analysis(
 @router.get("/slow-queries", response_model=PaginatedResponse[SlowQueryResponse])
 async def get_slow_queries(
     pagination: PaginationParams = Depends(get_pagination_params),
-    current_user: AuthUser = Depends(get_current_admin_user),
+    current_user: User = Depends(get_admin_user),
     min_duration: float = Query(1.0, ge=0.1, description="Minimum query duration in seconds")
 ):
     """
@@ -187,7 +188,7 @@ async def get_slow_queries(
 
 @router.get("/cache/stats", response_model=CacheStatsResponse)
 async def get_cache_stats(
-    current_user: AuthUser = Depends(get_current_admin_user)
+    current_user: User = Depends(get_admin_user)
 ):
     """
     Get cache statistics
@@ -214,7 +215,7 @@ async def get_cache_stats(
 
 @router.delete("/cache/clear")
 async def clear_cache(
-    current_user: AuthUser = Depends(get_current_admin_user)
+    current_user: User = Depends(get_admin_user)
 ):
     """
     Clear all cache entries
@@ -238,7 +239,7 @@ async def clear_cache(
 @router.get("/endpoints", response_model=PaginatedResponse[EndpointPerformanceResponse])
 async def get_endpoint_performance(
     pagination: PaginationParams = Depends(get_pagination_params),
-    current_user: AuthUser = Depends(get_current_admin_user),
+    current_user: User = Depends(get_admin_user),
     sort_by: str = Query("avg_duration", description="Sort by: count, avg_duration, total_duration"),
     min_calls: int = Query(1, ge=1, description="Minimum number of calls to include endpoint")
 ):

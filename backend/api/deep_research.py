@@ -16,6 +16,20 @@ logger = logging.getLogger(__name__)
 from backend.services.research_scheduler import research_scheduler
 from backend.agents.deep_research_agent import deep_research_agent
 from backend.middleware.feature_flag_enforcement import require_flag
+from backend.middleware.research_access_control import (
+    require_research_feature,
+    require_basic_research,
+    require_advanced_research,
+    require_deep_research,
+    require_research_analytics,
+    get_research_access_controller,
+    ResearchAccessController
+)
+from backend.services.research_monitoring import (
+    get_research_monitoring_service,
+    ResearchOperationTracker
+)
+from backend.auth.dependencies import get_current_user, AuthUser
 try:
     from backend.tasks.research_tasks import (
         execute_weekly_deep_research_task,
@@ -101,7 +115,7 @@ async def setup_industry_research(
     industry: str,
     setup_request: IndustryResearchSetup,
     background_tasks: BackgroundTasks,
-    _: None = Depends(require_flag("ENABLE_DEEP_RESEARCH"))
+    _: None = Depends(require_deep_research())
 ):
     """
     Set up autonomous deep research for a specific industry
@@ -132,7 +146,10 @@ async def setup_industry_research(
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/status/{industry}")
-async def get_research_status(industry: str):
+async def get_research_status(
+    industry: str,
+    _: None = Depends(require_research_feature("research_status"))
+):
     """
     Get current research status for a specific industry
     
@@ -160,7 +177,9 @@ async def get_research_status(industry: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/status")
-async def get_all_research_status():
+async def get_all_research_status(
+    _: None = Depends(require_research_feature("research_status"))
+):
     """
     Get research status for all configured industries
     
@@ -184,7 +203,8 @@ async def get_all_research_status():
 @router.put("/schedule/{industry}")
 async def update_research_schedule(
     industry: str,
-    schedule_update: ScheduleUpdate
+    schedule_update: ScheduleUpdate,
+    _: None = Depends(require_deep_research())
 ):
     """
     Update research schedule for a specific industry
@@ -215,7 +235,7 @@ async def update_research_schedule(
 async def trigger_immediate_research(
     industry: str,
     background_tasks: BackgroundTasks,
-    _: None = Depends(require_flag("ENABLE_DEEP_RESEARCH"))
+    _: None = Depends(require_advanced_research())
 ):
     """
     Trigger immediate deep research execution for an industry
@@ -243,7 +263,11 @@ async def trigger_immediate_research(
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/execute/{industry}/result/{task_id}")
-async def get_research_task_result(industry: str, task_id: str):
+async def get_research_task_result(
+    industry: str, 
+    task_id: str,
+    _: None = Depends(require_research_feature("research_status"))
+):
     """
     Get results from a specific research task execution
     
@@ -273,7 +297,10 @@ async def get_research_task_result(industry: str, task_id: str):
 # ============================================================================
 
 @router.post("/knowledge-base/query")
-async def query_knowledge_base(query_request: ResearchQuery):
+async def query_knowledge_base(
+    query_request: ResearchQuery,
+    _: None = Depends(require_basic_research())
+):
     """
     Query the industry knowledge base using semantic search
     
@@ -309,7 +336,8 @@ async def query_knowledge_base(query_request: ResearchQuery):
 @router.get("/knowledge-base/recent/{industry}")
 async def get_recent_intelligence(
     industry: str,
-    days: int = Query(7, ge=1, le=30, description="Number of days to look back")
+    days: int = Query(7, ge=1, le=30, description="Number of days to look back"),
+    _: None = Depends(require_research_feature("recent_intelligence"))
 ):
     """
     Get recent industry intelligence report
@@ -358,7 +386,8 @@ async def get_recent_intelligence(
 async def get_content_opportunities(
     industry: str,
     urgency: Optional[str] = Query(None, description="Filter by urgency: low, medium, high"),
-    limit: int = Query(20, ge=1, le=100, description="Maximum opportunities to return")
+    limit: int = Query(20, ge=1, le=100, description="Maximum opportunities to return"),
+    _: None = Depends(require_research_feature("content_opportunities"))
 ):
     """
     Get content opportunities identified from recent research
@@ -414,7 +443,8 @@ async def get_content_opportunities(
 @router.get("/analytics/{industry}")
 async def get_research_analytics(
     industry: str,
-    period_days: int = Query(30, ge=7, le=90, description="Analysis period in days")
+    period_days: int = Query(30, ge=7, le=90, description="Analysis period in days"),
+    _: None = Depends(require_research_analytics())
 ):
     """
     Get research analytics and performance metrics
@@ -476,6 +506,29 @@ async def get_research_analytics(
 # System Health & Monitoring
 # ============================================================================
 
+@router.get("/access-summary")
+async def get_research_access_summary(
+    access_controller: ResearchAccessController = Depends(get_research_access_controller)
+):
+    """
+    Get user's research access capabilities and current usage
+    
+    Returns information about available research features, quotas, and current usage.
+    Useful for frontend to display appropriate UI elements and usage warnings.
+    """
+    try:
+        access_summary = access_controller.get_access_summary()
+        
+        return {
+            "status": "success",
+            "access_summary": access_summary,
+            "message": f"Research access level determined for {access_summary['plan']} plan"
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get research access summary: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/health")
 async def deep_research_health_check():
     """
@@ -521,7 +574,10 @@ async def deep_research_health_check():
 # ============================================================================
 
 @router.delete("/remove/{industry}")
-async def remove_industry_research(industry: str):
+async def remove_industry_research(
+    industry: str,
+    _: None = Depends(require_deep_research())
+):
     """
     Remove research configuration for an industry
     
@@ -545,7 +601,10 @@ async def remove_industry_research(industry: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/topics/{industry}")
-async def get_research_topics(industry: str):
+async def get_research_topics(
+    industry: str,
+    _: None = Depends(require_research_feature("research_status"))
+):
     """
     Get current research topics for an industry
     

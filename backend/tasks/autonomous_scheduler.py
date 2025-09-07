@@ -32,6 +32,7 @@ from backend.services.content_persistence_service import ContentPersistenceServi
 from backend.services.memory_service_production import ProductionMemoryService
 from backend.tasks.celery_app import celery_app
 from backend.tasks.db_session_manager import get_celery_db_session
+from backend.core.feature_flags import ff
 
 logger = logging.getLogger(__name__)
 
@@ -116,6 +117,17 @@ def daily_content_generation(self):
     """Daily autonomous content generation task"""
     try:
         logger.info("Starting daily autonomous content generation")
+        
+        # SECURITY: Check research feature flags before executing autonomous research
+        if not ff("ENABLE_DEEP_RESEARCH"):
+            logger.warning("Daily autonomous content generation blocked: ENABLE_DEEP_RESEARCH flag is disabled")
+            return {
+                'status': 'feature_disabled',
+                'error': 'Deep research features are currently disabled',
+                'flag_required': 'ENABLE_DEEP_RESEARCH',
+                'users_processed': 0,
+                'timestamp': datetime.now(timezone.utc).isoformat()
+            }
         
         scheduler = AutonomousScheduler()
         

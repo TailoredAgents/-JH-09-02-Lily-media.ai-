@@ -22,6 +22,7 @@ from backend.services.content_scheduler_service import get_content_scheduler_ser
 from backend.api.partner_oauth import is_partner_oauth_enabled
 from backend.core.api_version import create_versioned_router
 from backend.middleware.feature_flag_enforcement import require_flag
+from backend.services.content_safety_service import get_content_safety_service
 
 logger = logging.getLogger(__name__)
 router = create_versioned_router(prefix="/content", tags=["content"])
@@ -708,7 +709,7 @@ async def generate_content(
     db: Session = Depends(get_db),
     _: None = Depends(require_flag("AI_CONTENT_GENERATION"))
 ):
-    """Generate AI content based on prompt"""
+    """Generate AI content based on prompt with comprehensive safety checks"""
     
     try:
         # Use OpenAI tool to generate content
@@ -720,16 +721,45 @@ async def generate_content(
         )
         
         if result.get("status") == "success":
-            return {
+            generated_content = result.get("content", "")
+            
+            # SECURITY: Perform content safety analysis
+            content_safety_service = get_content_safety_service()
+            safety_result = await content_safety_service.analyze_content_safety(
+                content_text=generated_content,
+                platform=request.platform or "general",
+                user_id=current_user.id
+            )
+            
+            # Check if content is safe for publication
+            response_data = {
                 "status": "success",
-                "content": result.get("content"),
+                "content": generated_content,
                 "title": result.get("title"),
                 "hashtags": result.get("hashtags", []),
                 "platform": request.platform,
                 "content_type": request.content_type,
                 "tone": request.tone,
-                "generated_at": datetime.now(timezone.utc)
+                "generated_at": datetime.now(timezone.utc),
+                "safety_check": {
+                    "safety_level": safety_result.safety_level.value,
+                    "brand_alignment_score": safety_result.brand_alignment_score,
+                    "publish_approved": safety_result.publish_approved,
+                    "review_required": safety_result.review_required,
+                    "recommendations": safety_result.recommendations,
+                    "confidence_score": safety_result.confidence_score
+                }
             }
+            
+            # Add violations if any exist
+            if safety_result.violations:
+                response_data["safety_check"]["violations"] = safety_result.violations[:3]  # Limit for response size
+            
+            # Log safety check for audit
+            logger.info(f"Content safety check for user {current_user.id}: {safety_result.safety_level.value} "
+                       f"(brand: {safety_result.brand_alignment_score:.2f}, violations: {len(safety_result.violations)})")
+            
+            return response_data
         else:
             return {
                 "status": "error",
@@ -886,7 +916,28 @@ async def generate_image(
     current_user: User = Depends(get_current_active_user),
     _: None = Depends(require_flag("IMAGE_GENERATION"))
 ):
-    """Generate an image using xAI Grok 2 Vision model"""
+    """Generate an image using xAI Grok 2 Vision model with safety validation"""
+    
+    # SECURITY: Pre-validate image generation prompt for safety
+    content_safety_service = get_content_safety_service()
+    prompt_safety_result = await content_safety_service.analyze_content_safety(
+        content_text=request.prompt,
+        platform=request.platform,
+        user_id=current_user.id
+    )
+    
+    # Block image generation for unsafe prompts
+    if prompt_safety_result.safety_level == content_safety_service.SafetyLevel.BLOCKED:
+        logger.warning(f"Blocked image generation for user {current_user.id}: unsafe prompt")
+        return {
+            "status": "blocked",
+            "error": "Image generation blocked due to safety policy violations",
+            "safety_check": {
+                "safety_level": prompt_safety_result.safety_level.value,
+                "violations": prompt_safety_result.violations,
+                "recommendations": prompt_safety_result.recommendations
+            }
+        }
     
     result = await image_generation_service.generate_image(
         prompt=request.prompt,
@@ -896,6 +947,39 @@ async def generate_image(
         industry_context=request.industry_context,
         tone=request.tone
     )
+    
+    # Add safety validation results to the response
+    if result.get("status") == "success":
+        # For successful generation, analyze the generated image content if available
+        image_safety_result = None
+        if result.get("image_base64"):
+            try:
+                import base64
+                image_data = base64.b64decode(result["image_base64"])
+                image_safety_result = await content_safety_service.analyze_content_safety(
+                    content_text=request.prompt,  # Use prompt as context
+                    image_data=image_data,
+                    platform=request.platform,
+                    user_id=current_user.id
+                )
+            except Exception as e:
+                logger.warning(f"Image safety analysis failed: {e}")
+        
+        result["safety_check"] = {
+            "prompt_safety": {
+                "safety_level": prompt_safety_result.safety_level.value,
+                "brand_alignment_score": prompt_safety_result.brand_alignment_score,
+                "publish_approved": prompt_safety_result.publish_approved
+            }
+        }
+        
+        if image_safety_result:
+            result["safety_check"]["image_safety"] = {
+                "safety_level": image_safety_result.safety_level.value,
+                "brand_alignment_score": image_safety_result.brand_alignment_score,
+                "publish_approved": image_safety_result.publish_approved,
+                "violations": image_safety_result.violations[:2] if image_safety_result.violations else []
+            }
     
     return result
 

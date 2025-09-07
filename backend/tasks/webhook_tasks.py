@@ -1,6 +1,7 @@
 """
-Celery tasks for webhook processing
-Handles asynchronous processing of webhook events with retries and DLQ
+Celery tasks for webhook processing with enhanced reliability
+Handles asynchronous processing of webhook events with retries, DLQ, and idempotency
+Enhanced with P0-11c reliability improvements
 """
 import json
 import logging
@@ -13,6 +14,11 @@ from celery.exceptions import Retry
 from backend.core.config import get_settings
 from backend.services.meta_webhook_service import get_meta_webhook_service
 from backend.core.dlq import handle_task_failure, get_dlq_manager, TaskFailureReason
+from backend.services.webhook_reliability_service import (
+    get_webhook_reliability_service, 
+    WebhookDeliveryStatus,
+    WebhookProcessingResult
+)
 
 logger = logging.getLogger(__name__)
 
@@ -20,12 +26,14 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 celery_app = Celery('webhook_tasks')
 
-# Configure Celery for webhook processing
+# Configure Celery for webhook processing with reliability enhancements
 celery_app.conf.update(
     # Task routing
     task_routes={
         'backend.tasks.webhook_tasks.process_meta_event': {'queue': 'webhook_processing'},
         'backend.tasks.webhook_tasks.watchdog_scan': {'queue': 'webhook_watchdog'},
+        'backend.tasks.webhook_tasks.webhook_recovery_scan': {'queue': 'webhook_recovery'},
+        'backend.tasks.webhook_tasks.webhook_cleanup_task': {'queue': 'webhook_maintenance'},
     },
     
     # Retry settings
@@ -57,7 +65,7 @@ DLQ_RETRY_DELAYS = [60, 300, 900, 3600, 14400]  # 1m, 5m, 15m, 1h, 4h
 )
 def process_meta_event(self, entry: Dict[str, Any], event_info: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Process a single Meta webhook entry
+    Process a single Meta webhook entry with enhanced reliability
     
     Args:
         self: Celery task instance (for retries)
@@ -73,8 +81,57 @@ def process_meta_event(self, entry: Dict[str, Any], event_info: Dict[str, Any]) 
         
         logger.info(f"Processing Meta webhook entry: task_id={task_id}, entry_id={event_info.get('entry_id')}")
         
-        # Get webhook service
+        # Get services
         webhook_service = get_meta_webhook_service()
+        reliability_service = get_webhook_reliability_service()
+        
+        # Generate idempotency key for duplicate detection
+        idempotency_key = reliability_service.generate_idempotency_key(
+            platform="meta",
+            event_data=entry,
+            signature=event_info.get('signature')
+        )
+        
+        # Check for duplicate processing
+        is_duplicate, previous_result = asyncio.run(
+            reliability_service.check_idempotency(
+                idempotency_key=idempotency_key,
+                platform="meta",
+                event_type=event_info.get('event_type', 'unknown'),
+                organization_id=entry.get('organization_id'),
+                user_id=entry.get('user_id')
+            )
+        )
+        
+        if is_duplicate:
+            logger.info(
+                f"Duplicate Meta webhook detected, skipping: task_id={task_id}, "
+                f"idempotency_key={idempotency_key[:12]}..., previous_result={previous_result}"
+            )
+            
+            return {
+                "status": "skipped",
+                "task_id": task_id,
+                "entry_id": event_info.get('entry_id'),
+                "processing_result": "idempotent_skip",
+                "idempotency_key": idempotency_key[:12] + "...",
+                "previous_processing": previous_result.value if previous_result else None
+            }
+        
+        # Track delivery attempt start
+        webhook_id = f"meta_{entry.get('id', task_id)}_{int(start_time.timestamp())}"
+        
+        asyncio.run(
+            reliability_service.track_delivery_attempt(
+                webhook_id=webhook_id,
+                platform="meta",
+                event_type=event_info.get('event_type', 'unknown'),
+                delivery_status=WebhookDeliveryStatus.PROCESSING,
+                attempt_number=self.request.retries + 1,
+                organization_id=entry.get('organization_id'),
+                user_id=entry.get('user_id')
+            )
+        )
         
         # Normalize the entry
         normalized_entry = webhook_service.normalize_webhook_entry(entry)
@@ -84,13 +141,54 @@ def process_meta_event(self, entry: Dict[str, Any], event_info: Dict[str, Any]) 
         
         # Calculate processing time
         processing_time = (datetime.now(timezone.utc) - start_time).total_seconds()
+        processing_time_ms = int(processing_time * 1000)
+        
+        # Determine processing result
+        processing_result = WebhookProcessingResult.SUCCESS
+        if result.get('error'):
+            processing_result = WebhookProcessingResult.TEMPORARY_FAILURE
+        
+        # Record successful processing
+        asyncio.run(
+            reliability_service.record_processing_result(
+                idempotency_key=idempotency_key,
+                platform="meta",
+                event_type=event_info.get('event_type', 'unknown'),
+                processing_result=processing_result,
+                processing_time_ms=processing_time_ms,
+                event_summary={
+                    'entry_id': event_info.get('entry_id'),
+                    'events_processed': result.get('events_processed', 0),
+                    'entry_type': result.get('entry_type', 'unknown')
+                },
+                organization_id=entry.get('organization_id'),
+                user_id=entry.get('user_id'),
+                webhook_id=webhook_id
+            )
+        )
+        
+        # Track successful delivery
+        asyncio.run(
+            reliability_service.track_delivery_attempt(
+                webhook_id=webhook_id,
+                platform="meta",
+                event_type=event_info.get('event_type', 'unknown'),
+                delivery_status=WebhookDeliveryStatus.DELIVERED,
+                attempt_number=self.request.retries + 1,
+                response_time=processing_time,
+                status_code=200,
+                organization_id=entry.get('organization_id'),
+                user_id=entry.get('user_id')
+            )
+        )
         
         # Log successful processing
         logger.info(
             f"Successfully processed Meta webhook entry: task_id={task_id}, "
             f"entry_id={event_info.get('entry_id')}, "
             f"processing_time={processing_time:.2f}s, "
-            f"events_processed={result.get('events_processed', 0)}"
+            f"events_processed={result.get('events_processed', 0)}, "
+            f"idempotency_key={idempotency_key[:12]}..."
         )
         
         return {
@@ -104,6 +202,65 @@ def process_meta_event(self, entry: Dict[str, Any], event_info: Dict[str, Any]) 
         
     except Exception as e:
         logger.error(f"Error processing Meta webhook entry: {e}")
+        
+        # Get reliability service for failure tracking
+        try:
+            reliability_service = get_webhook_reliability_service()
+            webhook_id = f"meta_{entry.get('id', task_id)}_{int(start_time.timestamp())}"
+            
+            # Track failed delivery attempt
+            asyncio.run(
+                reliability_service.track_delivery_attempt(
+                    webhook_id=webhook_id,
+                    platform="meta",
+                    event_type=event_info.get('event_type', 'unknown'),
+                    delivery_status=WebhookDeliveryStatus.FAILED,
+                    attempt_number=self.request.retries + 1,
+                    error_message=str(e),
+                    organization_id=entry.get('organization_id'),
+                    user_id=entry.get('user_id')
+                )
+            )
+            
+            # Generate idempotency key for failure recording
+            idempotency_key = reliability_service.generate_idempotency_key(
+                platform="meta",
+                event_data=entry,
+                signature=event_info.get('signature')
+            )
+            
+            # Record processing failure
+            processing_time_ms = int((datetime.now(timezone.utc) - start_time).total_seconds() * 1000)
+            
+            # Determine processing result based on error type
+            processing_result = WebhookProcessingResult.TEMPORARY_FAILURE
+            if not _is_retryable_error(e):
+                processing_result = WebhookProcessingResult.PERMANENT_FAILURE
+            elif 'auth' in str(e).lower():
+                processing_result = WebhookProcessingResult.AUTH_FAILURE
+            elif 'rate' in str(e).lower():
+                processing_result = WebhookProcessingResult.RATE_LIMITED
+            
+            asyncio.run(
+                reliability_service.record_processing_result(
+                    idempotency_key=idempotency_key,
+                    platform="meta",
+                    event_type=event_info.get('event_type', 'unknown'),
+                    processing_result=processing_result,
+                    processing_time_ms=processing_time_ms,
+                    event_summary={
+                        'entry_id': event_info.get('entry_id'),
+                        'error': str(e)[:200],  # Truncate error message
+                        'retry_count': self.request.retries
+                    },
+                    organization_id=entry.get('organization_id'),
+                    user_id=entry.get('user_id'),
+                    webhook_id=webhook_id
+                )
+            )
+            
+        except Exception as reliability_error:
+            logger.error(f"Failed to track webhook reliability metrics: {reliability_error}")
         
         # Determine if this is a retryable error
         retryable = _is_retryable_error(e)
@@ -146,7 +303,8 @@ def process_meta_event(self, entry: Dict[str, Any], event_info: Dict[str, Any]) 
                 "entry_id": event_info.get('entry_id'),
                 "error": str(e),
                 "retries": self.request.retries,
-                "sent_to_dlq": True
+                "sent_to_dlq": True,
+                "webhook_id": webhook_id if 'webhook_id' in locals() else None
             }
 
 
@@ -544,4 +702,122 @@ def watchdog_scan(self) -> Dict[str, Any]:
             "scan_time": datetime.now(timezone.utc).isoformat(),
             "status": "failed",
             "error": str(e)
+        }
+
+
+@celery_app.task(
+    bind=True,
+    name='backend.tasks.webhook_tasks.webhook_recovery_scan',
+    acks_late=True
+)
+def webhook_recovery_scan(self, limit: int = 50) -> Dict[str, Any]:
+    """
+    Enhanced webhook recovery scan using the reliability service
+    
+    Args:
+        self: Celery task instance
+        limit: Maximum number of failed webhooks to process
+        
+    Returns:
+        Recovery scan results
+    """
+    try:
+        logger.info(f"Starting webhook recovery scan: limit={limit}")
+        
+        scan_start = datetime.now(timezone.utc)
+        
+        # Get reliability service
+        reliability_service = get_webhook_reliability_service()
+        
+        # Process failed webhooks for recovery
+        recovery_results = asyncio.run(
+            reliability_service.process_failed_webhooks_recovery(limit=limit)
+        )
+        
+        # Get webhook reliability statistics
+        reliability_stats = reliability_service.get_webhook_reliability_stats()
+        
+        scan_time = (datetime.now(timezone.utc) - scan_start).total_seconds()
+        
+        result = {
+            "recovery_scan": recovery_results,
+            "reliability_stats": reliability_stats.get('delivery_statistics', {}),
+            "scan_duration_seconds": scan_time,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "status": "completed"
+        }
+        
+        logger.info(
+            f"Webhook recovery scan completed: {recovery_results.get('recovery_attempts', 0)} attempts, "
+            f"{recovery_results.get('successful_recoveries', 0)} successes, "
+            f"scan_duration={scan_time:.2f}s"
+        )
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Webhook recovery scan failed: {e}")
+        return {
+            "recovery_scan": {"error": str(e)},
+            "scan_duration_seconds": 0,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "status": "failed"
+        }
+
+
+@celery_app.task(
+    bind=True,
+    name='backend.tasks.webhook_tasks.webhook_cleanup_task',
+    acks_late=True
+)
+def webhook_cleanup_task(self, batch_size: int = 1000) -> Dict[str, Any]:
+    """
+    Webhook reliability maintenance task for cleanup
+    
+    Args:
+        self: Celery task instance
+        batch_size: Number of records to process per batch
+        
+    Returns:
+        Cleanup results
+    """
+    try:
+        logger.info(f"Starting webhook cleanup task: batch_size={batch_size}")
+        
+        cleanup_start = datetime.now(timezone.utc)
+        
+        # Get reliability service
+        reliability_service = get_webhook_reliability_service()
+        
+        # Clean up expired records
+        cleanup_results = asyncio.run(
+            reliability_service.cleanup_expired_records(batch_size=batch_size)
+        )
+        
+        cleanup_time = (datetime.now(timezone.utc) - cleanup_start).total_seconds()
+        
+        result = {
+            "cleanup_results": cleanup_results,
+            "cleanup_duration_seconds": cleanup_time,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "status": "completed" if not cleanup_results.get('error') else "failed"
+        }
+        
+        logger.info(
+            f"Webhook cleanup completed: "
+            f"{cleanup_results.get('expired_idempotency_records_deleted', 0)} idempotency records, "
+            f"{cleanup_results.get('old_delivered_records_deleted', 0)} delivered records, "
+            f"{cleanup_results.get('old_abandoned_records_deleted', 0)} abandoned records deleted, "
+            f"cleanup_duration={cleanup_time:.2f}s"
+        )
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Webhook cleanup task failed: {e}")
+        return {
+            "cleanup_results": {"error": str(e)},
+            "cleanup_duration_seconds": 0,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "status": "failed"
         }

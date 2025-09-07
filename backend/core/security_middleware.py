@@ -505,20 +505,28 @@ def get_cors_middleware_config(environment: str = "production"):
         if allowed_origins_env:
             allowed_origins = allowed_origins_env.split(",")
             allowed_origins = [origin.strip() for origin in allowed_origins if origin.strip()]
+            
+            # Production security: filter out localhost origins
+            if environment.lower() == "production":
+                filtered_origins = []
+                for origin in allowed_origins:
+                    if "localhost" in origin.lower() or origin.startswith("http://"):
+                        logger.warning(f"CORS Security: Filtering out insecure origin in production: {origin}")
+                    else:
+                        filtered_origins.append(origin)
+                allowed_origins = filtered_origins
         else:
             allowed_origins = []
         
         if not allowed_origins:
-            # Current production domains as defaults
+            # Production domains only - localhost removed for security
             allowed_origins = [
                 "https://socialmedia-frontend-pycc.onrender.com",
                 "https://socialmedia-api-wxip.onrender.com",
                 "https://www.lily-ai-socialmedia.com",
-                "https://lily-ai-socialmedia.com",
-                "https://localhost", 
-                "http://localhost"
+                "https://lily-ai-socialmedia.com"
             ]
-            logger.warning("No CORS environment variables found, using default origins including current production domains")
+            logger.warning("No CORS environment variables found, using production domains only (localhost excluded for security)")
         
         logger.info(f"Security middleware CORS allowed origins: {allowed_origins}")
         

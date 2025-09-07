@@ -49,6 +49,28 @@ jobs:
       with:
         args: --file=frontend/package.json --severity-threshold=medium
       continue-on-error: true
+    
+    - name: Run Trivy filesystem scan on frontend
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: './frontend'
+        format: 'sarif'
+        output: 'frontend-fs-trivy.sarif'
+        severity: 'HIGH,CRITICAL'
+    
+    - name: Upload Trivy results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'frontend-fs-trivy.sarif'
+        category: 'frontend-filesystem-scan'
+    
+    - name: Generate frontend SBOM
+      run: |
+        cd frontend
+        python3 ../scripts/generate-sbom.py --project-root ../frontend --output-dir ../sbom/frontend
+      continue-on-error: true
       
   backend-security:
     runs-on: ubuntu-latest
@@ -77,6 +99,27 @@ jobs:
         bandit -r backend/ -f json -o bandit-report.json || true
         bandit -r backend/
       continue-on-error: true
+    
+    - name: Run Trivy filesystem scan on backend
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: './backend'
+        format: 'sarif'
+        output: 'backend-fs-trivy.sarif'
+        severity: 'HIGH,CRITICAL'
+    
+    - name: Upload Trivy results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'backend-fs-trivy.sarif'
+        category: 'backend-filesystem-scan'
+    
+    - name: Generate backend SBOM
+      run: |
+        python3 scripts/generate-sbom.py --project-root . --output-dir sbom/backend
+      continue-on-error: true
       
     - name: Upload security reports
       uses: actions/upload-artifact@v4
@@ -85,6 +128,8 @@ jobs:
         path: |
           safety-report.json
           bandit-report.json
+          backend-fs-trivy.sarif
+          sbom/backend/
         retention-days: 30
 
   codeql-analysis:

@@ -1,0 +1,3417 @@
+{
+  "spdxVersion": "SPDX-2.3",
+  "dataLicense": "CC0-1.0",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "creationInfo": {
+    "created": "2025-09-07T04:20:38.098058+00:00",
+    "creators": [
+      "Tool: lily-media-sbom-generator"
+    ],
+    "licenseListVersion": "3.20"
+  },
+  "name": "lily-media-application-sbom",
+  "documentNamespace": "https://github.com/lily-media/app/sbom-20250907002214",
+  "packages": [
+    {
+      "SPDXID": "SPDXRef-Package-aiohappyeyeballs",
+      "name": "aiohappyeyeballs",
+      "versionInfo": "2.6.1",
+      "downloadLocation": "",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: J. Nick Koston",
+      "homepage": "",
+      "summary": "Happy Eyeballs for asyncio",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "85f6deb9454c0b857366c836e775395d4a77ddf2"
+      },
+      "licenseConcluded": "PSF-2.0",
+      "licenseDeclared": "PSF-2.0"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-aiohttp",
+      "name": "aiohttp",
+      "versionInfo": "3.10.11",
+      "downloadLocation": "https://github.com/aio-libs/aiohttp",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://github.com/aio-libs/aiohttp",
+      "summary": "Async http client/server framework (asyncio)",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "a7e759a84e0f32ab049ab6f355e6bf560393cd80"
+      },
+      "licenseConcluded": "Apache 2",
+      "licenseDeclared": "Apache 2"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-aiosignal",
+      "name": "aiosignal",
+      "versionInfo": "1.4.0",
+      "downloadLocation": "https://github.com/aio-libs/aiosignal",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://github.com/aio-libs/aiosignal",
+      "summary": "aiosignal: a list of registered asynchronous callbacks",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "2d3498248169c705a120414d6837d861f3c05ab2"
+      },
+      "licenseConcluded": "Apache 2.0",
+      "licenseDeclared": "Apache 2.0"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-alembic",
+      "name": "alembic",
+      "versionInfo": "1.14.0",
+      "downloadLocation": "https://alembic.sqlalchemy.org",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Mike Bayer",
+      "homepage": "https://alembic.sqlalchemy.org",
+      "summary": "A database migration tool for SQLAlchemy.",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "ae8af8c077446a58b6dd6bd0ccd3c2e7c8707fc3"
+      },
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-amqp",
+      "name": "amqp",
+      "versionInfo": "5.3.1",
+      "downloadLocation": "http://github.com/celery/py-amqp",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Barry Pederson",
+      "homepage": "http://github.com/celery/py-amqp",
+      "summary": "Low-level AMQP client for Python (fork of amqplib).",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "7dbf567624e7a1aa346dd13e97bba340024fa4b1"
+      },
+      "licenseConcluded": "BSD",
+      "licenseDeclared": "BSD"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-annotated-types",
+      "name": "annotated-types",
+      "versionInfo": "0.7.0",
+      "downloadLocation": "https://github.com/annotated-types/annotated-types",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://github.com/annotated-types/annotated-types",
+      "summary": "Reusable constraint types to use with typing.Annotated",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "760f9f8bdb583cb260781330a3322d73d7546c04"
+      },
+      "licenseConcluded": "",
+      "licenseDeclared": ""
+    },
+    {
+      "SPDXID": "SPDXRef-Package-anyio",
+      "name": "anyio",
+      "versionInfo": "4.10.0",
+      "downloadLocation": "",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "",
+      "summary": "High-level concurrency and networking framework on top of asyncio or Trio",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "f1660c7727cd529a13c93704f0ae7a0fd0fa85f8"
+      },
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-argon2-cffi",
+      "name": "argon2-cffi",
+      "versionInfo": "23.1.0",
+      "downloadLocation": "",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "",
+      "summary": "Argon2 for Python",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "82917ff9bd50020af0bfa679870e31665beb8e7b"
+      },
+      "licenseConcluded": "",
+      "licenseDeclared": ""
+    },
+    {
+      "SPDXID": "SPDXRef-Package-argon2-cffi-bindings",
+      "name": "argon2-cffi-bindings",
+      "versionInfo": "25.1.0",
+      "downloadLocation": "",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "",
+      "summary": "Low-level CFFI bindings for Argon2",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "299c64eba2cab7cbea36d6c68d1b2bb168236d67"
+      },
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-asyncpg",
+      "name": "asyncpg",
+      "versionInfo": "0.30.0",
+      "downloadLocation": "",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "",
+      "summary": "An asyncio PostgreSQL driver",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "5d406bf973ee9b40d15dbbf52d9971417f1ae346"
+      },
+      "licenseConcluded": "Apache License, Version 2.0",
+      "licenseDeclared": "Apache License, Version 2.0"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-attrs",
+      "name": "attrs",
+      "versionInfo": "25.3.0",
+      "downloadLocation": "",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "",
+      "summary": "Classes Without Boilerplate",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "b1dfd9565b4ea2f113e30a89607d2d50ee2cd5fc"
+      },
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-Authlib",
+      "name": "Authlib",
+      "versionInfo": "1.6.3",
+      "downloadLocation": "",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "",
+      "summary": "The ultimate Python library in building OAuth and OpenID Connect servers and clients.",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "a8a1f7be568de303df7e5b0883e18f077409e77f"
+      },
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-bcrypt",
+      "name": "bcrypt",
+      "versionInfo": "4.1.2",
+      "downloadLocation": "https://github.com/pyca/bcrypt/",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://github.com/pyca/bcrypt/",
+      "summary": "Modern password hashing for your software and your servers",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "5c29bb8740dffb4984dfefc60a5e32e0465a84c2"
+      },
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-beautifulsoup4",
+      "name": "beautifulsoup4",
+      "versionInfo": "4.12.3",
+      "downloadLocation": "https://www.crummy.com/software/BeautifulSoup/bs4/",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://www.crummy.com/software/BeautifulSoup/bs4/",
+      "summary": "Screen-scraping library",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "aa4c632135d7252fe4a46ba1b6e1da3b804c269c"
+      },
+      "licenseConcluded": "MIT License",
+      "licenseDeclared": "MIT License"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-billiard",
+      "name": "billiard",
+      "versionInfo": "4.2.1",
+      "downloadLocation": "https://github.com/celery/billiard",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: R Oudkerk / Python Software Foundation",
+      "homepage": "https://github.com/celery/billiard",
+      "summary": "Python multiprocessing fork with improvements and bugfixes",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "1a28d0f078d67a83ceb6e1a70559598f72cf3503"
+      },
+      "licenseConcluded": "BSD",
+      "licenseDeclared": "BSD"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-celery",
+      "name": "celery",
+      "versionInfo": "5.4.0",
+      "downloadLocation": "https://docs.celeryq.dev/",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Ask Solem",
+      "homepage": "https://docs.celeryq.dev/",
+      "summary": "Distributed Task Queue.",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "83926b6875fc70820b9436d8131fd22bae2fb46b"
+      },
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-certifi",
+      "name": "certifi",
+      "versionInfo": "2025.8.3",
+      "downloadLocation": "https://github.com/certifi/python-certifi",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Kenneth Reitz",
+      "homepage": "https://github.com/certifi/python-certifi",
+      "summary": "Python package for providing Mozilla's CA Bundle.",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "6df7cc6c3ed3b0a47aa5c7335c70126e01be2aeb"
+      },
+      "licenseConcluded": "MPL-2.0",
+      "licenseDeclared": "MPL-2.0"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-cffi",
+      "name": "cffi",
+      "versionInfo": "1.17.1",
+      "downloadLocation": "http://cffi.readthedocs.org",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Armin Rigo, Maciej Fijalkowski",
+      "homepage": "http://cffi.readthedocs.org",
+      "summary": "Foreign Function Interface for Python calling C code.",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "6dbec5781c13ce2a5aaf75d26f676d2eb541d79c"
+      },
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-charset-normalizer",
+      "name": "charset-normalizer",
+      "versionInfo": "3.4.3",
+      "downloadLocation": "",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "",
+      "summary": "The Real First Universal Charset Detector. Open, modern and actively maintained alternative to Chardet.",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "849a0416dae51a4274e626bfca8c90e7b1935ae7"
+      },
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-click",
+      "name": "click",
+      "versionInfo": "8.2.1",
+      "downloadLocation": "",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "",
+      "summary": "Composable command line interface toolkit",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "61ed0386eee9b6d805d67749deb88398210ec003"
+      },
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-click-didyoumean",
+      "name": "click-didyoumean",
+      "versionInfo": "0.3.1",
+      "downloadLocation": "https://github.com/click-contrib/click-didyoumean",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Timo Furrer",
+      "homepage": "https://github.com/click-contrib/click-didyoumean",
+      "summary": "Enables git-like *did-you-mean* feature in click",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "a879d85b92e5cadaf5c7b6543d4340e3ff2ada41"
+      },
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-click-plugins",
+      "name": "click-plugins",
+      "versionInfo": "1.1.1.2",
+      "downloadLocation": "https://github.com/click-contrib/click-plugins",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Kevin Wurster, Sean Gillies",
+      "homepage": "https://github.com/click-contrib/click-plugins",
+      "summary": "An extension module for click to enable registering CLI commands via setuptools entry-points.",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "49b0ad972c9052e2d9b98eacaa73677f2bd9de08"
+      },
+      "licenseConcluded": "New BSD",
+      "licenseDeclared": "New BSD"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-click-repl",
+      "name": "click-repl",
+      "versionInfo": "0.3.0",
+      "downloadLocation": "https://github.com/untitaker/click-repl",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Markus Unterwaditzer",
+      "homepage": "https://github.com/untitaker/click-repl",
+      "summary": "REPL plugin for Click",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "ea1e517856ee73d90d63ab7d4b05513d8c31aa55"
+      },
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-cryptography",
+      "name": "cryptography",
+      "versionInfo": "42.0.8",
+      "downloadLocation": "https://github.com/pyca/cryptography",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://github.com/pyca/cryptography",
+      "summary": "cryptography is a package which provides cryptographic recipes and primitives to Python developers.",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "25c3e5013be1a58308554fc0cb3cba055272863b"
+      },
+      "licenseConcluded": "Apache-2.0 OR BSD-3-Clause",
+      "licenseDeclared": "Apache-2.0 OR BSD-3-Clause"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-distro",
+      "name": "distro",
+      "versionInfo": "1.9.0",
+      "downloadLocation": "https://github.com/python-distro/distro",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Nir Cohen",
+      "homepage": "https://github.com/python-distro/distro",
+      "summary": "Distro - an OS platform information API",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "974ad6f2c398189c195e64af0c0b0f5852c2e66e"
+      },
+      "licenseConcluded": "Apache License, Version 2.0",
+      "licenseDeclared": "Apache License, Version 2.0"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-dnspython",
+      "name": "dnspython",
+      "versionInfo": "2.7.0",
+      "downloadLocation": "https://www.dnspython.org",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://www.dnspython.org",
+      "summary": "DNS toolkit",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "de242566097de4e8e6c699a8d590ceeed36f8b80"
+      },
+      "licenseConcluded": "ISC",
+      "licenseDeclared": "ISC"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-dparse",
+      "name": "dparse",
+      "versionInfo": "0.6.4",
+      "downloadLocation": "https://github.com/pyupio/dparse",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://github.com/pyupio/dparse",
+      "summary": "A parser for Python dependency files",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "d03c52622d62cdb023c355025b71e85fced71306"
+      },
+      "licenseConcluded": "MIT license",
+      "licenseDeclared": "MIT license"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-ecdsa",
+      "name": "ecdsa",
+      "versionInfo": "0.19.1",
+      "downloadLocation": "http://github.com/tlsfuzzer/python-ecdsa",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Brian Warner",
+      "homepage": "http://github.com/tlsfuzzer/python-ecdsa",
+      "summary": "ECDSA cryptographic signature library (pure python)",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "4277c26a5ca3200cdf3ce457f9305118db07cff1"
+      },
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-email-validator",
+      "name": "email-validator",
+      "versionInfo": "2.1.0",
+      "downloadLocation": "https://github.com/JoshData/python-email-validator",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Joshua Tauberer",
+      "homepage": "https://github.com/JoshData/python-email-validator",
+      "summary": "A robust email address syntax and deliverability validation library.",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "50afccb13c7809af59300350469cfea098a43442"
+      },
+      "licenseConcluded": "CC0 (copyright waived)",
+      "licenseDeclared": "CC0 (copyright waived)"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-fastapi",
+      "name": "fastapi",
+      "versionInfo": "0.115.6",
+      "downloadLocation": "https://github.com/fastapi/fastapi",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://github.com/fastapi/fastapi",
+      "summary": "FastAPI framework, high performance, easy to learn, fast to code, ready for production",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "933314dc022eb809a4b94aec572a38dd0ed22b3e"
+      },
+      "licenseConcluded": "",
+      "licenseDeclared": ""
+    },
+    {
+      "SPDXID": "SPDXRef-Package-fastapi-users",
+      "name": "fastapi-users",
+      "versionInfo": "13.0.0",
+      "downloadLocation": "",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "",
+      "summary": "Ready-to-use and customizable users management for FastAPI",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "062f362a6fa72dcab0c8dd440155ac0e9415ea06"
+      },
+      "licenseConcluded": "",
+      "licenseDeclared": ""
+    },
+    {
+      "SPDXID": "SPDXRef-Package-fastapi-users-db-sqlalchemy",
+      "name": "fastapi-users-db-sqlalchemy",
+      "versionInfo": "7.0.0",
+      "downloadLocation": "",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "",
+      "summary": "FastAPI Users database adapter for SQLAlchemy",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "690125674af721fa8f52081a830815339039e4a2"
+      },
+      "licenseConcluded": "",
+      "licenseDeclared": ""
+    },
+    {
+      "SPDXID": "SPDXRef-Package-filelock",
+      "name": "filelock",
+      "versionInfo": "3.19.1",
+      "downloadLocation": "https://github.com/tox-dev/py-filelock",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://github.com/tox-dev/py-filelock",
+      "summary": "A platform independent file lock.",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "5470649b6b6996db93959d91684f6617c14dfc3f"
+      },
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-filetype",
+      "name": "filetype",
+      "versionInfo": "1.2.0",
+      "downloadLocation": "https://github.com/h2non/filetype.py",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Tomas Aparicio",
+      "homepage": "https://github.com/h2non/filetype.py",
+      "summary": "Infer file type and MIME type of any file/buffer. No external dependencies.",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "663cfb080ff5970932a802c65e56024f6b587b8e"
+      },
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-flower",
+      "name": "flower",
+      "versionInfo": "2.0.1",
+      "downloadLocation": "https://github.com/mher/flower",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Mher Movsisyan",
+      "homepage": "https://github.com/mher/flower",
+      "summary": "Celery Flower",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "ead918d3f50f89670d2125c63c3c51d36c64b725"
+      },
+      "licenseConcluded": "BSD",
+      "licenseDeclared": "BSD"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-frozenlist",
+      "name": "frozenlist",
+      "versionInfo": "1.7.0",
+      "downloadLocation": "https://github.com/aio-libs/frozenlist",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://github.com/aio-libs/frozenlist",
+      "summary": "A list-like structure which implements collections.abc.MutableSequence",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "a6f053614726c852b6d16c5aefc6de5c4d57ac11"
+      },
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-greenlet",
+      "name": "greenlet",
+      "versionInfo": "3.2.4",
+      "downloadLocation": "https://greenlet.readthedocs.io/",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Alexey Borzenkov",
+      "homepage": "https://greenlet.readthedocs.io/",
+      "summary": "Lightweight in-process concurrent programming",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "d02aa01b52d3ef9b0b118c69c90240269b93ba17"
+      },
+      "licenseConcluded": "MIT AND Python-2.0",
+      "licenseDeclared": "MIT AND Python-2.0"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-h11",
+      "name": "h11",
+      "versionInfo": "0.16.0",
+      "downloadLocation": "https://github.com/python-hyper/h11",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Nathaniel J. Smith",
+      "homepage": "https://github.com/python-hyper/h11",
+      "summary": "A pure-Python, bring-your-own-I/O implementation of HTTP/1.1",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "266348e2bdb2e8a368a720d81f650e4c1b4914b2"
+      },
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-httpcore",
+      "name": "httpcore",
+      "versionInfo": "1.0.9",
+      "downloadLocation": "https://www.encode.io/httpcore/",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://www.encode.io/httpcore/",
+      "summary": "A minimal low-level HTTP client.",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "0f6ac8ea9714873afa39320cc45177a6a0387dbc"
+      },
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-httptools",
+      "name": "httptools",
+      "versionInfo": "0.6.4",
+      "downloadLocation": "https://github.com/MagicStack/httptools",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Yury Selivanov",
+      "homepage": "https://github.com/MagicStack/httptools",
+      "summary": "A collection of framework independent HTTP protocol utils.",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "98e402f14a9815b89cf846e4a661b7147b5b2df6"
+      },
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-httpx",
+      "name": "httpx",
+      "versionInfo": "0.27.2",
+      "downloadLocation": "https://github.com/encode/httpx",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://github.com/encode/httpx",
+      "summary": "The next generation HTTP client.",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "8a89d4eafc471daa781f7576b0dc7131245f101d"
+      },
+      "licenseConcluded": "",
+      "licenseDeclared": ""
+    },
+    {
+      "SPDXID": "SPDXRef-Package-httpx-oauth",
+      "name": "httpx-oauth",
+      "versionInfo": "0.14.1",
+      "downloadLocation": "",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "",
+      "summary": "Async OAuth client using HTTPX",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "621c39919bf2fae9f5dd94c8129a64e3e4a2eeee"
+      },
+      "licenseConcluded": "",
+      "licenseDeclared": ""
+    },
+    {
+      "SPDXID": "SPDXRef-Package-humanize",
+      "name": "humanize",
+      "versionInfo": "4.13.0",
+      "downloadLocation": "https://github.com/python-humanize/humanize",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://github.com/python-humanize/humanize",
+      "summary": "Python humanize utilities",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "34f9b52d96984292aa5a426e034e2eb0fb31e739"
+      },
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-idna",
+      "name": "idna",
+      "versionInfo": "3.10",
+      "downloadLocation": "",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "",
+      "summary": "Internationalized Domain Names in Applications (IDNA)",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "f44b118d681ac9a4973c2dcbe13ef79954b1e767"
+      },
+      "licenseConcluded": "",
+      "licenseDeclared": ""
+    },
+    {
+      "SPDXID": "SPDXRef-Package-iniconfig",
+      "name": "iniconfig",
+      "versionInfo": "2.1.0",
+      "downloadLocation": "https://github.com/pytest-dev/iniconfig",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://github.com/pytest-dev/iniconfig",
+      "summary": "brain-dead simple config-ini parsing",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "de574557c59eda6af83ce364a6252b387a60ce1e"
+      },
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-Jinja2",
+      "name": "Jinja2",
+      "versionInfo": "3.1.6",
+      "downloadLocation": "",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "",
+      "summary": "A very fast and expressive template engine.",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "0dd29e329604f1acfd051be436f16cfa9238d90c"
+      },
+      "licenseConcluded": "",
+      "licenseDeclared": ""
+    },
+    {
+      "SPDXID": "SPDXRef-Package-jiter",
+      "name": "jiter",
+      "versionInfo": "0.10.0",
+      "downloadLocation": "https://github.com/pydantic/jiter/",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Samuel Colvin <samuel@pydantic.dev>",
+      "homepage": "https://github.com/pydantic/jiter/",
+      "summary": "Fast iterable JSON parser.",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "4fa2157cfaca1bb15c6e621f65cd894f6f99021b"
+      },
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-joblib",
+      "name": "joblib",
+      "versionInfo": "1.5.2",
+      "downloadLocation": "https://joblib.readthedocs.io",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://joblib.readthedocs.io",
+      "summary": "Lightweight pipelining with Python functions",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "530c126ad81e5b519331e2240c13db14318b3e1e"
+      },
+      "licenseConcluded": "BSD 3-Clause",
+      "licenseDeclared": "BSD 3-Clause"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-kombu",
+      "name": "kombu",
+      "versionInfo": "5.5.4",
+      "downloadLocation": "https://kombu.readthedocs.io",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Ask Solem",
+      "homepage": "https://kombu.readthedocs.io",
+      "summary": "Messaging library for Python.",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "4487faf091d829419a8c2bac352b12f0e07f3f34"
+      },
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-makefun",
+      "name": "makefun",
+      "versionInfo": "1.16.0",
+      "downloadLocation": "https://github.com/smarie/python-makefun",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Sylvain MARIE <sylvain.marie@se.com>",
+      "homepage": "https://github.com/smarie/python-makefun",
+      "summary": "Small library to dynamically create python functions.",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "d885833922dca8f450e4bc3c854909e810e44265"
+      },
+      "licenseConcluded": "BSD 3-Clause",
+      "licenseDeclared": "BSD 3-Clause"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-Mako",
+      "name": "Mako",
+      "versionInfo": "1.3.10",
+      "downloadLocation": "https://www.makotemplates.org/",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Mike Bayer",
+      "homepage": "https://www.makotemplates.org/",
+      "summary": "A super-fast templating language that borrows the best ideas from the existing templating languages.",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "000d6aa15a765cf81328c11aebcd935cf9cfaac9"
+      },
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-markdown-it-py",
+      "name": "markdown-it-py",
+      "versionInfo": "4.0.0",
+      "downloadLocation": "https://github.com/executablebooks/markdown-it-py",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://github.com/executablebooks/markdown-it-py",
+      "summary": "Python port of markdown-it. Markdown parsing, done right!",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "5d3f8dd3841ee2649e2eb1912738def449a18182"
+      },
+      "licenseConcluded": "",
+      "licenseDeclared": ""
+    },
+    {
+      "SPDXID": "SPDXRef-Package-MarkupSafe",
+      "name": "MarkupSafe",
+      "versionInfo": "3.0.2",
+      "downloadLocation": "",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "",
+      "summary": "Safely add untrusted strings to HTML/XML markup.",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "c44dc7c9fe99a613cc7f6368882e29f54e8bf583"
+      },
+      "licenseConcluded": "Copyright 2010 Pallets",
+      "licenseDeclared": "Copyright 2010 Pallets"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-marshmallow",
+      "name": "marshmallow",
+      "versionInfo": "4.0.1",
+      "downloadLocation": "",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "",
+      "summary": "A lightweight library for converting complex datatypes to and from native Python datatypes.",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "51542a9563cdb63a8f8a3d2ab9ab2eeb5a2dee22"
+      },
+      "licenseConcluded": "",
+      "licenseDeclared": ""
+    },
+    {
+      "SPDXID": "SPDXRef-Package-mdurl",
+      "name": "mdurl",
+      "versionInfo": "0.1.2",
+      "downloadLocation": "https://github.com/executablebooks/mdurl",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://github.com/executablebooks/mdurl",
+      "summary": "Markdown URL utilities",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "ff2b963a1ba3a587d449578398f95aa53ab9c0ec"
+      },
+      "licenseConcluded": "",
+      "licenseDeclared": ""
+    },
+    {
+      "SPDXID": "SPDXRef-Package-multidict",
+      "name": "multidict",
+      "versionInfo": "6.6.4",
+      "downloadLocation": "https://github.com/aio-libs/multidict",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Andrew Svetlov",
+      "homepage": "https://github.com/aio-libs/multidict",
+      "summary": "multidict implementation",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "726ce69f03d8029dbb6a3a434a3a911ee9559a7e"
+      },
+      "licenseConcluded": "Apache License 2.0",
+      "licenseDeclared": "Apache License 2.0"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-nltk",
+      "name": "nltk",
+      "versionInfo": "3.9.1",
+      "downloadLocation": "https://www.nltk.org/",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: NLTK Team",
+      "homepage": "https://www.nltk.org/",
+      "summary": "Natural Language Toolkit",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "48ac97f315371587cdae1fa148c683f0bda85399"
+      },
+      "licenseConcluded": "Apache License, Version 2.0",
+      "licenseDeclared": "Apache License, Version 2.0"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-numpy",
+      "name": "numpy",
+      "versionInfo": "2.3.2",
+      "downloadLocation": "https://numpy.org",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Travis E. Oliphant et al.",
+      "homepage": "https://numpy.org",
+      "summary": "Fundamental package for array computing in Python",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "9260f75aa6f70b3fbe46ac3037a5e6fa6cc50348"
+      },
+      "licenseConcluded": "LGPL-2.1-or-later",
+      "licenseDeclared": "LGPL-2.1-or-later"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-oauthlib",
+      "name": "oauthlib",
+      "versionInfo": "3.3.1",
+      "downloadLocation": "https://github.com/oauthlib/oauthlib",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: The OAuthlib Community",
+      "homepage": "https://github.com/oauthlib/oauthlib",
+      "summary": "A generic, spec-compliant, thorough implementation of the OAuth request-signing logic",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "18ee593148dbaf06c024c905b900575d371d11e0"
+      },
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-openai",
+      "name": "openai",
+      "versionInfo": "1.75.0",
+      "downloadLocation": "https://github.com/openai/openai-python",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://github.com/openai/openai-python",
+      "summary": "The official Python library for the openai API",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "6664ecaa110c7fbb6f99b8f7ec30d968f933a919"
+      },
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-packaging",
+      "name": "packaging",
+      "versionInfo": "25.0",
+      "downloadLocation": "",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "",
+      "summary": "Core utilities for Python packages",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "b4bd200e0411a96f14f4393df959a65a40eebb96"
+      },
+      "licenseConcluded": "",
+      "licenseDeclared": ""
+    },
+    {
+      "SPDXID": "SPDXRef-Package-passlib",
+      "name": "passlib",
+      "versionInfo": "1.7.4",
+      "downloadLocation": "https://passlib.readthedocs.io",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Eli Collins",
+      "homepage": "https://passlib.readthedocs.io",
+      "summary": "comprehensive password hashing framework supporting over 30 schemes",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "d4735ec18e8f44a9e48c6e67992f993656666df9"
+      },
+      "licenseConcluded": "BSD",
+      "licenseDeclared": "BSD"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-pgvector",
+      "name": "pgvector",
+      "versionInfo": "0.2.5",
+      "downloadLocation": "https://github.com/pgvector/pgvector-python",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Andrew Kane",
+      "homepage": "https://github.com/pgvector/pgvector-python",
+      "summary": "pgvector support for Python",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "456a8418a4dc5d86efbab6220f31a758184dc433"
+      },
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-pillow",
+      "name": "pillow",
+      "versionInfo": "11.0.0",
+      "downloadLocation": "https://python-pillow.org",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://python-pillow.org",
+      "summary": "Python Imaging Library (Fork)",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "2049457e5650e17b7f0a2e68495576facfee1af3"
+      },
+      "licenseConcluded": "MIT-CMU",
+      "licenseDeclared": "MIT-CMU"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-pip",
+      "name": "pip",
+      "versionInfo": "25.2",
+      "downloadLocation": "https://pip.pypa.io/",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://pip.pypa.io/",
+      "summary": "The PyPA recommended tool for installing Python packages.",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "8ab0e22552ecbc074e48d06e438af0110d7db7c0"
+      },
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-pluggy",
+      "name": "pluggy",
+      "versionInfo": "1.6.0",
+      "downloadLocation": "",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "",
+      "summary": "plugin and hook calling mechanisms for python",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "d3a96ee762fb138d6e0b44dddb860961c4655d11"
+      },
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-prometheus_client",
+      "name": "prometheus_client",
+      "versionInfo": "0.20.0",
+      "downloadLocation": "https://github.com/prometheus/client_python",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Brian Brazil",
+      "homepage": "https://github.com/prometheus/client_python",
+      "summary": "Python client for the Prometheus monitoring system.",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "e82f071c11f2bf6b4ed41e7efaac3c8be74685dd"
+      },
+      "licenseConcluded": "Apache Software License 2.0",
+      "licenseDeclared": "Apache Software License 2.0"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-prometheus-fastapi-instrumentator",
+      "name": "prometheus-fastapi-instrumentator",
+      "versionInfo": "7.1.0",
+      "downloadLocation": "https://github.com/trallnag/prometheus-fastapi-instrumentator",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Tim Schwenke",
+      "homepage": "https://github.com/trallnag/prometheus-fastapi-instrumentator",
+      "summary": "Instrument your FastAPI app with Prometheus metrics",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "87fa795e0be072e52a3f763bae785ef49562ffc3"
+      },
+      "licenseConcluded": "ISC",
+      "licenseDeclared": "ISC"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-prompt_toolkit",
+      "name": "prompt_toolkit",
+      "versionInfo": "3.0.52",
+      "downloadLocation": "https://github.com/prompt-toolkit/python-prompt-toolkit",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Jonathan Slenders",
+      "homepage": "https://github.com/prompt-toolkit/python-prompt-toolkit",
+      "summary": "Library for building powerful interactive command lines in Python",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "d1f6a815db14972d2337d70872aaf9d5e5a955e9"
+      },
+      "licenseConcluded": "",
+      "licenseDeclared": ""
+    },
+    {
+      "SPDXID": "SPDXRef-Package-propcache",
+      "name": "propcache",
+      "versionInfo": "0.3.2",
+      "downloadLocation": "https://github.com/aio-libs/propcache",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Andrew Svetlov",
+      "homepage": "https://github.com/aio-libs/propcache",
+      "summary": "Accelerated property cache",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "33592e4d3013cfc439b074b4007f5ba93d2b1d1d"
+      },
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-psutil",
+      "name": "psutil",
+      "versionInfo": "7.0.0",
+      "downloadLocation": "https://github.com/giampaolo/psutil",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Giampaolo Rodola",
+      "homepage": "https://github.com/giampaolo/psutil",
+      "summary": "Cross-platform lib for process and system monitoring in Python.  NOTE: the syntax of this script MUST be kept compatible with Python 2.7.",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "bae7a078bdfb398888a2ec6cedb0839072ef5991"
+      },
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-psycopg2-binary",
+      "name": "psycopg2-binary",
+      "versionInfo": "2.9.10",
+      "downloadLocation": "https://psycopg.org/",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Federico Di Gregorio",
+      "homepage": "https://psycopg.org/",
+      "summary": "psycopg2 - Python-PostgreSQL Database Adapter",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "1f6f47917dc66cf358a2059b37d8055585f9334e"
+      },
+      "licenseConcluded": "LGPL with exceptions",
+      "licenseDeclared": "LGPL with exceptions"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-pwdlib",
+      "name": "pwdlib",
+      "versionInfo": "0.2.0",
+      "downloadLocation": "",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "",
+      "summary": "Modern password hashing for Python",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "17699c1befd2a4f1061f270400d6ec61d7dddf6f"
+      },
+      "licenseConcluded": "",
+      "licenseDeclared": ""
+    },
+    {
+      "SPDXID": "SPDXRef-Package-pyasn1",
+      "name": "pyasn1",
+      "versionInfo": "0.6.1",
+      "downloadLocation": "https://github.com/pyasn1/pyasn1",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Ilya Etingof",
+      "homepage": "https://github.com/pyasn1/pyasn1",
+      "summary": "Pure-Python implementation of ASN.1 types and DER/BER/CER codecs (X.208)",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "79218b1398e842084164480485d5fb37de0e4c83"
+      },
+      "licenseConcluded": "BSD-2-Clause",
+      "licenseDeclared": "BSD-2-Clause"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-pycparser",
+      "name": "pycparser",
+      "versionInfo": "2.22",
+      "downloadLocation": "https://github.com/eliben/pycparser",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Eli Bendersky",
+      "homepage": "https://github.com/eliben/pycparser",
+      "summary": "C parser in Python",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "54b34b0307bbd73629c484b0d64d1c89197327b7"
+      },
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-pydantic",
+      "name": "pydantic",
+      "versionInfo": "2.9.2",
+      "downloadLocation": "https://github.com/pydantic/pydantic",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://github.com/pydantic/pydantic",
+      "summary": "Data validation using Python type hints",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "ea6b5167f462806b5df6cc5a018a8c603559b733"
+      },
+      "licenseConcluded": "",
+      "licenseDeclared": ""
+    },
+    {
+      "SPDXID": "SPDXRef-Package-pydantic_core",
+      "name": "pydantic_core",
+      "versionInfo": "2.23.4",
+      "downloadLocation": "https://github.com/pydantic/pydantic-core",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://github.com/pydantic/pydantic-core",
+      "summary": "Core functionality for Pydantic validation and serialization",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "a59361b31e6e9a3dd2d5fa47628b3c18e579f9f9"
+      },
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-pydantic-settings",
+      "name": "pydantic-settings",
+      "versionInfo": "2.10.1",
+      "downloadLocation": "https://github.com/pydantic/pydantic-settings",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://github.com/pydantic/pydantic-settings",
+      "summary": "Settings management using Pydantic",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "1fa294e5c7205559a19f7c9a9735614cee2454f6"
+      },
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-Pygments",
+      "name": "Pygments",
+      "versionInfo": "2.19.2",
+      "downloadLocation": "https://pygments.org",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://pygments.org",
+      "summary": "Pygments is a syntax highlighting package written in Python.",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "cef3acabf604b5b3ccaa23d3b99903233a58a098"
+      },
+      "licenseConcluded": "BSD-2-Clause",
+      "licenseDeclared": "BSD-2-Clause"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-PyJWT",
+      "name": "PyJWT",
+      "versionInfo": "2.8.0",
+      "downloadLocation": "https://github.com/jpadilla/pyjwt",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Jose Padilla",
+      "homepage": "https://github.com/jpadilla/pyjwt",
+      "summary": "JSON Web Token implementation in Python",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "41f171c807af18e75d9edfd1817699b31713317c"
+      },
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-pyotp",
+      "name": "pyotp",
+      "versionInfo": "2.9.0",
+      "downloadLocation": "https://github.com/pyotp/pyotp",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: PyOTP contributors",
+      "homepage": "https://github.com/pyotp/pyotp",
+      "summary": "Python One Time Password Library",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "6831c89158f18a203833224a2a9ed0432cb808fb"
+      },
+      "licenseConcluded": "MIT License",
+      "licenseDeclared": "MIT License"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-pypng",
+      "name": "pypng",
+      "versionInfo": "0.20220715.0",
+      "downloadLocation": "https://gitlab.com/drj11/pypng",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: David Jones",
+      "homepage": "https://gitlab.com/drj11/pypng",
+      "summary": "Pure Python library for saving and loading PNG images",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "19cef7b346c065741554e79362ae114432aaf6ac"
+      },
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-pytest",
+      "name": "pytest",
+      "versionInfo": "8.4.2",
+      "downloadLocation": "https://docs.pytest.org/en/latest/",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Holger Krekel, Bruno Oliveira, Ronny Pfannschmidt, Floris Bruynooghe, Brianna Laugher, Florian Bruhin, Others (See AUTHORS)",
+      "homepage": "https://docs.pytest.org/en/latest/",
+      "summary": "pytest: simple powerful testing with Python",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "fd5d782a8b2789a5b9de98afb44ee1217e37e4dc"
+      },
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-pytest-asyncio",
+      "name": "pytest-asyncio",
+      "versionInfo": "1.1.0",
+      "downloadLocation": "https://github.com/pytest-dev/pytest-asyncio",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://github.com/pytest-dev/pytest-asyncio",
+      "summary": "Pytest support for asyncio",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "e14ced13aaa789fae7159f0b80438b4b4d141ad5"
+      },
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-python-dateutil",
+      "name": "python-dateutil",
+      "versionInfo": "2.9.0.post0",
+      "downloadLocation": "https://github.com/dateutil/dateutil",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Gustavo Niemeyer",
+      "homepage": "https://github.com/dateutil/dateutil",
+      "summary": "Extensions to the standard Python datetime module",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "5d039c8049021db58f6cb3d2a7b06097fad7bc3e"
+      },
+      "licenseConcluded": "Dual License",
+      "licenseDeclared": "Dual License"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-python-dotenv",
+      "name": "python-dotenv",
+      "versionInfo": "1.1.1",
+      "downloadLocation": "https://github.com/theskumar/python-dotenv",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Saurabh Kumar",
+      "homepage": "https://github.com/theskumar/python-dotenv",
+      "summary": "Read key-value pairs from a .env file and set them as environment variables",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "2708ab28067b0e9dafca35f120aa69ed993c1dfa"
+      },
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-python-jose",
+      "name": "python-jose",
+      "versionInfo": "3.3.0",
+      "downloadLocation": "http://github.com/mpdavis/python-jose",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Michael Davis",
+      "homepage": "http://github.com/mpdavis/python-jose",
+      "summary": "JOSE implementation in Python",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "3b70f8bb133ae1d15f495f34c6c6a6f6323a5891"
+      },
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-python-magic",
+      "name": "python-magic",
+      "versionInfo": "0.4.27",
+      "downloadLocation": "http://github.com/ahupp/python-magic",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Adam Hupp",
+      "homepage": "http://github.com/ahupp/python-magic",
+      "summary": "File type identification using libmagic",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "9cc96218e9ab7fc9876cb04e25fc0d4291259988"
+      },
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-python-magic-bin",
+      "name": "python-magic-bin",
+      "versionInfo": "0.4.14",
+      "downloadLocation": "http://github.com/julian-r/python-magic",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Julian David Rath",
+      "homepage": "http://github.com/julian-r/python-magic",
+      "summary": "File type identification using libmagic binary package",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "f14320cb0fadb81c07e5b3a90e93c760a79beb1d"
+      },
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-python-multipart",
+      "name": "python-multipart",
+      "versionInfo": "0.0.9",
+      "downloadLocation": "https://github.com/andrew-d/python-multipart",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://github.com/andrew-d/python-multipart",
+      "summary": "A streaming multipart parser for Python",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "37ae55b5714086feb93975f22ce758a54ac20cc9"
+      },
+      "licenseConcluded": "",
+      "licenseDeclared": ""
+    },
+    {
+      "SPDXID": "SPDXRef-Package-pytz",
+      "name": "pytz",
+      "versionInfo": "2025.2",
+      "downloadLocation": "http://pythonhosted.org/pytz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Stuart Bishop",
+      "homepage": "http://pythonhosted.org/pytz",
+      "summary": "World timezone definitions, modern and historical",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "acb849bc649f1720f8f7d732a9fe9d2576a509ad"
+      },
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-PyYAML",
+      "name": "PyYAML",
+      "versionInfo": "6.0.2",
+      "downloadLocation": "https://pyyaml.org/",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Kirill Simonov",
+      "homepage": "https://pyyaml.org/",
+      "summary": "YAML parser and emitter for Python",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "c8457b481e9f815848a853f2b11ac9e527cfe3d7"
+      },
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-qrcode",
+      "name": "qrcode",
+      "versionInfo": "7.4.2",
+      "downloadLocation": "https://github.com/lincolnloop/python-qrcode",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Lincoln Loop",
+      "homepage": "https://github.com/lincolnloop/python-qrcode",
+      "summary": "QR Code image generator",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "86e630606fcbfddf72b8f01e6439c4fadde05617"
+      },
+      "licenseConcluded": "BSD",
+      "licenseDeclared": "BSD"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-redis",
+      "name": "redis",
+      "versionInfo": "5.2.1",
+      "downloadLocation": "https://github.com/redis/redis-py",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Redis Inc.",
+      "homepage": "https://github.com/redis/redis-py",
+      "summary": "Python client for Redis database and key-value store",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "2fac009e1decedb3d9ca872abf8b3de8084f3c55"
+      },
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-regex",
+      "name": "regex",
+      "versionInfo": "2025.9.1",
+      "downloadLocation": "https://github.com/mrabarnett/mrab-regex",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://github.com/mrabarnett/mrab-regex",
+      "summary": "Alternative regular expression module, to replace re.",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "d08916bad604b3de9357e43ec4d06b5c7f2e4d62"
+      },
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-requests",
+      "name": "requests",
+      "versionInfo": "2.32.3",
+      "downloadLocation": "https://requests.readthedocs.io",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Kenneth Reitz",
+      "homepage": "https://requests.readthedocs.io",
+      "summary": "Python HTTP for Humans.",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "501204f8e9198af03afc42d27cdeececd06691ee"
+      },
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-requests-oauthlib",
+      "name": "requests-oauthlib",
+      "versionInfo": "1.3.1",
+      "downloadLocation": "https://github.com/requests/requests-oauthlib",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Kenneth Reitz",
+      "homepage": "https://github.com/requests/requests-oauthlib",
+      "summary": "OAuthlib authentication support for Requests.",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "3efed7d5ba452fadca1c1b234fbed0fe86bf565b"
+      },
+      "licenseConcluded": "ISC",
+      "licenseDeclared": "ISC"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-rich",
+      "name": "rich",
+      "versionInfo": "14.1.0",
+      "downloadLocation": "https://github.com/Textualize/rich",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Will McGugan",
+      "homepage": "https://github.com/Textualize/rich",
+      "summary": "Render rich text, tables, progress bars, syntax highlighting, markdown and more to the terminal",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "c24f5c7c6d8a14e3e47cbae6ad1e366cc167bfc9"
+      },
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-rsa",
+      "name": "rsa",
+      "versionInfo": "4.9.1",
+      "downloadLocation": "https://stuvel.eu/rsa",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Sybren A. Stüvel",
+      "homepage": "https://stuvel.eu/rsa",
+      "summary": "Pure-Python RSA implementation",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "7cb95e8e37595bff36fa2cc20989c285c9b3b25b"
+      },
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-ruamel.yaml",
+      "name": "ruamel.yaml",
+      "versionInfo": "0.18.15",
+      "downloadLocation": "",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Anthon van der Neut",
+      "homepage": "",
+      "summary": "ruamel.yaml is a YAML parser/emitter that supports roundtrip preservation of comments, seq/map flow style, and map key order",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "5899b915d48e9080a0f356c832159a06c0048b67"
+      },
+      "licenseConcluded": "MIT license",
+      "licenseDeclared": "MIT license"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-ruamel.yaml.clib",
+      "name": "ruamel.yaml.clib",
+      "versionInfo": "0.2.12",
+      "downloadLocation": "",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Anthon van der Neut",
+      "homepage": "",
+      "summary": "C version of reader, parser and emitter for ruamel.yaml derived from libyaml",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "7985e550d3317bdd429a390084e0f3bb1cc7fc6e"
+      },
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-safety",
+      "name": "safety",
+      "versionInfo": "3.6.1",
+      "downloadLocation": "https://safetycli.com",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://safetycli.com",
+      "summary": "Scan dependencies for known vulnerabilities and licenses.",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "6eb24adcc3ce77d7650b1d1f07b7d8a9d1130df8"
+      },
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-safety-schemas",
+      "name": "safety-schemas",
+      "versionInfo": "0.0.14",
+      "downloadLocation": "https://github.com/pyupio/safety_schemas",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://github.com/pyupio/safety_schemas",
+      "summary": "Schemas for Safety tools",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "0ba85b4075c637c74cb41cdbeabbb5d445e637f1"
+      },
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-sentry-sdk",
+      "name": "sentry-sdk",
+      "versionInfo": "2.35.0",
+      "downloadLocation": "https://github.com/getsentry/sentry-python",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Sentry Team and Contributors",
+      "homepage": "https://github.com/getsentry/sentry-python",
+      "summary": "Python client for Sentry (https://sentry.io)",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "78188415f0c7d8b106475c358d37438e2a5148a7"
+      },
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-setuptools",
+      "name": "setuptools",
+      "versionInfo": "80.9.0",
+      "downloadLocation": "",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "",
+      "summary": "Easily download, build, install, upgrade, and uninstall Python packages",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "65720001e071b5e4769c44d9599313d7e0ce4dc8"
+      },
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-shellingham",
+      "name": "shellingham",
+      "versionInfo": "1.5.4",
+      "downloadLocation": "https://github.com/sarugaku/shellingham",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Tzu-ping Chung",
+      "homepage": "https://github.com/sarugaku/shellingham",
+      "summary": "Tool to Detect Surrounding Shell",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "d71a5c16fcf423588da5c384367ffd12c5dfee7e"
+      },
+      "licenseConcluded": "ISC License",
+      "licenseDeclared": "ISC License"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-six",
+      "name": "six",
+      "versionInfo": "1.17.0",
+      "downloadLocation": "https://github.com/benjaminp/six",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Benjamin Peterson",
+      "homepage": "https://github.com/benjaminp/six",
+      "summary": "Python 2 and 3 compatibility utilities",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "0570b4cb374e8695b5a030abe0b8662798a24779"
+      },
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-sniffio",
+      "name": "sniffio",
+      "versionInfo": "1.3.1",
+      "downloadLocation": "https://github.com/python-trio/sniffio",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://github.com/python-trio/sniffio",
+      "summary": "Sniff out which async library your code is running under",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "d1dd2ebb063831586250242b8651045b3918e022"
+      },
+      "licenseConcluded": "MIT OR Apache-2.0",
+      "licenseDeclared": "MIT OR Apache-2.0"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-soupsieve",
+      "name": "soupsieve",
+      "versionInfo": "2.8",
+      "downloadLocation": "https://github.com/facelessuser/soupsieve",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://github.com/facelessuser/soupsieve",
+      "summary": "A modern CSS selector implementation for Beautiful Soup.",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "c130201146e5da1c13f6afd4d9a023a725d744a5"
+      },
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-SQLAlchemy",
+      "name": "SQLAlchemy",
+      "versionInfo": "2.0.36",
+      "downloadLocation": "https://www.sqlalchemy.org",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Mike Bayer",
+      "homepage": "https://www.sqlalchemy.org",
+      "summary": "Database Abstraction Library",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "fa6829c4e069cec03a3bb1d5438c59c685e03ca4"
+      },
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-sse-starlette",
+      "name": "sse-starlette",
+      "versionInfo": "2.1.3",
+      "downloadLocation": "",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "",
+      "summary": "SSE plugin for Starlette",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "448334f13d53ca25c0fbfc2bc6630c47df8f632c"
+      },
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-starlette",
+      "name": "starlette",
+      "versionInfo": "0.41.3",
+      "downloadLocation": "https://github.com/encode/starlette",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://github.com/encode/starlette",
+      "summary": "The little ASGI library that shines.",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "9530ed75a8db6fb339ee11190a02a9cafe751ce8"
+      },
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-stripe",
+      "name": "stripe",
+      "versionInfo": "12.5.0",
+      "downloadLocation": "https://github.com/stripe/stripe-python",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Stripe",
+      "homepage": "https://github.com/stripe/stripe-python",
+      "summary": "Python bindings for the Stripe API",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "dbb21e2c4f83b22212f51162e89f4dbf8097b6d5"
+      },
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-structlog",
+      "name": "structlog",
+      "versionInfo": "25.4.0",
+      "downloadLocation": "",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "",
+      "summary": "Structured Logging for Python",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "61bcf56fdaeec0af23a5188187c867140e20aa74"
+      },
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-tenacity",
+      "name": "tenacity",
+      "versionInfo": "9.1.2",
+      "downloadLocation": "https://github.com/jd/tenacity",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Julien Danjou",
+      "homepage": "https://github.com/jd/tenacity",
+      "summary": "Retry code until it succeeds",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "f93bb9d82ab79ed1c539e4a99072800b6c23e89f"
+      },
+      "licenseConcluded": "Apache 2.0",
+      "licenseDeclared": "Apache 2.0"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-tomlkit",
+      "name": "tomlkit",
+      "versionInfo": "0.13.3",
+      "downloadLocation": "https://github.com/sdispater/tomlkit",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Sébastien Eustace",
+      "homepage": "https://github.com/sdispater/tomlkit",
+      "summary": "Style preserving TOML library",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "19e199f2952553106acee78875f7ef7e6957b4e1"
+      },
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-tornado",
+      "name": "tornado",
+      "versionInfo": "6.5.2",
+      "downloadLocation": "http://www.tornadoweb.org/",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Facebook",
+      "homepage": "http://www.tornadoweb.org/",
+      "summary": "Tornado is a Python web framework and asynchronous networking library, originally developed at FriendFeed.",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "5f759dd6da396691b385dd96b68da0f01efdc38b"
+      },
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-tqdm",
+      "name": "tqdm",
+      "versionInfo": "4.67.1",
+      "downloadLocation": "https://tqdm.github.io",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://tqdm.github.io",
+      "summary": "Fast, Extensible Progress Meter",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "17da497e5a267da21d45279d8f1bee31b43e48e9"
+      },
+      "licenseConcluded": "MPL-2.0 AND MIT",
+      "licenseDeclared": "MPL-2.0 AND MIT"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-tweepy",
+      "name": "tweepy",
+      "versionInfo": "4.16.0",
+      "downloadLocation": "https://tweepy.org",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Joshua Roesslein, Harmon",
+      "homepage": "https://tweepy.org",
+      "summary": "Library for accessing the X API (Twitter)",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "9ccc7f5b939de7ed7da03a0035d6f7c3c8847548"
+      },
+      "licenseConcluded": "",
+      "licenseDeclared": ""
+    },
+    {
+      "SPDXID": "SPDXRef-Package-typer",
+      "name": "typer",
+      "versionInfo": "0.17.4",
+      "downloadLocation": "https://github.com/fastapi/typer",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://github.com/fastapi/typer",
+      "summary": "Typer, build great CLIs. Easy to code. Based on Python type hints.",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "7b7a71f5534fb98dced4bacae1814f8e1861cf8a"
+      },
+      "licenseConcluded": "",
+      "licenseDeclared": ""
+    },
+    {
+      "SPDXID": "SPDXRef-Package-typing_extensions",
+      "name": "typing_extensions",
+      "versionInfo": "4.15.0",
+      "downloadLocation": "",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "",
+      "summary": "Backported and Experimental Type Hints for Python 3.9+",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "c5f809013e4a11afe2bc23e8ae7a923dfe38a0be"
+      },
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-typing-inspection",
+      "name": "typing-inspection",
+      "versionInfo": "0.4.1",
+      "downloadLocation": "https://github.com/pydantic/typing-inspection",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://github.com/pydantic/typing-inspection",
+      "summary": "Runtime typing introspection tools",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "2f2f37cb477b62444069e7760de1a204f7e024b3"
+      },
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-tzdata",
+      "name": "tzdata",
+      "versionInfo": "2025.2",
+      "downloadLocation": "https://github.com/python/tzdata",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Python Software Foundation",
+      "homepage": "https://github.com/python/tzdata",
+      "summary": "Provider of IANA time zone data",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "e1cb6f7a56a42d3e02c074f99c070c9b25e64536"
+      },
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-urllib3",
+      "name": "urllib3",
+      "versionInfo": "2.5.0",
+      "downloadLocation": "",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "",
+      "summary": "HTTP library with thread-safe connection pooling, file post, and more.",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "0f9b529a46e3806136419097773dbc1234862c02"
+      },
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-uvicorn",
+      "name": "uvicorn",
+      "versionInfo": "0.32.1",
+      "downloadLocation": "https://www.uvicorn.org/",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://www.uvicorn.org/",
+      "summary": "The lightning-fast ASGI server.",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "ff044cb8b7ad4a578a160c0745a1f461d7fa108b"
+      },
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-uvloop",
+      "name": "uvloop",
+      "versionInfo": "0.21.0",
+      "downloadLocation": "",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "",
+      "summary": "Fast implementation of asyncio event loop on top of libuv",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "b08c9f2353e664b73f2822be9c4944d59a3789c5"
+      },
+      "licenseConcluded": "MIT License",
+      "licenseDeclared": "MIT License"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-vine",
+      "name": "vine",
+      "versionInfo": "5.1.0",
+      "downloadLocation": "https://github.com/celery/vine",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Ask Solem",
+      "homepage": "https://github.com/celery/vine",
+      "summary": "Python promises.",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "ad0300f367fe6cedf68d391f6363f16b43bfd8c6"
+      },
+      "licenseConcluded": "BSD",
+      "licenseDeclared": "BSD"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-watchfiles",
+      "name": "watchfiles",
+      "versionInfo": "1.1.0",
+      "downloadLocation": "https://github.com/samuelcolvin/watchfiles",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://github.com/samuelcolvin/watchfiles",
+      "summary": "Simple, modern and high performance file watching and code reload in python.",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "c5a7f9167f0b5624b95fac7c08fb11efb88d632e"
+      },
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-wcwidth",
+      "name": "wcwidth",
+      "versionInfo": "0.2.13",
+      "downloadLocation": "https://github.com/jquast/wcwidth",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Jeff Quast",
+      "homepage": "https://github.com/jquast/wcwidth",
+      "summary": "Measures the displayed width of unicode strings in a terminal",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "1233a7e8477732e88c1bc427e1360f8037990c7a"
+      },
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-websockets",
+      "name": "websockets",
+      "versionInfo": "12.0",
+      "downloadLocation": "https://github.com/python-websockets/websockets",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: ",
+      "homepage": "https://github.com/python-websockets/websockets",
+      "summary": "An implementation of the WebSocket Protocol (RFC 6455 & 7692)",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "9b2bd5f733272caa4c1173202d40f7a407b5aa6d"
+      },
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-yarl",
+      "name": "yarl",
+      "versionInfo": "1.20.1",
+      "downloadLocation": "https://github.com/aio-libs/yarl",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "supplier": "Organization: Andrew Svetlov",
+      "homepage": "https://github.com/aio-libs/yarl",
+      "summary": "Yet another URL library",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "33369b2b5bb449265cff3b149036b8691aa21399"
+      },
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-@dnd-kit/core",
+      "name": "@dnd-kit/core",
+      "versionInfo": "6.3.1",
+      "downloadLocation": "https://registry.npmjs.org/@dnd-kit/core/-/core-6.3.1.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "2e2579a76ecea08f29374bd62802b2b2f558b104"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "xkGBRQQab4RLwgXxoqETICr6S5JlogafbhNsidmrkVv2YRs5MLwpjoF2qpiGjQt8S9AoxtIV603s0GIUpY5eYQ=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-@dnd-kit/sortable",
+      "name": "@dnd-kit/sortable",
+      "versionInfo": "8.0.0",
+      "downloadLocation": "https://registry.npmjs.org/@dnd-kit/sortable/-/sortable-8.0.0.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "bdcc5b7d6e2a60ecbb14993c91966615519db7b9"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "U3jk5ebVXe1Lr7c2wU7SBZjcWdQP+j7peHJfCspnA81enlu88Mgd7CC8Q+pub9ubP7eKVETzJW+IBAhsqbSu/g=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-@dnd-kit/utilities",
+      "name": "@dnd-kit/utilities",
+      "versionInfo": "3.2.2",
+      "downloadLocation": "https://registry.npmjs.org/@dnd-kit/utilities/-/utilities-3.2.2.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "88d976194ecd1f18bdc6fd32a3cb286d3b98b8ea"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "+MKAJEOfaBe5SmV6t34p80MMKhjvUz0vRrvVJbPT0WElzaOJ/1xs+D+KDv+tD/NE5ujfrChEcshd4fLn0wpiqg=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-@heroicons/react",
+      "name": "@heroicons/react",
+      "versionInfo": "2.2.0",
+      "downloadLocation": "https://registry.npmjs.org/@heroicons/react/-/react-2.2.0.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "5f2ac4a89b6712ecb2741847557cfb6ef4192e80"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "LMcepvRaS9LYHJGsF0zzmgKCUim/X3N/DQKc4jepAXJ7l8QxJ1PmxJzqplF2Z3FE4PqBAIGyJAQ/w4B5dsqbtQ=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-@tanstack/react-query",
+      "name": "@tanstack/react-query",
+      "versionInfo": "5.84.1",
+      "downloadLocation": "https://registry.npmjs.org/@tanstack/react-query/-/react-query-5.84.1.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "fbc1d838e4d1433cc9675ac4806e0891fe7c64c6"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "zo7EUygcWJMQfFNWDSG7CBhy8irje/XY0RDVKKV4IQJAysb+ZJkkJPcnQi+KboyGUgT+SQebRFoTqLuTtfoDLw=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-@tanstack/react-table",
+      "name": "@tanstack/react-table",
+      "versionInfo": "8.21.3",
+      "downloadLocation": "https://registry.npmjs.org/@tanstack/react-table/-/react-table-8.21.3.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "c450c758a959233dd5fd80e4794428fa39fdcf06"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "5nNMTSETP4ykGegmVkhjcS8tTLW6Vl4axfEGQN3v0zdHYbK4UfoqfPChclTrJ4EoK9QynqAu9oUf8VEmrpZ5Ww=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-chart.js",
+      "name": "chart.js",
+      "versionInfo": "4.5.0",
+      "downloadLocation": "https://registry.npmjs.org/chart.js/-/chart.js-4.5.0.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "3e70602a8aac7cce523f67642314e750ccee8af9"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "aYeC/jDgSEx8SHWZvANYMioYMZ2KX02W6f6uVfyteuCGcadDLcYVHdfdygsTQkQ4TKn5lghoojAsPj5pu0SnvQ=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-date-fns",
+      "name": "date-fns",
+      "versionInfo": "3.6.0",
+      "downloadLocation": "https://registry.npmjs.org/date-fns/-/date-fns-3.6.0.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "49e445e6736c078f139a552a583c6e418fb9490b"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "fRHTG8g/Gif+kSh50gaGEdToemgfj74aRX3swtiouboip5JDLAyDE9F11nHMIcvOaXeOC6D7SpNhi7uFyB7Uww=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-focus-trap-react",
+      "name": "focus-trap-react",
+      "versionInfo": "11.0.4",
+      "downloadLocation": "https://registry.npmjs.org/focus-trap-react/-/focus-trap-react-11.0.4.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "77c4979b84113385d20f2cbf282b6c5025a59c31"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "tC7jC/yqeAqhe4irNIzdyDf9XCtGSeECHiBSYJBO/vIN0asizbKZCt8TarB6/XqIceu42ajQ/U4lQJ9pZlWjrg=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-formik",
+      "name": "formik",
+      "versionInfo": "2.4.6",
+      "downloadLocation": "https://registry.npmjs.org/formik/-/formik-2.4.6.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "2a20404018a17adbcf59164ed17a2697bf003ff5"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "A+2EI7U7aG296q2TLGvNapDNTZp1khVt5Vk0Q/fyfSROss0V/V6+txt2aJnwEos44IxTCW/LYAi/zgWzlevj+g=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-framer-motion",
+      "name": "framer-motion",
+      "versionInfo": "10.18.0",
+      "downloadLocation": "https://registry.npmjs.org/framer-motion/-/framer-motion-10.18.0.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "71bd80234a1af5787c5d9c23cede5b0c678a9343"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "oGlDh1Q1XqYPksuTD/usb0I70hq95OUzmL9+6Zd+Hs4XV0oaISBa/UUMSjYiq6m8EUF32132mOJ8xVZS+I0S6w=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-lucide-react",
+      "name": "lucide-react",
+      "versionInfo": "0.536.0",
+      "downloadLocation": "https://registry.npmjs.org/lucide-react/-/lucide-react-0.536.0.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "c597439fe248b1c8be9e7aa3fe686b8fc4e7dbb9"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "2PgvNa9v+qz4Jt/ni8vPLt4jwoFybXHuubQT8fv4iCW5TjDxkbZjNZZHa485ad73NSEn/jdsEtU57eE1g+ma8A=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-prop-types",
+      "name": "prop-types",
+      "versionInfo": "15.8.1",
+      "downloadLocation": "https://registry.npmjs.org/prop-types/-/prop-types-15.8.1.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "92709d26fde0582be64d57335f05c38512b8e709"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "oj87CgZICdulUohogVAR7AjlC0327U4el4L6eAvOqCeudMDVU0NThNaV+b9Df4dXgSP1gXMTnPdhfe/2qDH5cg=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-react-beautiful-dnd",
+      "name": "react-beautiful-dnd",
+      "versionInfo": "13.1.1",
+      "downloadLocation": "https://registry.npmjs.org/react-beautiful-dnd/-/react-beautiful-dnd-13.1.1.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "be601cc55e62f666f221ac8481adc9e1c133f60e"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "0Lvs4tq2VcrEjEgDXHjT98r+63drkKEgqyxdA7qD3mvKwga6a5SscbdLPO2IExotU1jW8L0Ksdl0Cj2AF67nPQ=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-react-calendar",
+      "name": "react-calendar",
+      "versionInfo": "4.8.0",
+      "downloadLocation": "https://registry.npmjs.org/react-calendar/-/react-calendar-4.8.0.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "aa1c97d9b2817cf6396fa8ab909d5042a60a7895"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "qFgwo+p58sgv1QYMI1oGNaop90eJVKuHTZ3ZgBfrrpUb+9cAexxsKat0sAszgsizPMVo7vOXedV7Lqa0GQGMvA=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-react-chartjs-2",
+      "name": "react-chartjs-2",
+      "versionInfo": "5.3.0",
+      "downloadLocation": "https://registry.npmjs.org/react-chartjs-2/-/react-chartjs-2-5.3.0.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "77461f5db984daaa5ceabeffb4a741fd0272d35f"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "UfZZFnDsERI3c3CZGxzvNJd02SHjaSJ8kgW1djn65H1KK8rehwTjyrRKOG3VTMG8wtHZ5rgAO5oTHtHi9GCCmw=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-react-dom",
+      "name": "react-dom",
+      "versionInfo": "18.3.1",
+      "downloadLocation": "https://registry.npmjs.org/react-dom/-/react-dom-18.3.1.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "d0a12490ed0ca6dea314b4e9338382ae51a91f26"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "5m4nQKp+rZRb09LNH59GM4BxTh9251/ylbKIbpe7TpGxfJ+9kv6BLkLBXIjjspbgbnIBNqlI23tRnTWT0snUIw=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-react-dropzone",
+      "name": "react-dropzone",
+      "versionInfo": "14.3.8",
+      "downloadLocation": "https://registry.npmjs.org/react-dropzone/-/react-dropzone-14.3.8.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "b2151175d33a6c68d4278563450023592328660c"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "sBgODnq+lcA4P296DY4wacOZz3JFpD99fp+hb//iBO2HHnyeZU3FwWyXJ6salNpqQdsZrgMrotuko/BdJMV8Ug=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-react-helmet-async",
+      "name": "react-helmet-async",
+      "versionInfo": "2.0.5",
+      "downloadLocation": "https://registry.npmjs.org/react-helmet-async/-/react-helmet-async-2.0.5.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "4be4802876f82347600cc6b5a5266586b7e87170"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "rYUYHeus+i27MvFE+Jaa4WsyBKGkL6qVgbJvSBoX8mbsWoABJXdEO0bZyi0F6i+4f0NuIb8AvqPMj3iXFHkMwg=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-react-infinite-scroll-component",
+      "name": "react-infinite-scroll-component",
+      "versionInfo": "6.1.0",
+      "downloadLocation": "https://registry.npmjs.org/react-infinite-scroll-component/-/react-infinite-scroll-component-6.1.0.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "dd1850730d2edd10764881b472bc3af2d1823a62"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "SQu5nCqy8DxQWpnUVLx7V7b7LcA37aM7tvoWjTLZp1dk6EJibM5/4EJKzOnl07/BsM1Y40sKLuqjCwwH/xV0TQ=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-react-router-dom",
+      "name": "react-router-dom",
+      "versionInfo": "6.30.1",
+      "downloadLocation": "https://registry.npmjs.org/react-router-dom/-/react-router-dom-6.30.1.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "6993ae8b53cfb9fc12a868178e8de8e84b08b443"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "llKsgOkZdbPU1Eg3zK8lCn+sjD9wMRZZPuzmdWWX5SUs8OFkN5HnFVC0u5KMeMaC9aoancFI/KoLuKPqN+hxHw=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-react-tooltip",
+      "name": "react-tooltip",
+      "versionInfo": "5.29.1",
+      "downloadLocation": "https://registry.npmjs.org/react-tooltip/-/react-tooltip-5.29.1.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "37e7386adac1b7a3fb4a673c05ed2b675c2420c1"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "rmJmEb/p99xWhwmVT7F7riLG08wwKykjHiMGbDPloNJk3tdI73oHsVOwzZ4SRjqMdd5/xwb/4nmz0RcoMfY7Bw=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-react-window-infinite-loader",
+      "name": "react-window-infinite-loader",
+      "versionInfo": "1.0.10",
+      "downloadLocation": "https://registry.npmjs.org/react-window-infinite-loader/-/react-window-infinite-loader-1.0.10.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "a64e6f499b6a2398eae88d37da9059c7fa55e65d"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "NO/csdHlxjWqA2RJZfzQgagAjGHspbO2ik9GtWZb0BY1Nnapq0auG8ErI+OhGCzpjYJsCYerqUlK6hkq9dfAAA=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-react-window",
+      "name": "react-window",
+      "versionInfo": "1.8.11",
+      "downloadLocation": "https://registry.npmjs.org/react-window/-/react-window-1.8.11.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "a11d5869c8175b40787933c66f06e5d903b06a30"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "+SRbUVT2scadgFSWx+R1P754xHPEqvcfSfVX10QYg6POOz+WNgkN48pS+BtZNIMGiL1HYrSEiCkwsMS15QogEQ=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-react",
+      "name": "react",
+      "versionInfo": "18.3.1",
+      "downloadLocation": "https://registry.npmjs.org/react/-/react-18.3.1.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "7cb500128bd74c91d3128211d462b623fae5203b"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-socket.io-client",
+      "name": "socket.io-client",
+      "versionInfo": "4.8.1",
+      "downloadLocation": "https://registry.npmjs.org/socket.io-client/-/socket.io-client-4.8.1.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "2ac0cad187bc573c66f750590826df0db06a1a96"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "hJVXfu3E28NmzGk8o1sHhN3om52tRvwYeidbj7xKy2eIIse5IoKX3USlS6Tqt3BHAtflLIkCQBkzVrEEfWUyYQ=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-yup",
+      "name": "yup",
+      "versionInfo": "1.7.0",
+      "downloadLocation": "https://registry.npmjs.org/yup/-/yup-1.7.0.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "25aff726c6686e80ddda3e2c07e3a678d6639a40"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "VJce62dBd+JQvoc+fCVq+KZfPHr+hXaxCcVgotfwWvlR0Ja3ffYKaJBT8rptPOSKOGJDCUnW2C2JWpud7aRP6Q=="
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-aiohappyeyeballs"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-aiohttp"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-aiosignal"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-alembic"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-amqp"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-annotated-types"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-anyio"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-argon2-cffi"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-argon2-cffi-bindings"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-asyncpg"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-attrs"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-Authlib"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-bcrypt"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-beautifulsoup4"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-billiard"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-celery"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-certifi"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-cffi"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-charset-normalizer"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-click"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-click-didyoumean"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-click-plugins"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-click-repl"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-cryptography"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-distro"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-dnspython"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-dparse"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-ecdsa"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-email-validator"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-fastapi"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-fastapi-users"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-fastapi-users-db-sqlalchemy"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-filelock"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-filetype"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-flower"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-frozenlist"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-greenlet"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-h11"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-httpcore"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-httptools"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-httpx"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-httpx-oauth"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-humanize"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-idna"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-iniconfig"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-Jinja2"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-jiter"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-joblib"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-kombu"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-makefun"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-Mako"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-markdown-it-py"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-MarkupSafe"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-marshmallow"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-mdurl"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-multidict"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-nltk"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-numpy"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-oauthlib"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-openai"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-packaging"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-passlib"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-pgvector"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-pillow"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-pip"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-pluggy"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-prometheus_client"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-prometheus-fastapi-instrumentator"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-prompt_toolkit"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-propcache"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-psutil"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-psycopg2-binary"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-pwdlib"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-pyasn1"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-pycparser"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-pydantic"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-pydantic_core"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-pydantic-settings"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-Pygments"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-PyJWT"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-pyotp"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-pypng"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-pytest"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-pytest-asyncio"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-python-dateutil"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-python-dotenv"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-python-jose"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-python-magic"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-python-magic-bin"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-python-multipart"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-pytz"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-PyYAML"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-qrcode"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-redis"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-regex"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-requests"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-requests-oauthlib"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-rich"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-rsa"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-ruamel.yaml"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-ruamel.yaml.clib"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-safety"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-safety-schemas"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-sentry-sdk"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-setuptools"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-shellingham"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-six"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-sniffio"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-soupsieve"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-SQLAlchemy"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-sse-starlette"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-starlette"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-stripe"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-structlog"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-tenacity"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-tomlkit"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-tornado"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-tqdm"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-tweepy"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-typer"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-typing_extensions"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-typing-inspection"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-tzdata"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-urllib3"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-uvicorn"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-uvloop"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-vine"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-watchfiles"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-wcwidth"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-websockets"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-yarl"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-@dnd-kit/core"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-@dnd-kit/sortable"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-@dnd-kit/utilities"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-@heroicons/react"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-@tanstack/react-query"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-@tanstack/react-table"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-chart.js"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-date-fns"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-focus-trap-react"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-formik"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-framer-motion"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-lucide-react"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-prop-types"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-react-beautiful-dnd"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-react-calendar"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-react-chartjs-2"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-react-dom"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-react-dropzone"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-react-helmet-async"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-react-infinite-scroll-component"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-react-router-dom"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-react-tooltip"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-react-window-infinite-loader"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-react-window"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-react"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-socket.io-client"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-yup"
+    }
+  ]
+}

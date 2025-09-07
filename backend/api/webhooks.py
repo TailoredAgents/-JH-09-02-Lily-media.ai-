@@ -34,6 +34,12 @@ except ImportError:
     get_meta_webhook_service = None
     MetaWebhookService = None
 
+# Import webhook reliability service for enhanced processing
+try:
+    from backend.services.webhook_reliability_service import get_webhook_reliability_service
+except ImportError:
+    get_webhook_reliability_service = None
+
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 
@@ -487,9 +493,10 @@ async def twitter_v2_webhook_handler(
 
 @router.get("/status")
 async def webhook_status():
-    """Get webhook configuration status"""
+    """Get comprehensive webhook configuration and reliability status"""
     
-    return {
+    # Basic platform configuration
+    platform_status = {
         "facebook": {
             "configured": facebook_handler is not None,
             "app_secret_set": bool(FACEBOOK_APP_SECRET),
@@ -505,13 +512,69 @@ async def webhook_status():
             "consumer_secret_set": bool(TWITTER_CONSUMER_SECRET),
             "v2_handler": twitter_v2_handler is not None
         },
-        "endpoints": {
-            "facebook_verify": "/webhooks/facebook",
-            "facebook_handler": "/webhooks/facebook/{user_id}",
-            "instagram_verify": "/webhooks/instagram", 
-            "instagram_handler": "/webhooks/instagram/{user_id}",
-            "twitter_crc": "/webhooks/twitter/crc",
-            "twitter_handler": "/webhooks/twitter/{user_id}",
-            "twitter_v2_handler": "/webhooks/twitter/v2/{user_id}"
+        "meta": {
+            "configured": get_meta_webhook_service is not None,
+            "partner_oauth_enabled": is_partner_oauth_enabled(),
+            "verify_token_set": bool(getattr(get_settings(), 'meta_verify_token', None))
+        }
+    }
+    
+    # Webhook endpoints
+    endpoints = {
+        "facebook_verify": "/webhooks/facebook",
+        "facebook_handler": "/webhooks/facebook/{user_id}",
+        "instagram_verify": "/webhooks/instagram", 
+        "instagram_handler": "/webhooks/instagram/{user_id}",
+        "twitter_crc": "/webhooks/twitter/crc",
+        "twitter_handler": "/webhooks/twitter/{user_id}",
+        "twitter_v2_handler": "/webhooks/twitter/v2/{user_id}",
+        "meta_verify": "/webhooks/meta",
+        "meta_handler": "/webhooks/meta"
+    }
+    
+    # Webhook reliability status
+    reliability_status = {
+        "service_available": get_webhook_reliability_service is not None,
+        "features": {
+            "idempotency_tracking": False,
+            "delivery_monitoring": False,
+            "automatic_recovery": False,
+            "dlq_integration": True
+        }
+    }
+    
+    # Get reliability statistics if service is available
+    if get_webhook_reliability_service:
+        try:
+            reliability_service = get_webhook_reliability_service()
+            reliability_stats = reliability_service.get_webhook_reliability_stats()
+            
+            reliability_status["features"] = {
+                "idempotency_tracking": True,
+                "delivery_monitoring": True,
+                "automatic_recovery": True,
+                "dlq_integration": True
+            }
+            reliability_status["statistics"] = {
+                "recent_deliveries_24h": reliability_stats.get('delivery_statistics', {}).get('recent_deliveries_24h', 0),
+                "success_rate_24h_percent": reliability_stats.get('delivery_statistics', {}).get('success_rate_24h_percent', 0),
+                "pending_retries": reliability_stats.get('delivery_statistics', {}).get('pending_retries', 0),
+                "duplicates_prevented_24h": reliability_stats.get('idempotency_statistics', {}).get('duplicates_prevented_24h', 0)
+            }
+            reliability_status["last_updated"] = reliability_stats.get('timestamp')
+            
+        except Exception as e:
+            logger.warning(f"Failed to get webhook reliability stats: {e}")
+            reliability_status["error"] = "Failed to retrieve reliability statistics"
+    
+    return {
+        "platforms": platform_status,
+        "endpoints": endpoints,
+        "reliability": reliability_status,
+        "service_info": {
+            "version": "1.0",
+            "enhanced_reliability": get_webhook_reliability_service is not None,
+            "dlq_enabled": True,
+            "partner_oauth_support": get_meta_webhook_service is not None
         }
     }

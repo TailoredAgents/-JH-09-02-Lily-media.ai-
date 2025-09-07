@@ -12,7 +12,7 @@ from sqlalchemy.engine.reflection import Inspector
 
 # revision identifiers, used by Alembic.
 revision = '027_create_content_drafts_and_schedules'
-down_revision = '025_add_performance_indexes'
+down_revision = '026_add_content_schedule_idempotency'
 branch_labels = None
 depends_on = None
 

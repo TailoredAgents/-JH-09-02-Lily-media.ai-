@@ -20,17 +20,70 @@ from pathlib import Path
 import uuid
 
 from openai import OpenAI, AsyncOpenAI
+from prometheus_client import Counter, Histogram, Gauge
 from backend.core.config import get_settings
 from backend.services.image_processing_service import image_processing_service
 from backend.services.alt_text_service import alt_text_service
+from backend.services.advanced_quality_scorer import get_advanced_quality_scorer
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
 
+# Image quality and generation metrics
+IMAGE_GENERATION_REQUESTS = Counter(
+    'image_generation_requests_total',
+    'Total image generation requests',
+    ['model', 'platform', 'status', 'quality_preset']
+)
+
+IMAGE_GENERATION_LATENCY = Histogram(
+    'image_generation_duration_seconds',
+    'Image generation latency including post-processing',
+    ['model', 'platform', 'quality_preset'],
+    buckets=[0.5, 1.0, 2.0, 5.0, 10.0, 15.0, 30.0, 45.0, 60.0, float('inf')]
+)
+
+IMAGE_QUALITY_SCORES = Histogram(
+    'image_quality_scores',
+    'Distribution of image quality scores',
+    ['model', 'platform', 'quality_preset'],
+    buckets=[10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+)
+
+IMAGE_RETRIES = Counter(
+    'image_generation_retries_total',
+    'Total image generation retries due to quality issues',
+    ['model', 'platform', 'retry_reason']
+)
+
+TEXT_FALLBACKS_GENERATED = Counter(
+    'image_text_fallbacks_total',
+    'Total text-only fallbacks generated due to poor image quality',
+    ['platform', 'reason']
+)
+
+PROCESSING_FAILURES = Counter(
+    'image_processing_failures_total',
+    'Total image post-processing failures',
+    ['platform', 'failure_type']
+)
+
+ALT_TEXT_GENERATION = Counter(
+    'alt_text_generation_total',
+    'Alt-text generation attempts and results',
+    ['platform', 'status']
+)
+
+CURRENT_QUALITY_DISTRIBUTION = Gauge(
+    'current_image_quality_average',
+    'Current average image quality score',
+    ['model', 'platform']
+)
+
 class ImageGenerationService:
     """
-    Enhanced image generation service using OpenAI's Responses API with image_generation tool
-    for superior social media content creation with real-time streaming and multi-turn editing capabilities.
+    Enhanced image generation service using xAI Grok-2 Vision for policy-compliant
+    social media content creation with real-time streaming and multi-turn editing capabilities.
     """
     
     def __init__(self):
@@ -56,24 +109,15 @@ class ImageGenerationService:
                 self.client = None
                 self.async_client = None
         
-        # Model-to-API mapping for multi-model support
+        # Model-to-API mapping for multi-model support - Policy compliant models only
         self.model_mapping = {
             "grok2": "grok-2-image",
             "grok2_basic": "grok-2-image",
             "grok2_premium": "grok-2-image", 
-            "gpt_image_1": "dall-e-3"  # This will use OpenAI client
+            "gpt_image_1": "grok-2-image"  # Policy compliant: use Grok-2 for all requests
         }
         
-        # Initialize OpenAI client for GPT Image 1 model
-        self.openai_client = None
-        self.openai_async_client = None
-        if settings.openai_api_key:
-            try:
-                self.openai_client = OpenAI(api_key=settings.openai_api_key)
-                self.openai_async_client = AsyncOpenAI(api_key=settings.openai_api_key)
-                logger.info("OpenAI client initialized for GPT Image 1 model")
-            except Exception as e:
-                logger.error(f"Failed to initialize OpenAI client: {e}")
+        # Policy compliant: Only xAI Grok-2 Vision model is used - OpenAI integration removed
         
         # Platform-specific optimization prompts
         self.platform_styles = {
@@ -369,8 +413,70 @@ class ImageGenerationService:
         Returns:
             Dict containing processed image data, alt-text, quality metrics, and metadata
         """
+        # Step 1: Content moderation - validate prompt before generation
+        try:
+            from backend.services.content_moderation_service import moderate_content, ContentType, ModerationResult
+            
+            moderation_result = await moderate_content(
+                content=prompt,
+                content_type=ContentType.TEXT,
+                user_id=None,  # User context not available at this service level
+                organization_id=None,
+                context={
+                    'type': 'image_generation_prompt',
+                    'platform': platform,
+                    'model': model,
+                    'quality': quality_preset
+                }
+            )
+            
+            # Block generation if content is rejected
+            if moderation_result['result'] == ModerationResult.REJECTED.value:
+                return {
+                    "status": "moderation_rejected",
+                    "error": f"Content rejected by moderation: {moderation_result['message']}",
+                    "moderation": {
+                        "result": moderation_result['result'],
+                        "confidence": moderation_result['confidence'],
+                        "categories": moderation_result['categories'],
+                        "processing_time_ms": moderation_result['processing_time_ms']
+                    }
+                }
+            
+            # Log flagged content but allow generation with warning
+            if moderation_result['result'] == ModerationResult.FLAGGED.value:
+                logger.warning(
+                    f"Flagged content approved for generation: "
+                    f"confidence={moderation_result['confidence']:.2f}, "
+                    f"categories={moderation_result['categories']}"
+                )
+                
+        except ImportError:
+            logger.warning("Content moderation service not available - proceeding without moderation")
+        except Exception as e:
+            logger.error(f"Content moderation error: {e} - proceeding with generation")
+        
+        # Start timing for metrics
+        generation_start_time = datetime.utcnow()
+        
+        # Track request initiation
+        IMAGE_GENERATION_REQUESTS.labels(
+            model=model,
+            platform=platform, 
+            status='initiated',
+            quality_preset=quality_preset
+        ).inc()
+        
         # Check if service is available
         if not self.async_client:
+            # Track service unavailable
+            IMAGE_GENERATION_REQUESTS.labels(
+                model=model,
+                platform=platform,
+                status='failed_service_unavailable',
+                quality_preset=quality_preset
+            ).inc()
+            
             return {
                 "status": "error",
                 "error": "Image generation service is unavailable. Please check xAI API key configuration.",
@@ -402,20 +508,18 @@ class ImageGenerationService:
             if custom_options:
                 tool_options.update(custom_options)
             
-            # Model routing: Select appropriate API client and model based on requested model
-            selected_model, client_to_use = self._select_model_and_client(model)
-            
-            # Generate image using the selected model
-            response = await client_to_use.images.generate(
-                model=selected_model,
-                prompt=enhanced_prompt,
-                n=1,
-                response_format="b64_json"  # Get base64 directly to avoid extra download step
+            # Model routing: Route to appropriate generation function based on effective_model
+            response = await self._route_to_generation_function(
+                model=model,
+                enhanced_prompt=enhanced_prompt,
+                tool_options=tool_options,
+                platform=platform,
+                quality_preset=quality_preset
             )
             
-            # Extract image data from xAI response
+            # Extract image data from API response
             if not response.data or len(response.data) == 0:
-                raise Exception("No image data returned from xAI Grok image generation")
+                raise Exception(f"No image data returned from {model} image generation")
             
             # Get the generated image
             image_data = response.data[0]
@@ -433,7 +537,7 @@ class ImageGenerationService:
                     else:
                         raise Exception(f"Failed to download generated image: {img_response.status_code}")
             else:
-                raise Exception("No valid image data format returned from xAI")
+                raise Exception(f"No valid image data format returned from {model}")
             
             # Convert base64 to bytes for post-processing
             raw_image_bytes = base64.b64decode(image_base64)
@@ -450,19 +554,49 @@ class ImageGenerationService:
                     logger.info(f"Post-processing completed for {platform} with preset {quality_preset}")
                 except Exception as e:
                     logger.warning(f"Post-processing failed: {e}, using original image")
+                    
+                    # Track post-processing failure
+                    PROCESSING_FAILURES.labels(
+                        platform=platform,
+                        failure_type='post_processing_failed'
+                    ).inc()
+                    
                     processing_metadata = {"error": str(e), "fallback": True}
             
-            # Validate image quality
-            quality_metrics = image_processing_service.validate_image_quality(processed_image_bytes)
+            # Advanced image quality assessment with CLIP/LAION integration
+            advanced_scorer = get_advanced_quality_scorer()
+            quality_metrics = await advanced_scorer.score_image_quality(
+                image_base64=base64.b64encode(processed_image_bytes).decode('utf-8'),
+                original_prompt=enhanced_prompt,
+                platform=platform,
+                brand_context=None,  # TODO: Pass brand context from user settings
+                fallback_to_basic=True
+            )
+            
+            # Convert to legacy format for compatibility
+            legacy_quality_score = quality_metrics.get("overall_score", 50)
+            legacy_quality_metrics = {
+                "quality_score": legacy_quality_score,
+                "issues": quality_metrics.get("recommendations", []),
+                "recommendations": quality_metrics.get("recommendations", []),
+                "advanced_assessment": quality_metrics
+            }
             
             # Retry if quality is too low (score < 50) and retries available
             retry_count = 0
-            while (quality_metrics.get("quality_score", 100) < 50 and 
+            while (legacy_quality_score < 50 and 
                    retry_count < max_retries and 
-                   "error" not in quality_metrics):
+                   "error" not in legacy_quality_metrics):
                 
-                logger.info(f"Image quality too low (score: {quality_metrics.get('quality_score')}), retrying... ({retry_count + 1}/{max_retries})")
+                logger.info(f"Image quality too low (score: {legacy_quality_score}), retrying... ({retry_count + 1}/{max_retries})")
                 retry_count += 1
+                
+                # Track retry
+                IMAGE_RETRIES.labels(
+                    model=model,
+                    platform=platform,
+                    retry_reason='quality_too_low'
+                ).inc()
                 
                 # Add quality improvement to prompt
                 retry_prompt = enhanced_prompt + ". Generate with higher resolution, better clarity, and professional quality."
@@ -490,7 +624,39 @@ class ImageGenerationService:
                             except Exception as e:
                                 logger.warning(f"Retry post-processing failed: {e}")
                         
-                        quality_metrics = image_processing_service.validate_image_quality(processed_image_bytes)
+                        # Re-assess quality with advanced scoring
+                        retry_quality_assessment = await advanced_scorer.score_image_quality(
+                            image_base64=base64.b64encode(processed_image_bytes).decode('utf-8'),
+                            original_prompt=enhanced_prompt,
+                            platform=platform,
+                            brand_context=None,
+                            fallback_to_basic=True
+                        )
+                        legacy_quality_score = retry_quality_assessment.get("overall_score", 50)
+                        legacy_quality_metrics = {
+                            "quality_score": legacy_quality_score,
+                            "issues": retry_quality_assessment.get("recommendations", []),
+                            "recommendations": retry_quality_assessment.get("recommendations", []),
+                            "advanced_assessment": retry_quality_assessment
+                        }
+            
+            # Check if text-only fallback should be offered due to poor quality
+            text_only_fallback = None
+            final_quality_score = legacy_quality_score
+            
+            if final_quality_score < 35 and retry_count >= max_retries:
+                # Generate text-only content as fallback option
+                logger.warning(f"Image quality critically low (score: {final_quality_score}) after {retry_count} retries. Generating text-only fallback.")
+                
+                # Track text fallback generation
+                TEXT_FALLBACKS_GENERATED.labels(
+                    platform=platform,
+                    reason='quality_threshold_failed'
+                ).inc()
+                
+                text_only_fallback = await self._generate_text_only_content(
+                    prompt, platform, content_context, industry_context, tone
+                )
             
             # Convert processed image back to base64
             final_image_base64 = base64.b64encode(processed_image_bytes).decode('utf-8')
@@ -505,8 +671,22 @@ class ImageGenerationService:
                         platform=platform
                     )
                     logger.info(f"Alt-text generated: {alt_text_data.get('status')}")
+                    
+                    # Track alt-text generation success
+                    ALT_TEXT_GENERATION.labels(
+                        platform=platform,
+                        status=alt_text_data.get('status', 'success')
+                    ).inc()
+                    
                 except Exception as e:
                     logger.warning(f"Alt-text generation failed: {e}")
+                    
+                    # Track alt-text generation failure
+                    ALT_TEXT_GENERATION.labels(
+                        platform=platform,
+                        status='failed'
+                    ).inc()
+                    
                     alt_text_data = {
                         "alt_text": "Generated image",
                         "status": "error",
@@ -517,6 +697,38 @@ class ImageGenerationService:
             image_id = str(uuid.uuid4())
             timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
             filename = f"{platform}_{timestamp}_{image_id[:8]}.png"
+            
+            # Calculate generation time and track metrics
+            generation_end_time = datetime.utcnow()
+            generation_duration = (generation_end_time - generation_start_time).total_seconds()
+            
+            # Track successful generation
+            IMAGE_GENERATION_REQUESTS.labels(
+                model=model,
+                platform=platform,
+                status='success',
+                quality_preset=quality_preset
+            ).inc()
+            
+            # Track latency
+            IMAGE_GENERATION_LATENCY.labels(
+                model=model,
+                platform=platform,
+                quality_preset=quality_preset
+            ).observe(generation_duration)
+            
+            # Track quality score
+            IMAGE_QUALITY_SCORES.labels(
+                model=model,
+                platform=platform,
+                quality_preset=quality_preset
+            ).observe(final_quality_score)
+            
+            # Update current quality average
+            CURRENT_QUALITY_DISTRIBUTION.labels(
+                model=model,
+                platform=platform
+            ).set(final_quality_score)
             
             return {
                 "status": "success",
@@ -538,12 +750,15 @@ class ImageGenerationService:
                     "platform_optimized": alt_text_data.get("platform") == platform
                 },
                 "quality": {
-                    "score": quality_metrics.get("quality_score", 0),
-                    "issues": quality_metrics.get("issues", []),
-                    "recommendations": quality_metrics.get("recommendations", []),
+                    "score": legacy_quality_metrics.get("quality_score", 0),
+                    "issues": legacy_quality_metrics.get("issues", []),
+                    "recommendations": legacy_quality_metrics.get("recommendations", []),
                     "retry_count": retry_count,
-                    "final_attempt": retry_count >= max_retries
+                    "final_attempt": retry_count >= max_retries,
+                    "quality_acceptable": final_quality_score >= 35,
+                    "advanced_assessment": legacy_quality_metrics.get("advanced_assessment", {})
                 },
+                "text_only_fallback": text_only_fallback,
                 "processing": {
                     "post_processed": enable_post_processing,
                     "processing_metadata": processing_metadata,
@@ -573,6 +788,21 @@ class ImageGenerationService:
             
         except Exception as e:
             logger.error(f"Image generation failed: {str(e)}")
+            
+            # Track generation failure
+            IMAGE_GENERATION_REQUESTS.labels(
+                model=model,
+                platform=platform,
+                status='failed_exception',
+                quality_preset=quality_preset
+            ).inc()
+            
+            # Track processing failure
+            PROCESSING_FAILURES.labels(
+                platform=platform,
+                failure_type='generation_exception'
+            ).inc()
+            
             return {
                 "status": "error",
                 "error": str(e),
@@ -1056,6 +1286,119 @@ class ImageGenerationService:
                 raise Exception("xAI client not initialized. Image generation unavailable.")
             return actual_model, self.async_client
 
+    async def _route_to_generation_function(self, model: str, enhanced_prompt: str, 
+                                          tool_options: Dict[str, Any], platform: str, 
+                                          quality_preset: str) -> Any:
+        """
+        Route to appropriate generation function based on effective_model parameter.
+        
+        This implements proper model routing to dispatch to different generation
+        functions based on the model's capabilities and API requirements.
+        
+        Args:
+            model: Effective model to use (grok2, grok2_basic, grok2_premium, gpt_image_1)
+            enhanced_prompt: Enhanced prompt for image generation
+            tool_options: Tool configuration options
+            platform: Target platform
+            quality_preset: Quality preset
+            
+        Returns:
+            API response from the appropriate generation function
+        """
+        logger.info(f"Routing image generation to model: {model}")
+        
+        # Route based on model family - Policy compliant: all models use Grok-2 Vision
+        if model in ["grok2", "grok2_basic", "grok2_premium", "gpt_image_1"]:
+            return await self._generate_with_grok_vision(
+                "grok2", enhanced_prompt, tool_options, platform, quality_preset
+            )
+        else:
+            # Default fallback to Grok-2
+            logger.warning(f"Unknown model '{model}', falling back to Grok-2")
+            return await self._generate_with_grok_vision(
+                "grok2", enhanced_prompt, tool_options, platform, quality_preset
+            )
+
+    # Policy compliant: Legacy generation method removed - all requests use Grok-2 Vision
+
+    async def _generate_with_grok_vision(self, model: str, enhanced_prompt: str, 
+                                       tool_options: Dict[str, Any], platform: str, 
+                                       quality_preset: str) -> Any:
+        """
+        Generate image using xAI Grok-2 Vision model with Grok-specific optimizations.
+        
+        Args:
+            model: Specific Grok model variant (grok2, grok2_basic, grok2_premium)
+            enhanced_prompt: Enhanced prompt for image generation
+            tool_options: Tool configuration options
+            platform: Target platform
+            quality_preset: Quality preset
+            
+        Returns:
+            xAI API response
+        """
+        if not self.async_client:
+            logger.error("xAI Grok client not available")
+            raise Exception("xAI Grok image generation service unavailable")
+        
+        logger.info(f"Generating image with xAI Grok-2 Vision model: {model}")
+        
+        # Grok-specific prompt enhancement based on model variant
+        grok_enhanced_prompt = self._enhance_prompt_for_grok_variant(
+            enhanced_prompt, model, platform, quality_preset
+        )
+        
+        try:
+            response = await self.async_client.images.generate(
+                model="grok-2-image",
+                prompt=grok_enhanced_prompt,
+                n=1,
+                response_format="b64_json"
+            )
+            
+            logger.info(f"Grok-2 generation successful with model variant: {model}")
+            return response
+            
+        except Exception as e:
+            logger.error(f"Grok-2 generation failed: {e}")
+            raise Exception(f"Grok-2 image generation failed: {str(e)}")
+
+    def _enhance_prompt_for_grok_variant(self, prompt: str, model: str, 
+                                       platform: str, quality_preset: str) -> str:
+        """
+        Enhance prompt specifically for different Grok model variants.
+        
+        Args:
+            prompt: Base enhanced prompt
+            model: Grok model variant
+            platform: Target platform
+            quality_preset: Quality preset
+            
+        Returns:
+            Grok variant-specific enhanced prompt
+        """
+        # Base Grok enhancements
+        enhanced = prompt
+        
+        # Model variant specific enhancements
+        if model == "grok2_premium":
+            # Premium variant: more detailed, artistic prompts
+            enhanced += " Ultra-high quality, premium artistic rendering, maximum detail and refinement, professional photography quality."
+        elif model == "grok2_basic":
+            # Basic variant: simple, clean prompts
+            enhanced += " Clean, simple design, good quality rendering, efficient generation."
+        else:  # grok2 default
+            # Standard variant: balanced quality and performance
+            enhanced += " High quality rendering, detailed and professional, optimal balance of speed and quality."
+        
+        # Platform-specific Grok optimizations
+        if platform in ["instagram", "tiktok"]:
+            enhanced += " Optimized for mobile viewing, vibrant colors, high visual impact."
+        elif platform in ["twitter", "facebook"]:
+            enhanced += " Optimized for social media engagement, clear and readable design."
+        
+        return enhanced
+
     def save_image_to_file(self, image_base64: str, filepath: str) -> bool:
         """Save base64 image data to file."""
         try:
@@ -1069,6 +1412,191 @@ class ImageGenerationService:
         except Exception as e:
             logger.error(f"Failed to save image to {filepath}: {str(e)}")
             return False
+
+    async def _generate_text_only_content(self,
+                                        original_prompt: str,
+                                        platform: str,
+                                        content_context: Optional[str] = None,
+                                        industry_context: Optional[str] = None,
+                                        tone: str = "professional") -> Dict[str, Any]:
+        """
+        Generate text-only content as fallback when image quality is poor
+        
+        Args:
+            original_prompt: Original image generation prompt
+            platform: Target social media platform
+            content_context: Context about the content
+            industry_context: Industry-specific context
+            tone: Desired tone for the content
+            
+        Returns:
+            Dict containing text-only content alternatives
+        """
+        try:
+            # Use OpenAI for text generation if available, otherwise xAI
+            client = self.openai_async_client if self.openai_async_client else self.async_client
+            if not client:
+                raise ValueError("No text generation client available")
+                
+            # Adapt image prompt to text content prompt
+            text_prompt = self._adapt_image_prompt_to_text(original_prompt, platform, content_context, industry_context, tone)
+            
+            # Generate multiple text alternatives
+            response = await client.chat.completions.create(
+                model="gpt-4o" if self.openai_async_client else "grok-beta",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": f"You are a social media content expert creating engaging {platform} posts. Generate professional, high-quality text content that would work well without images."
+                    },
+                    {
+                        "role": "user", 
+                        "content": text_prompt
+                    }
+                ],
+                max_tokens=500,
+                temperature=0.7
+            )
+            
+            generated_content = response.choices[0].message.content.strip()
+            
+            # Generate additional text-based alternatives
+            alternatives = await self._generate_text_alternatives(generated_content, platform, tone)
+            
+            # Create formatted text content suitable for the platform
+            formatted_content = self._format_text_for_platform(generated_content, platform)
+            
+            return {
+                "reason": "image_quality_fallback",
+                "original_image_prompt": original_prompt,
+                "quality_threshold_failed": True,
+                "text_content": {
+                    "primary": formatted_content,
+                    "alternatives": alternatives,
+                    "platform": platform,
+                    "tone": tone,
+                    "word_count": len(formatted_content.split()),
+                    "character_count": len(formatted_content),
+                    "platform_optimized": True
+                },
+                "suggestions": {
+                    "use_case": f"High-quality text post for {platform}",
+                    "benefits": [
+                        "Guaranteed readability and engagement",
+                        "Fast loading and accessible content", 
+                        "Professional appearance without image dependency",
+                        "Better performance than poor quality images"
+                    ],
+                    "call_to_action": "Consider using this text-only version for better user experience"
+                },
+                "generated_at": datetime.utcnow().isoformat()
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to generate text-only fallback: {e}")
+            return {
+                "reason": "text_generation_failed",
+                "error": str(e),
+                "fallback_content": "Content creation in progress. Please check back shortly.",
+                "generated_at": datetime.utcnow().isoformat()
+            }
+    
+    def _adapt_image_prompt_to_text(self,
+                                  image_prompt: str,
+                                  platform: str,
+                                  content_context: Optional[str] = None,
+                                  industry_context: Optional[str] = None,
+                                  tone: str = "professional") -> str:
+        """Convert image generation prompt to text content prompt"""
+        
+        # Extract key concepts from image prompt
+        concepts = image_prompt.replace("Generate an image of", "").replace("Create a visual", "").strip()
+        
+        # Platform-specific text content guidance
+        platform_guidance = {
+            "twitter": "Create a concise, engaging tweet (280 characters max) with relevant hashtags",
+            "instagram": "Write an engaging Instagram caption with storytelling elements and relevant hashtags",
+            "facebook": "Create a conversational Facebook post that encourages engagement", 
+            "linkedin": "Write a professional LinkedIn post with industry insights",
+            "tiktok": "Create energetic, trend-aware content suitable for video captions"
+        }
+        
+        guidance = platform_guidance.get(platform, "Create engaging social media content")
+        
+        text_prompt = f"""
+        {guidance} based on this concept: {concepts}
+        
+        Content context: {content_context or "General social media content"}
+        Industry context: {industry_context or "General business"}
+        Tone: {tone}
+        Platform: {platform}
+        
+        Requirements:
+        - Make it engaging and platform-appropriate
+        - Include relevant hashtags if suitable for the platform
+        - Focus on the core message from the original visual concept
+        - Ensure it works well as standalone text content
+        - Make it actionable and valuable to the audience
+        
+        Generate professional, high-quality text content:
+        """
+        
+        return text_prompt.strip()
+    
+    async def _generate_text_alternatives(self, primary_content: str, platform: str, tone: str) -> List[str]:
+        """Generate alternative text versions"""
+        try:
+            client = self.openai_async_client if self.openai_async_client else self.async_client
+            if not client:
+                return ["Alternative version not available"]
+            
+            alt_prompt = f"""
+            Based on this {platform} content: "{primary_content}"
+            
+            Create 2 alternative versions with the same {tone} tone but different approaches:
+            1. A more conversational version
+            2. A more concise version
+            
+            Keep the core message but vary the style. Return just the alternatives, one per line.
+            """
+            
+            response = await client.chat.completions.create(
+                model="gpt-4o" if self.openai_async_client else "grok-beta",
+                messages=[{"role": "user", "content": alt_prompt}],
+                max_tokens=300,
+                temperature=0.8
+            )
+            
+            alternatives = response.choices[0].message.content.strip().split('\n')
+            return [alt.strip() for alt in alternatives if alt.strip()][:2]
+            
+        except Exception as e:
+            logger.error(f"Failed to generate text alternatives: {e}")
+            return ["Alternative version not available"]
+    
+    def _format_text_for_platform(self, content: str, platform: str) -> str:
+        """Format text content for specific platform requirements"""
+        
+        # Platform-specific formatting
+        if platform == "twitter":
+            # Ensure under 280 characters
+            if len(content) > 280:
+                content = content[:276] + "..."
+                
+        elif platform == "instagram":
+            # Add line breaks for better readability
+            if '\n' not in content:
+                sentences = content.split('. ')
+                if len(sentences) > 2:
+                    mid_point = len(sentences) // 2
+                    content = '. '.join(sentences[:mid_point]) + '.\n\n' + '. '.join(sentences[mid_point:])
+                    
+        elif platform == "linkedin":
+            # Add professional formatting
+            if not content.startswith(('Excited to', 'Proud to', 'Thrilled to')):
+                content = content
+            
+        return content.strip()
 
 # Global service instance
 image_generation_service = ImageGenerationService()

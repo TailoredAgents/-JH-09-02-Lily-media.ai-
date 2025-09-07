@@ -1,0 +1,666 @@
+{
+  "spdxVersion": "SPDX-2.3",
+  "dataLicense": "CC0-1.0",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "creationInfo": {
+    "created": "2025-09-07T04:20:38.098058+00:00",
+    "creators": [
+      "Tool: lily-media-sbom-generator"
+    ],
+    "licenseListVersion": "3.20"
+  },
+  "name": "lily-media-frontend-sbom",
+  "documentNamespace": "https://github.com/lily-media/frontend/sbom-20250907002214",
+  "packages": [
+    {
+      "SPDXID": "SPDXRef-Package-@dnd-kit/core",
+      "name": "@dnd-kit/core",
+      "versionInfo": "6.3.1",
+      "downloadLocation": "https://registry.npmjs.org/@dnd-kit/core/-/core-6.3.1.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "2e2579a76ecea08f29374bd62802b2b2f558b104"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "xkGBRQQab4RLwgXxoqETICr6S5JlogafbhNsidmrkVv2YRs5MLwpjoF2qpiGjQt8S9AoxtIV603s0GIUpY5eYQ=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-@dnd-kit/sortable",
+      "name": "@dnd-kit/sortable",
+      "versionInfo": "8.0.0",
+      "downloadLocation": "https://registry.npmjs.org/@dnd-kit/sortable/-/sortable-8.0.0.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "bdcc5b7d6e2a60ecbb14993c91966615519db7b9"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "U3jk5ebVXe1Lr7c2wU7SBZjcWdQP+j7peHJfCspnA81enlu88Mgd7CC8Q+pub9ubP7eKVETzJW+IBAhsqbSu/g=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-@dnd-kit/utilities",
+      "name": "@dnd-kit/utilities",
+      "versionInfo": "3.2.2",
+      "downloadLocation": "https://registry.npmjs.org/@dnd-kit/utilities/-/utilities-3.2.2.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "88d976194ecd1f18bdc6fd32a3cb286d3b98b8ea"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "+MKAJEOfaBe5SmV6t34p80MMKhjvUz0vRrvVJbPT0WElzaOJ/1xs+D+KDv+tD/NE5ujfrChEcshd4fLn0wpiqg=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-@heroicons/react",
+      "name": "@heroicons/react",
+      "versionInfo": "2.2.0",
+      "downloadLocation": "https://registry.npmjs.org/@heroicons/react/-/react-2.2.0.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "5f2ac4a89b6712ecb2741847557cfb6ef4192e80"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "LMcepvRaS9LYHJGsF0zzmgKCUim/X3N/DQKc4jepAXJ7l8QxJ1PmxJzqplF2Z3FE4PqBAIGyJAQ/w4B5dsqbtQ=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-@tanstack/react-query",
+      "name": "@tanstack/react-query",
+      "versionInfo": "5.84.1",
+      "downloadLocation": "https://registry.npmjs.org/@tanstack/react-query/-/react-query-5.84.1.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "fbc1d838e4d1433cc9675ac4806e0891fe7c64c6"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "zo7EUygcWJMQfFNWDSG7CBhy8irje/XY0RDVKKV4IQJAysb+ZJkkJPcnQi+KboyGUgT+SQebRFoTqLuTtfoDLw=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-@tanstack/react-table",
+      "name": "@tanstack/react-table",
+      "versionInfo": "8.21.3",
+      "downloadLocation": "https://registry.npmjs.org/@tanstack/react-table/-/react-table-8.21.3.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "c450c758a959233dd5fd80e4794428fa39fdcf06"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "5nNMTSETP4ykGegmVkhjcS8tTLW6Vl4axfEGQN3v0zdHYbK4UfoqfPChclTrJ4EoK9QynqAu9oUf8VEmrpZ5Ww=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-chart.js",
+      "name": "chart.js",
+      "versionInfo": "4.5.0",
+      "downloadLocation": "https://registry.npmjs.org/chart.js/-/chart.js-4.5.0.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "3e70602a8aac7cce523f67642314e750ccee8af9"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "aYeC/jDgSEx8SHWZvANYMioYMZ2KX02W6f6uVfyteuCGcadDLcYVHdfdygsTQkQ4TKn5lghoojAsPj5pu0SnvQ=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-date-fns",
+      "name": "date-fns",
+      "versionInfo": "3.6.0",
+      "downloadLocation": "https://registry.npmjs.org/date-fns/-/date-fns-3.6.0.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "49e445e6736c078f139a552a583c6e418fb9490b"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "fRHTG8g/Gif+kSh50gaGEdToemgfj74aRX3swtiouboip5JDLAyDE9F11nHMIcvOaXeOC6D7SpNhi7uFyB7Uww=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-focus-trap-react",
+      "name": "focus-trap-react",
+      "versionInfo": "11.0.4",
+      "downloadLocation": "https://registry.npmjs.org/focus-trap-react/-/focus-trap-react-11.0.4.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "77c4979b84113385d20f2cbf282b6c5025a59c31"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "tC7jC/yqeAqhe4irNIzdyDf9XCtGSeECHiBSYJBO/vIN0asizbKZCt8TarB6/XqIceu42ajQ/U4lQJ9pZlWjrg=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-formik",
+      "name": "formik",
+      "versionInfo": "2.4.6",
+      "downloadLocation": "https://registry.npmjs.org/formik/-/formik-2.4.6.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "2a20404018a17adbcf59164ed17a2697bf003ff5"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "A+2EI7U7aG296q2TLGvNapDNTZp1khVt5Vk0Q/fyfSROss0V/V6+txt2aJnwEos44IxTCW/LYAi/zgWzlevj+g=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-framer-motion",
+      "name": "framer-motion",
+      "versionInfo": "10.18.0",
+      "downloadLocation": "https://registry.npmjs.org/framer-motion/-/framer-motion-10.18.0.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "71bd80234a1af5787c5d9c23cede5b0c678a9343"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "oGlDh1Q1XqYPksuTD/usb0I70hq95OUzmL9+6Zd+Hs4XV0oaISBa/UUMSjYiq6m8EUF32132mOJ8xVZS+I0S6w=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-lucide-react",
+      "name": "lucide-react",
+      "versionInfo": "0.536.0",
+      "downloadLocation": "https://registry.npmjs.org/lucide-react/-/lucide-react-0.536.0.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "c597439fe248b1c8be9e7aa3fe686b8fc4e7dbb9"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "2PgvNa9v+qz4Jt/ni8vPLt4jwoFybXHuubQT8fv4iCW5TjDxkbZjNZZHa485ad73NSEn/jdsEtU57eE1g+ma8A=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-prop-types",
+      "name": "prop-types",
+      "versionInfo": "15.8.1",
+      "downloadLocation": "https://registry.npmjs.org/prop-types/-/prop-types-15.8.1.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "92709d26fde0582be64d57335f05c38512b8e709"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "oj87CgZICdulUohogVAR7AjlC0327U4el4L6eAvOqCeudMDVU0NThNaV+b9Df4dXgSP1gXMTnPdhfe/2qDH5cg=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-react-beautiful-dnd",
+      "name": "react-beautiful-dnd",
+      "versionInfo": "13.1.1",
+      "downloadLocation": "https://registry.npmjs.org/react-beautiful-dnd/-/react-beautiful-dnd-13.1.1.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "be601cc55e62f666f221ac8481adc9e1c133f60e"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "0Lvs4tq2VcrEjEgDXHjT98r+63drkKEgqyxdA7qD3mvKwga6a5SscbdLPO2IExotU1jW8L0Ksdl0Cj2AF67nPQ=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-react-calendar",
+      "name": "react-calendar",
+      "versionInfo": "4.8.0",
+      "downloadLocation": "https://registry.npmjs.org/react-calendar/-/react-calendar-4.8.0.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "aa1c97d9b2817cf6396fa8ab909d5042a60a7895"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "qFgwo+p58sgv1QYMI1oGNaop90eJVKuHTZ3ZgBfrrpUb+9cAexxsKat0sAszgsizPMVo7vOXedV7Lqa0GQGMvA=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-react-chartjs-2",
+      "name": "react-chartjs-2",
+      "versionInfo": "5.3.0",
+      "downloadLocation": "https://registry.npmjs.org/react-chartjs-2/-/react-chartjs-2-5.3.0.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "77461f5db984daaa5ceabeffb4a741fd0272d35f"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "UfZZFnDsERI3c3CZGxzvNJd02SHjaSJ8kgW1djn65H1KK8rehwTjyrRKOG3VTMG8wtHZ5rgAO5oTHtHi9GCCmw=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-react-dom",
+      "name": "react-dom",
+      "versionInfo": "18.3.1",
+      "downloadLocation": "https://registry.npmjs.org/react-dom/-/react-dom-18.3.1.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "d0a12490ed0ca6dea314b4e9338382ae51a91f26"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "5m4nQKp+rZRb09LNH59GM4BxTh9251/ylbKIbpe7TpGxfJ+9kv6BLkLBXIjjspbgbnIBNqlI23tRnTWT0snUIw=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-react-dropzone",
+      "name": "react-dropzone",
+      "versionInfo": "14.3.8",
+      "downloadLocation": "https://registry.npmjs.org/react-dropzone/-/react-dropzone-14.3.8.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "b2151175d33a6c68d4278563450023592328660c"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "sBgODnq+lcA4P296DY4wacOZz3JFpD99fp+hb//iBO2HHnyeZU3FwWyXJ6salNpqQdsZrgMrotuko/BdJMV8Ug=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-react-helmet-async",
+      "name": "react-helmet-async",
+      "versionInfo": "2.0.5",
+      "downloadLocation": "https://registry.npmjs.org/react-helmet-async/-/react-helmet-async-2.0.5.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "4be4802876f82347600cc6b5a5266586b7e87170"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "rYUYHeus+i27MvFE+Jaa4WsyBKGkL6qVgbJvSBoX8mbsWoABJXdEO0bZyi0F6i+4f0NuIb8AvqPMj3iXFHkMwg=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-react-infinite-scroll-component",
+      "name": "react-infinite-scroll-component",
+      "versionInfo": "6.1.0",
+      "downloadLocation": "https://registry.npmjs.org/react-infinite-scroll-component/-/react-infinite-scroll-component-6.1.0.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "dd1850730d2edd10764881b472bc3af2d1823a62"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "SQu5nCqy8DxQWpnUVLx7V7b7LcA37aM7tvoWjTLZp1dk6EJibM5/4EJKzOnl07/BsM1Y40sKLuqjCwwH/xV0TQ=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-react-router-dom",
+      "name": "react-router-dom",
+      "versionInfo": "6.30.1",
+      "downloadLocation": "https://registry.npmjs.org/react-router-dom/-/react-router-dom-6.30.1.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "6993ae8b53cfb9fc12a868178e8de8e84b08b443"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "llKsgOkZdbPU1Eg3zK8lCn+sjD9wMRZZPuzmdWWX5SUs8OFkN5HnFVC0u5KMeMaC9aoancFI/KoLuKPqN+hxHw=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-react-tooltip",
+      "name": "react-tooltip",
+      "versionInfo": "5.29.1",
+      "downloadLocation": "https://registry.npmjs.org/react-tooltip/-/react-tooltip-5.29.1.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "37e7386adac1b7a3fb4a673c05ed2b675c2420c1"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "rmJmEb/p99xWhwmVT7F7riLG08wwKykjHiMGbDPloNJk3tdI73oHsVOwzZ4SRjqMdd5/xwb/4nmz0RcoMfY7Bw=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-react-window-infinite-loader",
+      "name": "react-window-infinite-loader",
+      "versionInfo": "1.0.10",
+      "downloadLocation": "https://registry.npmjs.org/react-window-infinite-loader/-/react-window-infinite-loader-1.0.10.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "a64e6f499b6a2398eae88d37da9059c7fa55e65d"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "NO/csdHlxjWqA2RJZfzQgagAjGHspbO2ik9GtWZb0BY1Nnapq0auG8ErI+OhGCzpjYJsCYerqUlK6hkq9dfAAA=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-react-window",
+      "name": "react-window",
+      "versionInfo": "1.8.11",
+      "downloadLocation": "https://registry.npmjs.org/react-window/-/react-window-1.8.11.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "a11d5869c8175b40787933c66f06e5d903b06a30"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "+SRbUVT2scadgFSWx+R1P754xHPEqvcfSfVX10QYg6POOz+WNgkN48pS+BtZNIMGiL1HYrSEiCkwsMS15QogEQ=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-react",
+      "name": "react",
+      "versionInfo": "18.3.1",
+      "downloadLocation": "https://registry.npmjs.org/react/-/react-18.3.1.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "7cb500128bd74c91d3128211d462b623fae5203b"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-socket.io-client",
+      "name": "socket.io-client",
+      "versionInfo": "4.8.1",
+      "downloadLocation": "https://registry.npmjs.org/socket.io-client/-/socket.io-client-4.8.1.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "2ac0cad187bc573c66f750590826df0db06a1a96"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "hJVXfu3E28NmzGk8o1sHhN3om52tRvwYeidbj7xKy2eIIse5IoKX3USlS6Tqt3BHAtflLIkCQBkzVrEEfWUyYQ=="
+        }
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-Package-yup",
+      "name": "yup",
+      "versionInfo": "1.7.0",
+      "downloadLocation": "https://registry.npmjs.org/yup/-/yup-1.7.0.tgz",
+      "filesAnalyzed": false,
+      "copyrightText": "NOASSERTION",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "packageVerificationCode": {
+        "packageVerificationCodeValue": "25aff726c6686e80ddda3e2c07e3a678d6639a40"
+      },
+      "checksums": [
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "VJce62dBd+JQvoc+fCVq+KZfPHr+hXaxCcVgotfwWvlR0Ja3ffYKaJBT8rptPOSKOGJDCUnW2C2JWpud7aRP6Q=="
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-@dnd-kit/core"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-@dnd-kit/sortable"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-@dnd-kit/utilities"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-@heroicons/react"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-@tanstack/react-query"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-@tanstack/react-table"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-chart.js"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-date-fns"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-focus-trap-react"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-formik"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-framer-motion"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-lucide-react"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-prop-types"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-react-beautiful-dnd"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-react-calendar"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-react-chartjs-2"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-react-dom"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-react-dropzone"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-react-helmet-async"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-react-infinite-scroll-component"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-react-router-dom"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-react-tooltip"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-react-window-infinite-loader"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-react-window"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-react"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-socket.io-client"
+    },
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-Package-yup"
+    }
+  ]
+}

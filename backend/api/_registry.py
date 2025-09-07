@@ -34,6 +34,7 @@ from . import (
     assistant_chat,  # OpenAI Assistant chat for landing page
     data_deletion,  # GA Checklist: Data deletion endpoints for compliance
     webhooks,  # GA Checklist: Meta webhook endpoints for compliance
+    webhook_reliability,  # P0-11c: Webhook reliability monitoring and management
     legal_documents,  # GA Checklist: Privacy Policy & Terms URLs for platform compliance
     memory_vector,  # Vector memory endpoints used by frontend
     linkedin_oauth,  # LinkedIn OAuth 2.0 integration for autonomous posting
@@ -49,6 +50,11 @@ from . import (
     sre_dashboard,  # SRE dashboard for enhanced observability and operations
     observability,  # OpenTelemetry observability and metrics endpoints
     plan_management,  # Plan management and quota enforcement API
+    data_export,  # GDPR/CCPA data export endpoints for privacy compliance
+    data_retention,  # Data retention policy management and automated cleanup
+    key_rotation,  # Encryption key rotation schedule and automation
+    template_validation,  # Template coverage validation system for AI models
+    error_taxonomy,  # Comprehensive error taxonomy mapping and classification
 )
 
 # Import CSRF router
@@ -95,6 +101,7 @@ ROUTERS = [
     assistant_chat.router,  # OpenAI Assistant chat for landing page
     data_deletion.router,  # GA Checklist: Data deletion endpoints for compliance
     webhooks.router,  # GA Checklist: Meta webhook endpoints for compliance
+    webhook_reliability.router,  # P0-11c: Webhook reliability monitoring and management
     legal_documents.router,  # GA Checklist: Privacy Policy & Terms URLs for platform compliance
     linkedin_oauth.router,  # LinkedIn OAuth 2.0 integration for autonomous posting
     dashboard_metrics.router,  # Dashboard metrics API for frontend consumption
@@ -109,6 +116,11 @@ ROUTERS = [
     sre_dashboard.router,  # SRE dashboard for enhanced observability and operations
     observability.router,  # OpenTelemetry observability and metrics endpoints
     plan_management.router,  # Plan management and quota enforcement API
+    data_export.router,  # GDPR/CCPA data export endpoints for privacy compliance
+    data_retention.router,  # Data retention policy management and automated cleanup
+    key_rotation.router,  # Encryption key rotation schedule and automation
+    template_validation.router,  # Template coverage validation system for AI models
+    error_taxonomy.router,  # Comprehensive error taxonomy mapping and classification
 ]
 
 # Add CSRF router if available

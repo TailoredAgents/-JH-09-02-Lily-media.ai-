@@ -19,6 +19,7 @@ from backend.services.research_automation import research_service, ResearchQuery
 from backend.services.content_automation import content_automation_service
 from backend.services.workflow_orchestration import workflow_orchestrator
 from backend.services.metrics_collection import metrics_collector
+from backend.services.plan_service import PlanService
 from backend.integrations.instagram_client import instagram_client
 from backend.integrations.facebook_client import facebook_client
 from backend.integrations.twitter_client import twitter_client
@@ -32,10 +33,25 @@ logger = get_task_logger(__name__)
 def execute_research_pipeline(user_id: int, research_config: Dict[str, Any]) -> Dict[str, Any]:
     """
     Execute comprehensive research pipeline across all platforms
+    PLAN ENFORCEMENT: Validates autopilot research capability before execution
     """
     db = SessionLocal()
     
     try:
+        # SECURITY: Check plan quota before executing expensive research operations
+        plan_service = PlanService(db)
+        capabilities = plan_service.get_user_capabilities(user_id)
+        
+        if not capabilities.has_autopilot_research():
+            logger.warning(f"Research pipeline blocked for user {user_id}: plan lacks autopilot research")
+            return {
+                "success": False,
+                "user_id": user_id,
+                "error": f"Autopilot research not available on {capabilities.get_plan_name()} plan",
+                "plan_enforcement": True,
+                "required_feature": "autopilot_research_enabled",
+                "timestamp": datetime.utcnow().isoformat()
+            }
         # Convert config to ResearchQuery
         research_query = ResearchQuery(
             keywords=research_config["keywords"],
@@ -88,10 +104,25 @@ def execute_research_pipeline(user_id: int, research_config: Dict[str, Any]) -> 
 def daily_trend_analysis(user_id: int) -> Dict[str, Any]:
     """
     Daily automated trend analysis across all platforms
+    PLAN ENFORCEMENT: Validates research capability before execution
     """
     db = SessionLocal()
     
     try:
+        # SECURITY: Check plan quota before expensive trend analysis
+        plan_service = PlanService(db)
+        capabilities = plan_service.get_user_capabilities(user_id)
+        
+        if not capabilities.has_autopilot_research():
+            logger.warning(f"Daily trend analysis blocked for user {user_id}: plan lacks autopilot research")
+            return {
+                "success": False,
+                "user_id": user_id,
+                "error": f"Autopilot research not available on {capabilities.get_plan_name()} plan",
+                "plan_enforcement": True,
+                "required_feature": "autopilot_research_enabled",
+                "timestamp": datetime.utcnow().isoformat()
+            }
         # Get trending topics from each platform
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
@@ -133,10 +164,37 @@ def daily_trend_analysis(user_id: int) -> Dict[str, Any]:
 def generate_and_schedule_content(user_id: int, content_config: Dict[str, Any]) -> Dict[str, Any]:
     """
     Generate AI content and schedule across multiple platforms
+    PLAN ENFORCEMENT: Validates autopilot post limits before execution
     """
     db = SessionLocal()
     
     try:
+        # SECURITY: Check plan quota for autopilot content generation
+        plan_service = PlanService(db)
+        capabilities = plan_service.get_user_capabilities(user_id)
+        
+        daily_limit = capabilities.get_autopilot_posts_per_day()
+        if daily_limit == 0:
+            logger.warning(f"Content generation blocked for user {user_id}: no autopilot posts allowed")
+            return {
+                "success": False,
+                "user_id": user_id,
+                "error": f"Autopilot content generation not available on {capabilities.get_plan_name()} plan",
+                "plan_enforcement": True,
+                "required_feature": "autopilot_posts_per_day",
+                "current_limit": daily_limit,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        
+        # Check if requested content count exceeds daily limit
+        platforms = content_config.get("platforms", ["twitter"])
+        requested_posts = len(platforms)
+        
+        if requested_posts > daily_limit:
+            logger.warning(f"Content generation reduced for user {user_id}: {requested_posts} requested, {daily_limit} allowed")
+            # Reduce platforms to fit within limit
+            platforms = platforms[:daily_limit]
+            content_config["platforms"] = platforms
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         
@@ -273,10 +331,25 @@ async def _schedule_platform_post(platform: str, content_result: Dict[str, Any],
 def execute_daily_workflow(user_id: int, workflow_config: Dict[str, Any] = None) -> Dict[str, Any]:
     """
     Execute comprehensive daily workflow: research → content generation → scheduling → analysis
+    PLAN ENFORCEMENT: Validates enhanced autopilot before full workflow execution
     """
     db = SessionLocal()
     
     try:
+        # SECURITY: Check plan quota for enhanced autopilot workflows
+        plan_service = PlanService(db)
+        capabilities = plan_service.get_user_capabilities(user_id)
+        
+        if not capabilities.has_enhanced_autopilot():
+            logger.warning(f"Daily workflow blocked for user {user_id}: lacks enhanced autopilot")
+            return {
+                "success": False,
+                "user_id": user_id,
+                "error": f"Enhanced autopilot not available on {capabilities.get_plan_name()} plan",
+                "plan_enforcement": True,
+                "required_feature": "enhanced_autopilot",
+                "timestamp": datetime.utcnow().isoformat()
+            }
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         
@@ -322,10 +395,25 @@ def execute_daily_workflow(user_id: int, workflow_config: Dict[str, Any] = None)
 def execute_engagement_optimization(user_id: int) -> Dict[str, Any]:
     """
     Analyze recent content performance and optimize future strategies
+    PLAN ENFORCEMENT: Validates advanced analytics before optimization
     """
     db = SessionLocal()
     
     try:
+        # SECURITY: Check plan quota for engagement optimization features
+        plan_service = PlanService(db)
+        capabilities = plan_service.get_user_capabilities(user_id)
+        
+        if not capabilities.has_advanced_analytics():
+            logger.warning(f"Engagement optimization blocked for user {user_id}: lacks advanced analytics")
+            return {
+                "success": False,
+                "user_id": user_id,
+                "error": f"Advanced analytics not available on {capabilities.get_plan_name()} plan",
+                "plan_enforcement": True,
+                "required_feature": "advanced_analytics",
+                "timestamp": datetime.utcnow().isoformat()
+            }
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         
@@ -469,6 +557,7 @@ def hourly_metrics_sync() -> Dict[str, Any]:
 def daily_workflow_automation() -> Dict[str, Any]:
     """
     Daily task to execute automated workflows for all users
+    PLAN ENFORCEMENT: Only triggers workflows for users with appropriate plan capabilities
     """
     db = SessionLocal()
     
@@ -480,8 +569,11 @@ def daily_workflow_automation() -> Dict[str, Any]:
         results = {
             "total_users": None,  # unknown up front
             "workflows_triggered": 0,
+            "plan_blocked": 0,
             "errors": []
         }
+        
+        plan_service = PlanService(db)
         
         while True:
             users = (
@@ -501,7 +593,14 @@ def daily_workflow_automation() -> Dict[str, Any]:
             for user in users:
                 total_processed += 1
                 try:
-                    # Trigger daily workflow for each user
+                    # SECURITY: Check if user has enhanced autopilot capability
+                    capabilities = plan_service.get_user_capabilities(user.id)
+                    if not capabilities.has_enhanced_autopilot():
+                        results["plan_blocked"] += 1
+                        logger.debug(f"Daily workflow skipped for user {user.id}: lacks enhanced autopilot ({capabilities.get_plan_name()})")
+                        continue
+                    
+                    # Trigger daily workflow for qualified users only
                     execute_daily_workflow.delay(user.id)
                     results["workflows_triggered"] += 1
                     

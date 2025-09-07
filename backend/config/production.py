@@ -52,7 +52,7 @@ class ProductionSettings(Settings):
     openai_research_model: str = Field("gpt-5-mini", env="OPENAI_RESEARCH_MODEL")  # GPT-5 mini for research
     openai_deep_research_model: str = Field("gpt-5", env="OPENAI_DEEP_RESEARCH_MODEL")  # GPT-5 for deep analysis
     openai_categorization_model: str = Field("gpt-5-mini", env="OPENAI_CATEGORIZATION_MODEL")  # GPT-5 mini for categorization
-    openai_image_model: str = Field("grok-2-image", env="OPENAI_IMAGE_MODEL")  # Grok-2 Image for all image generation
+    xai_image_model: str = Field("grok-2-image", env="XAI_IMAGE_MODEL")  # Grok-2 Image for all image generation
     openai_embedding_model: str = Field("text-embedding-3-large", env="OPENAI_EMBEDDING_MODEL")  # text-embedding-3-large
     openai_max_tokens: int = Field(2000, env="OPENAI_MAX_TOKENS")
     openai_temperature: float = Field(0.7, env="OPENAI_TEMPERATURE")

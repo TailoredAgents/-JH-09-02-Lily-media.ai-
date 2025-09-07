@@ -18,6 +18,7 @@ from backend.services.industry_classification_service import industry_classifica
 from backend.agents.tools import openai_tool
 from backend.core.config import get_settings
 from backend.core.observability import get_observability_manager
+from backend.core.feature_flags import ff
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -38,11 +39,24 @@ class AutonomousPostingService:
         try:
             logger.info(f"Starting autonomous posting cycle for user {user_id}")
             
+            # SECURITY: Check research feature flags before executing autonomous research
+            if not ff("ENABLE_DEEP_RESEARCH"):
+                logger.warning(f"Autonomous cycle blocked for user {user_id}: ENABLE_DEEP_RESEARCH flag is disabled")
+                return {
+                    "status": "feature_disabled",
+                    "user_id": user_id,
+                    "error": "Deep research features are currently disabled",
+                    "flag_required": "ENABLE_DEEP_RESEARCH",
+                    "flag_status": False,
+                    "cycle_attempted_at": datetime.now(timezone.utc),
+                    "message": "Autonomous research cycles require the ENABLE_DEEP_RESEARCH feature flag to be enabled"
+                }
+            
             # Add Sentry breadcrumb for debugging
             self.observability.add_sentry_breadcrumb(
                 f"Starting autonomous cycle for user {user_id}",
                 category="autonomous_posting",
-                data={"user_id": user_id}
+                data={"user_id": user_id, "deep_research_enabled": True}
             )
             
             # Step 1: Conduct real industry research using AI insights
@@ -63,15 +77,28 @@ class AutonomousPostingService:
             
             logger.info(f"Autonomous posting for user {user_id}: Industry={industry_display_name}, Topics={research_topics}")
             
-            # Generate weekly insights using AI service
-            research_results = await ai_insights_service.generate_weekly_insights()
-            
-            if research_results.get("status") != "success":
-                # Fallback to web research with user's actual industry
-                research_results = await web_research_service.research_industry_trends(
-                    industry=industry_display_name,
-                    topics=research_topics
-                )
+            # Generate weekly insights using AI service (with research flag validation)
+            if ff("ENABLE_DEEP_RESEARCH"):
+                research_results = await ai_insights_service.generate_weekly_insights()
+                
+                if research_results.get("status") != "success":
+                    # Fallback to web research with user's actual industry
+                    research_results = await web_research_service.research_industry_trends(
+                        industry=industry_display_name,
+                        topics=research_topics
+                    )
+            else:
+                # Use simplified content ideas when deep research is disabled
+                logger.info(f"Using simplified content generation for user {user_id}: deep research disabled")
+                research_results = {
+                    "status": "simplified",
+                    "insights": {
+                        "trending_topics": ["AI automation", "productivity tools", "business efficiency"],
+                        "market_insights": ["Businesses seek automation solutions", "AI adoption growing"],
+                        "content_opportunities": ["Show practical AI benefits", "Share automation tips"]
+                    },
+                    "source": "fallback_content"
+                }
             
             # Track research performance
             research_duration = time.time() - research_start_time
@@ -333,7 +360,7 @@ Generate content that demonstrates real expertise and actionable insights."""
             # Generate image if needed
             image_url = None
             if content_idea.get("content_type") == "image+text":
-                image_result = openai_tool.create_image(
+                image_result = xai_tool.create_image(
                     f"Professional social media image for: {content_idea['hook']} - AI automation and social media management theme"
                 )
                 if image_result.get("status") == "success":

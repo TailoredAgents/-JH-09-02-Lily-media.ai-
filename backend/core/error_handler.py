@@ -256,8 +256,8 @@ def handle_validation_error(
     )
 
 
-def log_and_raise(error: APIError, logger_instance: logging.Logger = logger) -> None:
-    """Log error details and raise as HTTPException"""
+def log_and_raise(error: APIError, logger_instance: logging.Logger = logger, context: Optional[Dict[str, Any]] = None) -> None:
+    """Log error details with taxonomy integration and raise as HTTPException"""
     logger_instance.error(
         f"API Error [{error.error_code.value}]: {error.message}",
         extra={
@@ -267,6 +267,28 @@ def log_and_raise(error: APIError, logger_instance: logging.Logger = logger) -> 
             "context": error.context
         }
     )
+    
+    # Integrate with error taxonomy service for comprehensive error handling
+    try:
+        from backend.services.error_taxonomy_service import classify_and_handle_error
+        
+        # Classify and handle error with taxonomy
+        taxonomy_info = classify_and_handle_error(error, context)
+        
+        # Log additional taxonomy information
+        if taxonomy_info.get("requires_alert"):
+            logger_instance.critical(
+                f"Alert required for error {error.error_code.value}",
+                extra={
+                    "taxonomy_classification": taxonomy_info["taxonomy"]["category"],
+                    "severity": taxonomy_info["taxonomy"]["severity"],
+                    "escalation_required": taxonomy_info.get("requires_escalation", False)
+                }
+            )
+    except Exception as taxonomy_error:
+        # Don't fail the main error flow if taxonomy service fails
+        logger_instance.warning(f"Error taxonomy classification failed: {taxonomy_error}")
+    
     raise error.to_http_exception()
 
 

@@ -53,6 +53,16 @@ help:
 	@echo "  make security-check - Run security vulnerability scans"
 	@echo "  make security-backend - Run Python security scans"
 	@echo "  make security-frontend - Run Node.js security scans"
+	@echo "  make generate-sbom  - Generate Software Bill of Materials"
+	@echo "  make validate-security - Validate all security controls"
+	@echo ""
+	@echo "🗄️ Database Migration Guardrails:"
+	@echo "  make migration-status - Check migration and rollback status"
+	@echo "  make migration-dry-run - Test migration without changes"
+	@echo "  make migration-safe - Run safe migration with backups"
+	@echo "  make migration-list-backups - List available backups"
+	@echo "  make migration-validate-rollback MIGRATION_ID=<id> - Validate rollback"
+	@echo "  make migration-emergency-rollback MIGRATION_ID=<id> - Emergency rollback"
 	@echo ""
 	@echo "🐳 Docker:"
 	@echo "  make docker-build   - Build Docker images"
@@ -307,6 +317,85 @@ benchmark:
 profile:
 	@echo "📊 Running performance profiling..."
 	@cd $(BACKEND_DIR) && ../$(VENV_DIR)/bin/python -m cProfile main.py
+
+# Database Migration Guardrails
+migration-status:
+	@echo "🔍 Checking migration status..."
+	@if [ -z "$(DATABASE_URL)" ]; then \
+		echo "❌ DATABASE_URL environment variable not set"; \
+		exit 1; \
+	fi
+	python scripts/migration-rollback.py --database-url "$(DATABASE_URL)" --status
+
+migration-dry-run:
+	@echo "🔍 Running migration dry run..."
+	@if [ -z "$(DATABASE_URL)" ]; then \
+		echo "❌ DATABASE_URL environment variable not set"; \
+		exit 1; \
+	fi
+	python scripts/migration-guardrails.py --database-url "$(DATABASE_URL)" --dry-run
+
+migration-safe:
+	@echo "⚡ Running safe migration with guardrails..."
+	@if [ -z "$(DATABASE_URL)" ]; then \
+		echo "❌ DATABASE_URL environment variable not set"; \
+		exit 1; \
+	fi
+	python scripts/migration-guardrails.py --database-url "$(DATABASE_URL)"
+
+migration-rollback-status:
+	@echo "🔄 Checking rollback status..."
+	@if [ -z "$(DATABASE_URL)" ]; then \
+		echo "❌ DATABASE_URL environment variable not set"; \
+		exit 1; \
+	fi
+	python scripts/migration-rollback.py --database-url "$(DATABASE_URL)" --status
+
+migration-list-backups:
+	@echo "📁 Listing available migration backups..."
+	@if [ -z "$(DATABASE_URL)" ]; then \
+		echo "❌ DATABASE_URL environment variable not set"; \
+		exit 1; \
+	fi
+	python scripts/migration-rollback.py --database-url "$(DATABASE_URL)" --list
+
+migration-validate-rollback:
+	@echo "🔍 Validating rollback point: $(MIGRATION_ID)"
+	@if [ -z "$(DATABASE_URL)" ]; then \
+		echo "❌ DATABASE_URL environment variable not set"; \
+		exit 1; \
+	fi
+	@if [ -z "$(MIGRATION_ID)" ]; then \
+		echo "❌ MIGRATION_ID environment variable not set"; \
+		echo "Usage: make migration-validate-rollback MIGRATION_ID=migration_20250906_123456"; \
+		exit 1; \
+	fi
+	python scripts/migration-rollback.py --database-url "$(DATABASE_URL)" --validate "$(MIGRATION_ID)"
+
+migration-emergency-rollback:
+	@echo "🚨 EMERGENCY ROLLBACK - This is destructive!"
+	@echo "⚠️  This will restore the database to: $(MIGRATION_ID)"
+	@echo "⚠️  Recent data may be lost!"
+	@if [ -z "$(DATABASE_URL)" ]; then \
+		echo "❌ DATABASE_URL environment variable not set"; \
+		exit 1; \
+	fi
+	@if [ -z "$(MIGRATION_ID)" ]; then \
+		echo "❌ MIGRATION_ID environment variable not set"; \
+		echo "Usage: make migration-emergency-rollback MIGRATION_ID=migration_20250906_123456"; \
+		exit 1; \
+	fi
+	@echo "Type 'yes' to confirm emergency rollback:"
+	@read confirm && [ "$$confirm" = "yes" ] || (echo "❌ Rollback cancelled" && exit 1)
+	python scripts/migration-rollback.py --database-url "$(DATABASE_URL)" --rollback "$(MIGRATION_ID)" --confirm
+
+generate-sbom:
+	@echo "📦 Generating Software Bill of Materials (SBOM)..."
+	python scripts/generate-sbom.py --project-root . --output-dir sbom
+
+validate-security:
+	@echo "🔒 Running security validation..."
+	python scripts/validate-security.py --project-root .
 
 # CI/CD
 ci-setup:

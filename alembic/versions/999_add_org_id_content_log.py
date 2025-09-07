@@ -13,7 +13,7 @@ from sqlalchemy import text
 
 # revision identifiers, used by Alembic.
 revision = '999_add_org_id_content_log'
-down_revision = '016_remove_registration_keys'
+down_revision = '039_webhook_reliability_improvements'
 branch_labels = None
 depends_on = None
 

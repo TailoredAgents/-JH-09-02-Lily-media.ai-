@@ -12,7 +12,7 @@ import uuid
 
 # revision identifiers, used by Alembic.
 revision = '024_partner_oauth'
-down_revision = '023_add_user_id_to_memory_content_tables'
+down_revision = '023_phase3a_social_inbox'
 branch_labels = None
 depends_on = None
 

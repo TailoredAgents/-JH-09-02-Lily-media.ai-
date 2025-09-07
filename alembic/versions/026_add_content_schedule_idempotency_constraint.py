@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = '026_add_content_schedule_idempotency'
-down_revision = '027_create_content_drafts_and_schedules'
+down_revision = '025_add_performance_indexes'
 branch_labels = None
 depends_on = None
 

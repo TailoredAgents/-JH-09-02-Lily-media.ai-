@@ -18,6 +18,7 @@ from backend.core.config import get_settings
 from backend.agents.deep_research_agent import deep_research_agent, ResearchTopic, IndustryIntelligence
 from backend.services.notification_service import notification_service
 from backend.services.plan_service import PlanService
+from backend.services.research_monitoring import get_research_monitoring_service, ResearchOperationTracker
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
