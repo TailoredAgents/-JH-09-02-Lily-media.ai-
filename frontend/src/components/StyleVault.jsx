@@ -2,7 +2,10 @@ import React, { useState, useEffect } from 'react'
 import { usePlan } from '../contexts/PlanContext'
 import { usePlanConditionals } from '../hooks/usePlanConditionals'
 import PlanGate from './PlanGate'
-import EnhancedPlanGate, { FeatureGate, TierGate } from './enhanced/EnhancedPlanGate'
+import EnhancedPlanGate, {
+  FeatureGate,
+  TierGate,
+} from './enhanced/EnhancedPlanGate'
 import { useNotifications } from '../hooks/useNotifications'
 import api from '../services/api'
 import {
@@ -41,12 +44,12 @@ import EditableRulesList from './StyleVault/EditableRulesList'
 
 const StyleVault = ({ userId }) => {
   const { plan, hasAdvancedAnalytics } = usePlan()
-  const { 
+  const {
     hasFeature,
     hasPremiumAI,
     hasAdvancedAnalytics: hasAdvancedAnalyticsConditional,
     getButtonState,
-    canPerformAction
+    canPerformAction,
   } = usePlanConditionals()
   const { showSuccess, showError } = useNotifications()
 
@@ -106,7 +109,10 @@ const StyleVault = ({ userId }) => {
   const [viewMode, setViewMode] = useState('grid') // grid or list
   const [selectedAssets, setSelectedAssets] = useState([])
   const [showUploadModal, setShowUploadModal] = useState(false)
-  const [assetFilter, setAssetFilter] = useState({ type: 'all', dateRange: 'all' })
+  const [assetFilter, setAssetFilter] = useState({
+    type: 'all',
+    dateRange: 'all',
+  })
   const [showFontUpload, setShowFontUpload] = useState(false)
   const [editingDos, setEditingDos] = useState(false)
   const [editingDonts, setEditingDonts] = useState(false)
@@ -335,54 +341,71 @@ const StyleVault = ({ userId }) => {
   }
 
   const updatePrimaryColor = (index, color) => {
-    const updatedColors = [...(styleVault.visual_guidelines?.primary_colors || [])]
+    const updatedColors = [
+      ...(styleVault.visual_guidelines?.primary_colors || []),
+    ]
     updatedColors[index] = color
     updateVisualGuidelines('primary_colors', updatedColors)
   }
 
   const addPrimaryColor = () => {
-    const updatedColors = [...(styleVault.visual_guidelines?.primary_colors || []), '#000000']
+    const updatedColors = [
+      ...(styleVault.visual_guidelines?.primary_colors || []),
+      '#000000',
+    ]
     updateVisualGuidelines('primary_colors', updatedColors)
   }
 
   const removePrimaryColor = (index) => {
-    const updatedColors = (styleVault.visual_guidelines?.primary_colors || []).filter((_, i) => i !== index)
+    const updatedColors = (
+      styleVault.visual_guidelines?.primary_colors || []
+    ).filter((_, i) => i !== index)
     updateVisualGuidelines('primary_colors', updatedColors)
   }
 
   const updateSecondaryColor = (index, color) => {
-    const updatedColors = [...(styleVault.visual_guidelines?.secondary_colors || [])]
+    const updatedColors = [
+      ...(styleVault.visual_guidelines?.secondary_colors || []),
+    ]
     updatedColors[index] = color
     updateVisualGuidelines('secondary_colors', updatedColors)
   }
 
   const addSecondaryColor = () => {
-    const updatedColors = [...(styleVault.visual_guidelines?.secondary_colors || []), '#000000']
+    const updatedColors = [
+      ...(styleVault.visual_guidelines?.secondary_colors || []),
+      '#000000',
+    ]
     updateVisualGuidelines('secondary_colors', updatedColors)
   }
 
   const removeSecondaryColor = (index) => {
-    const updatedColors = (styleVault.visual_guidelines?.secondary_colors || []).filter((_, i) => i !== index)
+    const updatedColors = (
+      styleVault.visual_guidelines?.secondary_colors || []
+    ).filter((_, i) => i !== index)
     updateVisualGuidelines('secondary_colors', updatedColors)
   }
 
   const handleAssetUpload = async (files, assetType, options = {}) => {
     const formData = new FormData()
-    files.forEach(file => formData.append('files', file))
+    files.forEach((file) => formData.append('files', file))
     formData.append('asset_type', assetType)
-    
+
     if (options.tags) {
       formData.append('tags', JSON.stringify(options.tags))
     }
 
     try {
       setUploadProgress({ [assetType]: 0 })
-      
+
       // Simulate upload progress
       const progressInterval = setInterval(() => {
-        setUploadProgress(prev => ({
+        setUploadProgress((prev) => ({
           ...prev,
-          [assetType]: Math.min((prev[assetType] || 0) + Math.random() * 30, 90)
+          [assetType]: Math.min(
+            (prev[assetType] || 0) + Math.random() * 30,
+            90
+          ),
         }))
       }, 500)
 
@@ -399,17 +422,21 @@ const StyleVault = ({ userId }) => {
         ...styleVault,
         brand_assets: {
           ...styleVault.brand_assets,
-          [assetType]: [...(styleVault.brand_assets?.[assetType] || []), ...response.assets],
+          [assetType]: [
+            ...(styleVault.brand_assets?.[assetType] || []),
+            ...response.assets,
+          ],
         },
       }
-      
+
       saveStyleVault(updatedVault)
-      showSuccess(`${files.length} asset${files.length > 1 ? 's' : ''} uploaded successfully`)
-      
+      showSuccess(
+        `${files.length} asset${files.length > 1 ? 's' : ''} uploaded successfully`
+      )
+
       setTimeout(() => {
         setUploadProgress({})
       }, 2000)
-
     } catch (error) {
       console.error('Asset upload failed:', error)
       showError('Failed to upload assets')
@@ -427,7 +454,10 @@ const StyleVault = ({ userId }) => {
         ...styleVault,
         brand_assets: {
           ...styleVault.brand_assets,
-          [assetType]: styleVault.brand_assets?.[assetType]?.filter(asset => asset.id !== assetId) || [],
+          [assetType]:
+            styleVault.brand_assets?.[assetType]?.filter(
+              (asset) => asset.id !== assetId
+            ) || [],
         },
       }
 
@@ -440,9 +470,9 @@ const StyleVault = ({ userId }) => {
   }
 
   const toggleAssetSelection = (assetId) => {
-    setSelectedAssets(prev => 
+    setSelectedAssets((prev) =>
       prev.includes(assetId)
-        ? prev.filter(id => id !== assetId)
+        ? prev.filter((id) => id !== assetId)
         : [...prev, assetId]
     )
   }
@@ -452,9 +482,9 @@ const StyleVault = ({ userId }) => {
       const response = await api.request('/api/style-vault/assets/download/', {
         method: 'POST',
         body: { asset_ids: selectedAssets },
-        responseType: 'blob'
+        responseType: 'blob',
       })
-      
+
       // Create download link
       const url = window.URL.createObjectURL(new Blob([response]))
       const link = document.createElement('a')
@@ -464,7 +494,7 @@ const StyleVault = ({ userId }) => {
       link.click()
       link.remove()
       window.URL.revokeObjectURL(url)
-      
+
       showSuccess('Assets downloaded successfully')
       setSelectedAssets([])
     } catch (error) {
@@ -474,23 +504,43 @@ const StyleVault = ({ userId }) => {
   }
 
   const deleteSelectedAssets = async () => {
-    if (!window.confirm(`Delete ${selectedAssets.length} selected assets? This cannot be undone.`)) {
+    if (
+      !window.confirm(
+        `Delete ${selectedAssets.length} selected assets? This cannot be undone.`
+      )
+    ) {
       return
     }
 
     try {
-      await Promise.all(selectedAssets.map(assetId => 
-        api.request(`/api/style-vault/assets/${assetId}/`, { method: 'DELETE' })
-      ))
+      await Promise.all(
+        selectedAssets.map((assetId) =>
+          api.request(`/api/style-vault/assets/${assetId}/`, {
+            method: 'DELETE',
+          })
+        )
+      )
 
       // Remove from all asset types
       const updatedVault = {
         ...styleVault,
         brand_assets: {
-          logos: styleVault.brand_assets?.logos?.filter(asset => !selectedAssets.includes(asset.id)) || [],
-          images: styleVault.brand_assets?.images?.filter(asset => !selectedAssets.includes(asset.id)) || [],
-          fonts: styleVault.brand_assets?.fonts?.filter(asset => !selectedAssets.includes(asset.id)) || [],
-          color_palettes: styleVault.brand_assets?.color_palettes?.filter(asset => !selectedAssets.includes(asset.id)) || [],
+          logos:
+            styleVault.brand_assets?.logos?.filter(
+              (asset) => !selectedAssets.includes(asset.id)
+            ) || [],
+          images:
+            styleVault.brand_assets?.images?.filter(
+              (asset) => !selectedAssets.includes(asset.id)
+            ) || [],
+          fonts:
+            styleVault.brand_assets?.fonts?.filter(
+              (asset) => !selectedAssets.includes(asset.id)
+            ) || [],
+          color_palettes:
+            styleVault.brand_assets?.color_palettes?.filter(
+              (asset) => !selectedAssets.includes(asset.id)
+            ) || [],
         },
       }
 
@@ -538,9 +588,10 @@ const StyleVault = ({ userId }) => {
         ...styleVault,
         brand_assets: {
           ...styleVault.brand_assets,
-          fonts: styleVault.brand_assets?.fonts?.map(font => 
-            font.id === fontId ? { ...font, ...response.font } : font
-          ) || [],
+          fonts:
+            styleVault.brand_assets?.fonts?.map((font) =>
+              font.id === fontId ? { ...font, ...response.font } : font
+            ) || [],
         },
       }
 
@@ -557,9 +608,9 @@ const StyleVault = ({ userId }) => {
       const response = await api.request('/api/style-vault/export/', {
         method: 'POST',
         body: { format: 'pdf' },
-        responseType: 'blob'
+        responseType: 'blob',
       })
-      
+
       // Create download link
       const url = window.URL.createObjectURL(new Blob([response]))
       const link = document.createElement('a')
@@ -569,7 +620,7 @@ const StyleVault = ({ userId }) => {
       link.click()
       link.remove()
       window.URL.revokeObjectURL(url)
-      
+
       showSuccess('Brand guidelines exported successfully')
     } catch (error) {
       console.error('Export failed:', error)
@@ -658,6 +709,137 @@ const StyleVault = ({ userId }) => {
         <div className="p-6">
           {activeTab === 'brand_assets' && (
             <div className="space-y-8">
+              {/* Asset Management Controls */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+                <div className="flex items-center space-x-4">
+                  <div className="relative">
+                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search assets..."
+                      value={assetSearch}
+                      onChange={(e) => setAssetSearch(e.target.value)}
+                      className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 w-64"
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => setViewMode('grid')}
+                      className={`p-2 rounded ${
+                        viewMode === 'grid'
+                          ? 'bg-purple-100 text-purple-600'
+                          : 'text-gray-400 hover:text-gray-600'
+                      }`}
+                    >
+                      <Squares2X2Icon className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setViewMode('list')}
+                      className={`p-2 rounded ${
+                        viewMode === 'list'
+                          ? 'bg-purple-100 text-purple-600'
+                          : 'text-gray-400 hover:text-gray-600'
+                      }`}
+                    >
+                      <ListBulletIcon className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  {selectedAssets.length > 0 && (
+                    <>
+                      <span className="text-sm text-gray-600">
+                        {selectedAssets.length} selected
+                      </span>
+                      <button
+                        onClick={downloadSelectedAssets}
+                        className="flex items-center px-3 py-1.5 text-sm text-blue-600 hover:text-blue-700"
+                      >
+                        <ArrowDownTrayIcon className="w-4 h-4 mr-1" />
+                        Download
+                      </button>
+                      <button
+                        onClick={deleteSelectedAssets}
+                        className="flex items-center px-3 py-1.5 text-sm text-red-600 hover:text-red-700"
+                      >
+                        <TrashIcon className="w-4 h-4 mr-1" />
+                        Delete
+                      </button>
+                    </>
+                  )}
+                  <button
+                    onClick={() => setShowUploadModal(true)}
+                    className="flex items-center px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700"
+                  >
+                    <ArrowUpTrayIcon className="w-4 h-4 mr-2" />
+                    Upload Assets
+                  </button>
+                </div>
+              </div>
+
+              {/* Asset Categories */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Logos */}
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                      <PhotoIcon className="w-5 h-5 mr-2 text-purple-600" />
+                      Logos ({styleVault.brand_assets?.logos?.length || 0})
+                    </h3>
+                  </div>
+                  <AssetGrid
+                    assets={styleVault.brand_assets?.logos || []}
+                    type="logos"
+                    viewMode="grid"
+                    searchTerm={assetSearch}
+                    onDelete={(id) => removeAsset('logos', id)}
+                    onSelect={toggleAssetSelection}
+                    selectedAssets={selectedAssets}
+                  />
+                </div>
+
+                {/* Images */}
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                      <PhotoIcon className="w-5 h-5 mr-2 text-purple-600" />
+                      Images ({styleVault.brand_assets?.images?.length || 0})
+                    </h3>
+                  </div>
+                  <AssetGrid
+                    assets={styleVault.brand_assets?.images || []}
+                    type="images"
+                    viewMode="grid"
+                    searchTerm={assetSearch}
+                    onDelete={(id) => removeAsset('images', id)}
+                    onSelect={toggleAssetSelection}
+                    selectedAssets={selectedAssets}
+                  />
+                </div>
+
+                {/* Fonts */}
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                      <DocumentTextIcon className="w-5 h-5 mr-2 text-purple-600" />
+                      Fonts ({styleVault.brand_assets?.fonts?.length || 0})
+                    </h3>
+                    <button
+                      onClick={() => setShowFontUpload(true)}
+                      className="text-sm text-purple-600 hover:text-purple-700"
+                    >
+                      Add Font
+                    </button>
+                  </div>
+                  <FontAssetGrid
+                    fonts={styleVault.brand_assets?.fonts || []}
+                    searchTerm={assetSearch}
+                    onDelete={(id) => removeAsset('fonts', id)}
+                    onUpdate={updateFontAsset}
+                  />
+                </div>
+              </div>
+
               {/* Color Palettes */}
               <div>
                 <h3 className="text-lg font-medium text-gray-900 mb-4">
@@ -993,48 +1175,167 @@ const StyleVault = ({ userId }) => {
           )}
 
           {activeTab === 'usage_rules' && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-8">
+              {/* Brand Guidelines and Restrictions Management */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Guidelines (Do's) */}
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                    <CheckCircleIcon className="w-5 h-5 text-green-500 mr-2" />
-                    Brand Guidelines (Do's)
-                  </h3>
-                  <div className="space-y-2">
-                    {styleVault.usage_rules?.dos?.map((rule, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center p-2 bg-green-50 rounded"
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                      <CheckCircleIcon className="w-5 h-5 text-green-500 mr-2" />
+                      Brand Guidelines
+                    </h3>
+                    {!editingDos && (
+                      <button
+                        onClick={() => setEditingDos(true)}
+                        className="text-sm text-purple-600 hover:text-purple-700"
                       >
-                        <CheckCircleIcon className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                        <span className="text-sm text-green-800">{rule}</span>
-                      </div>
-                    ))}
+                        Edit Guidelines
+                      </button>
+                    )}
                   </div>
+
+                  {editingDos ? (
+                    <EditableRulesList
+                      rules={styleVault.usage_rules?.dos || []}
+                      type="dos"
+                      onUpdate={(rules) => {
+                        updateUsageRules('dos', rules)
+                        setEditingDos(false)
+                      }}
+                      onCancel={() => setEditingDos(false)}
+                    />
+                  ) : (
+                    <div className="space-y-3">
+                      {styleVault.usage_rules?.dos?.length > 0 ? (
+                        styleVault.usage_rules.dos.map((rule, index) => (
+                          <div
+                            key={index}
+                            className="flex items-start p-3 bg-green-50 rounded-lg border border-green-200"
+                          >
+                            <CheckCircleIcon className="w-4 h-4 text-green-500 mr-3 flex-shrink-0 mt-0.5" />
+                            <span className="text-sm text-green-800">
+                              {rule}
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-8 text-gray-500">
+                          <CheckCircleIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                          <p className="text-sm">
+                            No brand guidelines configured yet
+                          </p>
+                          <button
+                            onClick={() => setEditingDos(true)}
+                            className="text-sm text-purple-600 hover:text-purple-700 mt-2"
+                          >
+                            Add your first guideline
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
+                {/* Restrictions (Don'ts) */}
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                    <XMarkIcon className="w-5 h-5 text-red-500 mr-2" />
-                    Brand Restrictions (Don'ts)
-                  </h3>
-                  <div className="space-y-2">
-                    {styleVault.usage_rules?.donts?.map((rule, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center p-2 bg-red-50 rounded"
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                      <XMarkIcon className="w-5 h-5 text-red-500 mr-2" />
+                      Brand Restrictions
+                    </h3>
+                    {!editingDonts && (
+                      <button
+                        onClick={() => setEditingDonts(true)}
+                        className="text-sm text-purple-600 hover:text-purple-700"
                       >
-                        <XMarkIcon className="w-4 h-4 text-red-500 mr-2 flex-shrink-0" />
-                        <span className="text-sm text-red-800">{rule}</span>
-                      </div>
-                    ))}
+                        Edit Restrictions
+                      </button>
+                    )}
                   </div>
+
+                  {editingDonts ? (
+                    <EditableRulesList
+                      rules={styleVault.usage_rules?.donts || []}
+                      type="donts"
+                      onUpdate={(rules) => {
+                        updateUsageRules('donts', rules)
+                        setEditingDonts(false)
+                      }}
+                      onCancel={() => setEditingDonts(false)}
+                    />
+                  ) : (
+                    <div className="space-y-3">
+                      {styleVault.usage_rules?.donts?.length > 0 ? (
+                        styleVault.usage_rules.donts.map((rule, index) => (
+                          <div
+                            key={index}
+                            className="flex items-start p-3 bg-red-50 rounded-lg border border-red-200"
+                          >
+                            <XMarkIcon className="w-4 h-4 text-red-500 mr-3 flex-shrink-0 mt-0.5" />
+                            <span className="text-sm text-red-800">{rule}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-8 text-gray-500">
+                          <XMarkIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                          <p className="text-sm">
+                            No brand restrictions configured yet
+                          </p>
+                          <button
+                            onClick={() => setEditingDonts(true)}
+                            className="text-sm text-purple-600 hover:text-purple-700 mt-2"
+                          >
+                            Add your first restriction
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Export Options */}
+              <div className="border-t border-gray-200 pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-900">
+                      Export Brand Guidelines
+                    </h4>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Download your complete brand guidelines as a PDF document
+                    </p>
+                  </div>
+                  <button
+                    onClick={exportBrandGuidelines}
+                    className="flex items-center px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700"
+                  >
+                    <ArrowDownTrayIcon className="w-4 h-4 mr-2" />
+                    Export PDF
+                  </button>
                 </div>
               </div>
             </div>
           )}
         </div>
       </div>
+
+      {/* Asset Upload Modal */}
+      {showUploadModal && (
+        <AssetUploadModal
+          onClose={() => setShowUploadModal(false)}
+          onUpload={handleAssetUpload}
+          uploadProgress={uploadProgress}
+        />
+      )}
+
+      {/* Font Upload Modal */}
+      {showFontUpload && (
+        <FontUploadModal
+          onClose={() => setShowFontUpload(false)}
+          onUpload={handleFontUpload}
+        />
+      )}
     </FeatureGate>
   )
 }

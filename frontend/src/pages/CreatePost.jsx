@@ -2,10 +2,17 @@ import { useState, useEffect } from 'react'
 import { useEnhancedApi } from '../hooks/useEnhancedApi'
 import { useNotifications } from '../hooks/useNotifications'
 import { usePlan } from '../contexts/PlanContext'
+import { usePlanConditionals } from '../hooks/usePlanConditionals'
 import { error as logError } from '../utils/logger.js'
 import ProgressBar from '../components/ProgressBar'
 import RealtimeContentPreview from '../components/RealtimeContentPreview'
 import PlanGate, { UsageLimitIndicator } from '../components/PlanGate'
+import {
+  PostCreationGuard,
+  ImageGenerationGuard,
+} from '../components/quota/ActionQuotaGuard'
+import QuotaManager from '../components/quota/QuotaManager'
+import UpgradeFlowModal from '../components/quota/UpgradeFlowModal'
 import {
   getIconAltText,
   getButtonProps,
@@ -32,6 +39,13 @@ export default function CreatePost() {
   const { api } = useEnhancedApi()
   const { showSuccess, showError, showProgress } = useNotifications()
   const { canGenerateImage, canPostToday, limits } = usePlan()
+  const {
+    canCreatePost,
+    canGenerateImage: canGenImg,
+    postsAtLimit,
+    imagesAtLimit,
+    getUpgradeMessage,
+  } = usePlanConditionals()
 
   const [formData, setFormData] = useState({
     title: '',
@@ -48,6 +62,8 @@ export default function CreatePost() {
   const [showResearchPanel, setShowResearchPanel] = useState(false)
   const [researchData, setResearchData] = useState(null)
   const [generateImageWithContent, setGenerateImageWithContent] = useState(true) // Default to true
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [upgradeContext, setUpgradeContext] = useState(null)
   const [isResearching, setIsResearching] = useState(false)
   const [contentGenerationProgress, setContentGenerationProgress] =
     useState(false)
@@ -486,6 +502,47 @@ export default function CreatePost() {
     }
   }
 
+  // Quota handling functions
+  const handleActionBlocked = (blockInfo) => {
+    const { action, limitType, reason, upgradeMessage } = blockInfo
+
+    setUpgradeContext({
+      action,
+      limitType,
+      currentUsage: limits?.[limitType]?.current || 0,
+      upgradeMessage,
+    })
+    setShowUpgradeModal(true)
+  }
+
+  const handleQuotaCheck = (actionType) => {
+    switch (actionType) {
+      case 'post':
+        if (!canCreatePost()) {
+          handleActionBlocked({
+            action: 'create_post',
+            limitType: 'posts',
+            reason: 'daily_limit_reached',
+            upgradeMessage: getUpgradeMessage('posts'),
+          })
+          return false
+        }
+        break
+      case 'image':
+        if (!canGenImg()) {
+          handleActionBlocked({
+            action: 'generate_image',
+            limitType: 'images',
+            reason: 'monthly_limit_reached',
+            upgradeMessage: getUpgradeMessage('images'),
+          })
+          return false
+        }
+        break
+    }
+    return true
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -659,31 +716,37 @@ export default function CreatePost() {
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-medium text-gray-900">Content</h3>
-              <button
-                onClick={generateAIContent}
-                disabled={contentGenerationProgress}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md flex items-center space-x-2 hover:bg-blue-700 transition-colors disabled:opacity-50"
-                aria-label={
-                  contentGenerationProgress
-                    ? 'Generating AI content, please wait'
-                    : 'Generate AI content using Lily AI'
-                }
-                {...getButtonProps(
-                  'generate AI content',
-                  contentGenerationProgress,
-                  contentGenerationProgress,
-                  true
-                )}
-              >
-                {!contentGenerationProgress ? (
-                  <SparklesIcon className="h-4 w-4" aria-hidden="true" />
-                ) : null}
-                <span>
-                  {contentGenerationProgress
-                    ? 'Creating Caption & Image...'
-                    : 'Generate AI Content'}
-                </span>
-              </button>
+              <PostCreationGuard onActionBlocked={handleActionBlocked}>
+                <button
+                  onClick={(e) => {
+                    if (handleQuotaCheck('post')) {
+                      generateAIContent(e)
+                    }
+                  }}
+                  disabled={contentGenerationProgress}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md flex items-center space-x-2 hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  aria-label={
+                    contentGenerationProgress
+                      ? 'Generating AI content, please wait'
+                      : 'Generate AI content using Lily AI'
+                  }
+                  {...getButtonProps(
+                    'generate AI content',
+                    contentGenerationProgress,
+                    contentGenerationProgress,
+                    true
+                  )}
+                >
+                  {!contentGenerationProgress ? (
+                    <SparklesIcon className="h-4 w-4" aria-hidden="true" />
+                  ) : null}
+                  <span>
+                    {contentGenerationProgress
+                      ? 'Creating Caption & Image...'
+                      : 'Generate AI Content'}
+                  </span>
+                </button>
+              </PostCreationGuard>
             </div>
 
             {/* Content Generation Progress */}
@@ -1039,18 +1102,24 @@ export default function CreatePost() {
                 >
                   Clear
                 </button>
-                <button
-                  onClick={saveToLibrary}
-                  disabled={isCreating || !formData.content.trim()}
-                  className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center space-x-2"
-                >
-                  {isCreating ? (
-                    <ArrowPathIcon className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <DocumentTextIcon className="h-4 w-4" />
-                  )}
-                  <span>{isCreating ? 'Saving...' : 'Save to Library'}</span>
-                </button>
+                <PostCreationGuard onActionBlocked={handleActionBlocked}>
+                  <button
+                    onClick={(e) => {
+                      if (handleQuotaCheck('post')) {
+                        saveToLibrary(e)
+                      }
+                    }}
+                    disabled={isCreating || !formData.content.trim()}
+                    className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center space-x-2"
+                  >
+                    {isCreating ? (
+                      <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <DocumentTextIcon className="h-4 w-4" />
+                    )}
+                    <span>{isCreating ? 'Saving...' : 'Save to Library'}</span>
+                  </button>
+                </PostCreationGuard>
               </div>
             </div>
           </div>
@@ -1175,6 +1244,24 @@ export default function CreatePost() {
           </div>
         </div>
       </div>
+
+      {/* Quota Manager */}
+      <div className="mt-8">
+        <QuotaManager
+          limitTypes={['posts', 'images']}
+          compactMode={true}
+          showHeader={true}
+          showUpgradePrompts={true}
+        />
+      </div>
+
+      {/* Upgrade Modal */}
+      <UpgradeFlowModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        triggerContext={upgradeContext}
+        trackingSource="create_post_page"
+      />
     </div>
   )
 }

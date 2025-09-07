@@ -7,25 +7,29 @@ import {
   StarIcon,
   ClockIcon,
   TagIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline'
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid'
 
-const AssetGrid = ({ 
-  assets, 
-  type, 
-  viewMode, 
-  searchTerm, 
-  onDelete, 
-  onSelect, 
-  selectedAssets 
+const AssetGrid = ({
+  assets,
+  type,
+  viewMode,
+  searchTerm,
+  onDelete,
+  onSelect,
+  selectedAssets,
 }) => {
   const [showPreview, setShowPreview] = useState(null)
-  
+
   // Filter assets based on search term
-  const filteredAssets = assets.filter(asset => 
-    !searchTerm || 
-    asset.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    asset.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+  const filteredAssets = assets.filter(
+    (asset) =>
+      !searchTerm ||
+      asset.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      asset.tags?.some((tag) =>
+        tag.toLowerCase().includes(searchTerm.toLowerCase())
+      )
   )
 
   const formatFileSize = (bytes) => {
@@ -40,7 +44,7 @@ const AssetGrid = ({
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
     })
   }
 
@@ -53,12 +57,13 @@ const AssetGrid = ({
     return (
       <div className="text-center py-12">
         <PhotoIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">No assets found</h3>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">
+          No assets found
+        </h3>
         <p className="text-gray-500">
-          {searchTerm 
+          {searchTerm
             ? `No ${type} assets match your search criteria.`
-            : `No ${type} assets uploaded yet.`
-          }
+            : `No ${type} assets uploaded yet.`}
         </p>
       </div>
     )
@@ -80,8 +85,8 @@ const AssetGrid = ({
                   />
                   <div className="flex-shrink-0 w-16 h-12 bg-gray-100 rounded overflow-hidden">
                     {asset.thumbnail_url ? (
-                      <img 
-                        src={asset.thumbnail_url} 
+                      <img
+                        src={asset.thumbnail_url}
                         alt={asset.name}
                         className="w-full h-full object-cover"
                       />
@@ -102,7 +107,9 @@ const AssetGrid = ({
                     </div>
                     <div className="flex items-center mt-1 text-sm text-gray-500 space-x-4">
                       <span>{formatFileSize(asset.file_size)}</span>
-                      <span>{asset.width}x{asset.height}</span>
+                      <span>
+                        {asset.width}x{asset.height}
+                      </span>
                       <span className="flex items-center">
                         <ClockIcon className="w-4 h-4 mr-1" />
                         {formatDate(asset.created_at)}
@@ -112,7 +119,7 @@ const AssetGrid = ({
                       <div className="flex items-center mt-2 space-x-1">
                         <TagIcon className="w-3 h-3 text-gray-400" />
                         {asset.tags.slice(0, 3).map((tag, index) => (
-                          <span 
+                          <span
                             key={index}
                             className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800"
                           >
@@ -176,8 +183,8 @@ const AssetGrid = ({
     <>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
         {filteredAssets.map((asset) => (
-          <div 
-            key={asset.id} 
+          <div
+            key={asset.id}
             className="group relative bg-white rounded-lg border border-gray-200 hover:border-purple-300 hover:shadow-md transition-all duration-200"
           >
             <div className="relative">
@@ -190,7 +197,7 @@ const AssetGrid = ({
                   className="h-4 w-4 text-purple-600 rounded border-gray-300 shadow-sm"
                 />
               </div>
-              
+
               {/* Favorite star */}
               {asset.is_favorite && (
                 <div className="absolute top-2 right-2 z-10">
@@ -201,8 +208,8 @@ const AssetGrid = ({
               {/* Asset preview */}
               <div className="aspect-w-4 aspect-h-3 rounded-t-lg overflow-hidden bg-gray-100">
                 {asset.thumbnail_url ? (
-                  <img 
-                    src={asset.thumbnail_url} 
+                  <img
+                    src={asset.thumbnail_url}
                     alt={asset.name}
                     className="w-full h-32 object-cover group-hover:scale-105 transition-transform duration-200"
                   />
@@ -211,7 +218,7 @@ const AssetGrid = ({
                     <PhotoIcon className="w-8 h-8 text-gray-400" />
                   </div>
                 )}
-                
+
                 {/* Overlay actions */}
                 <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
                   <div className="flex space-x-2">
@@ -248,11 +255,13 @@ const AssetGrid = ({
                     <TrashIcon className="w-4 h-4" />
                   </button>
                 </div>
-                
+
                 <div className="text-xs text-gray-500 space-y-1">
                   <div className="flex justify-between">
                     <span>{formatFileSize(asset.file_size)}</span>
-                    <span>{asset.width}x{asset.height}</span>
+                    <span>
+                      {asset.width}x{asset.height}
+                    </span>
                   </div>
                   <div className="truncate">{formatDate(asset.created_at)}</div>
                 </div>
@@ -261,7 +270,7 @@ const AssetGrid = ({
                 {asset.tags && asset.tags.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-1">
                     {asset.tags.slice(0, 2).map((tag, index) => (
-                      <span 
+                      <span
                         key={index}
                         className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800"
                       >
@@ -283,9 +292,9 @@ const AssetGrid = ({
 
       {/* Preview Modal */}
       {showPreview && (
-        <AssetPreviewModal 
-          asset={showPreview} 
-          onClose={() => setShowPreview(null)} 
+        <AssetPreviewModal
+          asset={showPreview}
+          onClose={() => setShowPreview(null)}
         />
       )}
     </>
@@ -294,14 +303,32 @@ const AssetGrid = ({
 
 // Asset Preview Modal Component
 const AssetPreviewModal = ({ asset, onClose }) => {
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+  }
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    })
+  }
+
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
       <div className="relative bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">{asset.name}</h3>
+            <h3 className="text-lg font-semibold text-gray-900">
+              {asset.name}
+            </h3>
             <p className="text-sm text-gray-500 mt-1">
-              {formatFileSize(asset.file_size)} • {asset.width}x{asset.height} • 
+              {formatFileSize(asset.file_size)} • {asset.width}x{asset.height} •
               Uploaded {formatDate(asset.created_at)}
             </p>
           </div>
@@ -312,46 +339,59 @@ const AssetPreviewModal = ({ asset, onClose }) => {
             <XMarkIcon className="h-6 w-6" />
           </button>
         </div>
-        
+
         <div className="p-6">
-          <div className="flex items-center justify-center bg-gray-50 rounded-lg mb-6" style={{ minHeight: '400px' }}>
-            <img 
-              src={asset.url || asset.thumbnail_url} 
+          <div
+            className="flex items-center justify-center bg-gray-50 rounded-lg mb-6"
+            style={{ minHeight: '400px' }}
+          >
+            <img
+              src={asset.url || asset.thumbnail_url}
               alt={asset.name}
               className="max-w-full max-h-96 object-contain rounded"
             />
           </div>
-          
+
           {/* Asset metadata */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <h4 className="text-sm font-medium text-gray-900 mb-3">Asset Details</h4>
+              <h4 className="text-sm font-medium text-gray-900 mb-3">
+                Asset Details
+              </h4>
               <dl className="space-y-2">
                 <div className="flex justify-between">
                   <dt className="text-sm text-gray-500">File Size:</dt>
-                  <dd className="text-sm text-gray-900">{formatFileSize(asset.file_size)}</dd>
+                  <dd className="text-sm text-gray-900">
+                    {formatFileSize(asset.file_size)}
+                  </dd>
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-sm text-gray-500">Dimensions:</dt>
-                  <dd className="text-sm text-gray-900">{asset.width}x{asset.height}</dd>
+                  <dd className="text-sm text-gray-900">
+                    {asset.width}x{asset.height}
+                  </dd>
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-sm text-gray-500">Format:</dt>
-                  <dd className="text-sm text-gray-900">{asset.format?.toUpperCase() || 'N/A'}</dd>
+                  <dd className="text-sm text-gray-900">
+                    {asset.format?.toUpperCase() || 'N/A'}
+                  </dd>
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-sm text-gray-500">Uploaded:</dt>
-                  <dd className="text-sm text-gray-900">{formatDate(asset.created_at)}</dd>
+                  <dd className="text-sm text-gray-900">
+                    {formatDate(asset.created_at)}
+                  </dd>
                 </div>
               </dl>
             </div>
-            
+
             {asset.tags && asset.tags.length > 0 && (
               <div>
                 <h4 className="text-sm font-medium text-gray-900 mb-3">Tags</h4>
                 <div className="flex flex-wrap gap-2">
                   {asset.tags.map((tag, index) => (
-                    <span 
+                    <span
                       key={index}
                       className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800"
                     >
@@ -362,7 +402,7 @@ const AssetPreviewModal = ({ asset, onClose }) => {
               </div>
             )}
           </div>
-          
+
           <div className="mt-6 flex justify-end space-x-3">
             <a
               href={asset.download_url}
