@@ -3,10 +3,12 @@ import { useAuth } from '../contexts/AuthContext'
 import { useEnhancedApi } from '../hooks/useEnhancedApi'
 import { useNotifications } from '../hooks/useNotifications'
 import { useTheme } from '../contexts/ThemeContext'
+import { usePlan } from '../contexts/PlanContext'
 import { error as logError } from '../utils/logger.js'
 import SocialPlatformManager from '../components/SocialPlatforms/SocialPlatformManager'
 import ErrorLogs from '../components/ErrorLogs'
 import StyleVault from '../components/StyleVault'
+import PlanGate from '../components/PlanGate'
 import {
   UserIcon,
   KeyIcon,
@@ -892,7 +894,37 @@ export default function Settings() {
       </div>
 
       {/* Style Vault */}
-      <StyleVault />
+      <PlanGate
+        feature="white_label"
+        showUpgradePrompt={true}
+        fallback={
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
+                <CogIcon className="h-5 w-5 mr-2" />
+                Style Vault (Premium)
+              </h3>
+            </div>
+            <div className="p-6 text-center">
+              <div className="mb-4">
+                <CogIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-600 dark:text-gray-400">
+                  Upgrade to access the Style Vault feature for brand asset
+                  management and custom styling.
+                </p>
+              </div>
+              <button
+                onClick={() => (window.location.href = '/billing')}
+                className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+              >
+                Upgrade Plan
+              </button>
+            </div>
+          </div>
+        }
+      >
+        <StyleVault />
+      </PlanGate>
 
       {/* System Status */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow">

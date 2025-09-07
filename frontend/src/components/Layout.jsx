@@ -8,6 +8,7 @@ import { useNotifications } from '../hooks/useNotifications'
 import NotificationSystem from './Notifications/NotificationSystem'
 import ThemeToggle from './ThemeToggle'
 import PlanGate, { UsageLimitIndicator } from './PlanGate'
+import UsageNotifications from './UsageNotifications'
 import {
   getIconAltText,
   getNavLinkProps,
@@ -84,7 +85,35 @@ function Layout({ children }) {
   const [settingsLoaded, setSettingsLoaded] = useState(false)
 
   // Memoize navigation items to prevent re-creation on every render
-  const navigationItems = useMemo(() => navigation, [])
+  const navigationItems = useMemo(() => {
+    return navigation.filter((item) => {
+      // No gating for core pages
+      if (
+        [
+          'Flight Deck',
+          'Create Post',
+          'Content Library',
+          'Scheduler',
+          'Settings',
+          'Billing',
+        ].includes(item.name)
+      ) {
+        return true
+      }
+
+      // Gate specific features based on plan
+      switch (item.name) {
+        case 'Social Inbox':
+          return plan && (plan.ai_inbox || plan.plan_name !== 'free')
+        case 'Brand Brain':
+          return plan && (plan.premium_ai_models || plan.plan_name !== 'free')
+        case 'Integrations':
+          return true // Feature flag already handles this
+        default:
+          return true
+      }
+    })
+  }, [plan])
 
   // Memoize handlers to prevent re-creation
   const handleSidebarOpen = useCallback(() => {
@@ -525,7 +554,14 @@ function Layout({ children }) {
           role="main"
           aria-label="Main content"
         >
-          <div className="px-4 sm:px-6 lg:px-8">{children}</div>
+          <div className="px-4 sm:px-6 lg:px-8">
+            {/* Usage notifications for limit warnings */}
+            <div className="mb-6">
+              <UsageNotifications />
+            </div>
+
+            {children}
+          </div>
         </main>
       </div>
     </div>

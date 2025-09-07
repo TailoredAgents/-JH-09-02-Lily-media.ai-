@@ -129,9 +129,14 @@ export const UsageGate = ({ limitType, action, children, ...props }) => (
   </PlanGate>
 )
 
-// Usage limit indicator component
-export const UsageLimitIndicator = ({ limitType, className = '' }) => {
-  const { limits } = usePlan()
+// Enhanced usage limit indicator component with upgrade prompts
+export const UsageLimitIndicator = ({
+  limitType,
+  className = '',
+  showUpgradePrompt = true,
+  size = 'default',
+}) => {
+  const { limits, getUpgradeMessage, canUpgrade } = usePlan()
 
   if (!limits || !limits[limitType]) return null
 
@@ -139,6 +144,8 @@ export const UsageLimitIndicator = ({ limitType, className = '' }) => {
   const currentUsage = limit.current || 0
   const maxUsage = limit.max || 1
   const percentage = Math.min((currentUsage / maxUsage) * 100, 100)
+  const isNearLimit = percentage >= 75
+  const isAtLimit = percentage >= 90
 
   const getColorClass = (percent) => {
     if (percent >= 90) return 'bg-red-500'
@@ -146,22 +153,90 @@ export const UsageLimitIndicator = ({ limitType, className = '' }) => {
     return 'bg-green-500'
   }
 
+  const getTextColorClass = (percent) => {
+    if (percent >= 90) return 'text-red-700'
+    if (percent >= 75) return 'text-yellow-700'
+    return 'text-green-700'
+  }
+
+  const getLimitLabel = (type) => {
+    const labels = {
+      posts: 'Posts',
+      images: 'Images',
+      social_profiles: 'Social Profiles',
+      team: 'Team Members',
+      workspaces: 'Workspaces',
+    }
+    return labels[type] || type.replace('_', ' ')
+  }
+
+  const sizeClasses = {
+    small: { bar: 'h-1.5', text: 'text-xs' },
+    default: { bar: 'h-2', text: 'text-sm' },
+    large: { bar: 'h-3', text: 'text-base' },
+  }
+
+  const { bar: barHeight, text: textSize } = sizeClasses[size]
+
   return (
     <div className={`${className}`}>
-      <div className="flex items-center justify-between text-sm mb-1">
-        <span className="text-gray-600 capitalize">
-          {limitType.replace('_', ' ')}
+      <div className={`flex items-center justify-between ${textSize} mb-1`}>
+        <span className="text-gray-600 dark:text-gray-400 font-medium">
+          {getLimitLabel(limitType)}
         </span>
-        <span className="text-gray-900 font-medium">
+        <span className={`font-semibold ${getTextColorClass(percentage)}`}>
           {currentUsage} / {maxUsage}
         </span>
       </div>
-      <div className="w-full bg-gray-200 rounded-full h-2">
+
+      <div
+        className={`w-full bg-gray-200 dark:bg-gray-700 rounded-full ${barHeight} mb-2`}
+      >
         <div
-          className={`h-2 rounded-full transition-all duration-300 ${getColorClass(percentage)}`}
+          className={`${barHeight} rounded-full transition-all duration-300 ${getColorClass(percentage)}`}
           style={{ width: `${percentage}%` }}
         />
       </div>
+
+      {/* Usage status and upgrade prompt */}
+      {(isNearLimit || isAtLimit) && showUpgradePrompt && canUpgrade() && (
+        <div
+          className={`${isAtLimit ? 'bg-red-50 border-red-200' : 'bg-yellow-50 border-yellow-200'} rounded-md p-3 mt-2`}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <p
+                className={`${textSize} font-medium ${isAtLimit ? 'text-red-800' : 'text-yellow-800'}`}
+              >
+                {isAtLimit ? 'Limit Reached' : 'Near Limit'}
+              </p>
+              <p
+                className={`text-xs ${isAtLimit ? 'text-red-700' : 'text-yellow-700'} mt-1`}
+              >
+                {getUpgradeMessage(`${limitType} limit`)}
+              </p>
+            </div>
+            <button
+              onClick={() => (window.location.href = '/billing')}
+              className={`ml-3 inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded ${
+                isAtLimit
+                  ? 'text-red-700 bg-red-100 hover:bg-red-200'
+                  : 'text-yellow-700 bg-yellow-100 hover:bg-yellow-200'
+              } transition-colors`}
+            >
+              Upgrade
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Helpful tip for good usage */}
+      {!isNearLimit && percentage > 0 && (
+        <p className="text-xs text-green-600 mt-1">
+          You're using {Math.round(percentage)}% of your{' '}
+          {getLimitLabel(limitType).toLowerCase()} limit
+        </p>
+      )}
     </div>
   )
 }
