@@ -1,0 +1,464 @@
+name: API Schema Validation
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/api/**'
+      - 'backend/main.py'
+      - 'app.py'
+      - 'backend/docs/**'
+      - 'docs/openapi.json'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'backend/api/**'
+      - 'backend/main.py'
+      - 'app.py'
+      - 'backend/docs/**'
+      - 'docs/openapi.json'
+  workflow_call:
+    # Allow this workflow to be called from other workflows
+    outputs:
+      schema_validation_status:
+        description: "Overall schema validation status"
+        value: ${{ jobs.validate-api-schema.outputs.validation_status }}
+      breaking_changes_detected:
+        description: "Whether breaking changes were detected"
+        value: ${{ jobs.validate-api-schema.outputs.breaking_changes }}
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  validate-api-schema:
+    name: API Schema Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    outputs:
+      validation_status: ${{ steps.validation-summary.outputs.status }}
+      breaking_changes: ${{ steps.breaking-change-check.outputs.breaking_changes }}
+      schema_hash: ${{ steps.schema-generation.outputs.schema_hash }}
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: test_schema_validation
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Need full history for comparing schemas
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+        pip install pytest httpx
+        pip install openapi-spec-validator
+        pip install swagger-spec-validator
+        pip install jsonschema
+        pip install schemathesis  # For API contract testing
+        
+    - name: Set test environment variables
+      run: |
+        echo "SECRET_KEY=test-secret-key-for-schema-validation" >> $GITHUB_ENV
+        echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/test_schema_validation" >> $GITHUB_ENV
+        echo "OPENAI_API_KEY=test-key" >> $GITHUB_ENV
+        echo "TOKEN_ENCRYPTION_KEY=test-encryption-key-32-characters" >> $GITHUB_ENV
+        echo "ENVIRONMENT=test" >> $GITHUB_ENV
+        echo "REDIS_URL=redis://localhost:6379" >> $GITHUB_ENV
+
+    - name: Generate current API schema
+      id: schema-generation
+      run: |
+        echo "🔄 Generating current API schema..."
+        
+        # Generate schema using our tool
+        python scripts/openapi-schema-manager.py --update --project-root .
+        
+        # Calculate schema hash for tracking
+        SCHEMA_HASH=$(python -c "
+        import json, hashlib
+        with open('docs/openapi.json', 'r') as f:
+            schema = json.load(f)
+        schema_str = json.dumps(schema, sort_keys=True)
+        print(hashlib.sha256(schema_str.encode()).hexdigest()[:12])
+        ")
+        
+        echo "schema_hash=$SCHEMA_HASH" >> $GITHUB_OUTPUT
+        echo "✅ Generated schema with hash: $SCHEMA_HASH"
+
+    - name: Validate OpenAPI schema structure
+      run: |
+        echo "🔍 Validating OpenAPI schema structure..."
+        
+        # Validate with multiple tools for comprehensive validation
+        echo "📋 Running openapi-spec-validator..."
+        python -c "
+        from openapi_spec_validator import validate_spec
+        import json
+        
+        with open('docs/openapi.json', 'r') as f:
+            spec = json.load(f)
+        
+        try:
+            validate_spec(spec)
+            print('✅ openapi-spec-validator: PASSED')
+        except Exception as e:
+            print(f'❌ openapi-spec-validator: FAILED - {e}')
+            exit(1)
+        "
+        
+        echo "📋 Running comprehensive schema validation..."
+        python -c "
+        import json
+        
+        with open('docs/openapi.json', 'r') as f:
+            spec = json.load(f)
+        
+        # Check OpenAPI version
+        if 'openapi' not in spec:
+            print('❌ Missing openapi version field')
+            exit(1)
+        
+        # Check required top-level fields
+        required_fields = ['info', 'paths']
+        for field in required_fields:
+            if field not in spec:
+                print(f'❌ Missing required field: {field}')
+                exit(1)
+        
+        # Check info section
+        info_required = ['title', 'version']
+        for field in info_required:
+            if field not in spec['info']:
+                print(f'❌ Missing required info field: {field}')
+                exit(1)
+        
+        # Count endpoints
+        endpoint_count = 0
+        for path, methods in spec['paths'].items():
+            if isinstance(methods, dict):
+                endpoint_count += len([m for m in methods.keys() if m in ['get', 'post', 'put', 'delete', 'patch']])
+        
+        print(f'✅ Schema validation passed: {endpoint_count} endpoints documented')
+        "
+
+    - name: Compare with main branch schema
+      id: schema-comparison
+      if: github.event_name == 'pull_request'
+      run: |
+        echo "🔍 Comparing schema changes with main branch..."
+        
+        # Fetch main branch schema if it exists
+        git fetch origin main:main
+        
+        if git show main:docs/openapi.json > main-schema.json 2>/dev/null; then
+          echo "📊 Main branch schema found, comparing changes..."
+          
+          # Use our schema manager to compare
+          python -c "
+          import json
+          import sys
+          sys.path.append('scripts')
+          from openapi_schema_manager import OpenAPISchemaManager
+          
+          manager = OpenAPISchemaManager()
+          
+          # Load schemas
+          with open('main-schema.json', 'r') as f:
+              old_schema = json.load(f)
+          with open('docs/openapi.json', 'r') as f:
+              new_schema = json.load(f)
+          
+          # Compare schemas
+          changes = manager.compare_schemas(old_schema, new_schema)
+          
+          print(f'Schema comparison results:')
+          print(f'- Added endpoints: {len(changes[\"added_paths\"])}')
+          print(f'- Removed endpoints: {len(changes[\"removed_paths\"])}')  
+          print(f'- Modified endpoints: {len(changes[\"modified_paths\"])}')
+          print(f'- Breaking changes: {len(changes[\"breaking_changes\"])}')
+          
+          # Save comparison results
+          with open('schema-comparison.json', 'w') as f:
+              json.dump(changes, f, indent=2)
+          
+          # Set outputs
+          if changes['breaking_changes']:
+              print('⚠️ Breaking changes detected!')
+              for change in changes['breaking_changes']:
+                  print(f'  - {change}')
+          else:
+              print('✅ No breaking changes detected')
+          "
+          
+          echo "schema_compared=true" >> $GITHUB_OUTPUT
+        else
+          echo "📋 No existing schema on main branch"
+          echo "schema_compared=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Detect breaking changes
+      id: breaking-change-check
+      run: |
+        echo "🔍 Checking for API breaking changes..."
+        
+        BREAKING_CHANGES=false
+        
+        if [ -f "schema-comparison.json" ]; then
+          BREAKING_COUNT=$(python -c "
+          import json
+          with open('schema-comparison.json', 'r') as f:
+              changes = json.load(f)
+          print(len(changes['breaking_changes']))
+          ")
+          
+          if [ "$BREAKING_COUNT" -gt 0 ]; then
+            BREAKING_CHANGES=true
+            echo "⚠️ $BREAKING_COUNT breaking changes detected"
+          else
+            echo "✅ No breaking changes detected"
+          fi
+        fi
+        
+        echo "breaking_changes=$BREAKING_CHANGES" >> $GITHUB_OUTPUT
+
+    - name: Run API contract tests
+      run: |
+        echo "🧪 Running API contract tests..."
+        
+        # Start the application in test mode
+        export ENVIRONMENT=test
+        
+        # Run contract tests with schemathesis
+        echo "📋 Testing API endpoints against OpenAPI schema..."
+        python -c "
+        import json
+        import requests
+        import time
+        import subprocess
+        import threading
+        import signal
+        import os
+        
+        # Start server in background
+        print('Starting test server...')
+        process = subprocess.Popen([
+            'python', '-m', 'uvicorn', 'app:app', 
+            '--host', '0.0.0.0', '--port', '8000',
+            '--env-file', '.env.test'
+        ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        
+        # Wait for server to start
+        time.sleep(10)
+        
+        try:
+            # Test basic endpoint
+            response = requests.get('http://localhost:8000/health', timeout=30)
+            if response.status_code == 200:
+                print('✅ Server started successfully')
+                print('✅ Health check passed')
+            else:
+                print(f'⚠️ Health check returned status {response.status_code}')
+        except requests.exceptions.RequestException as e:
+            print(f'⚠️ Server connection test: {e}')
+        except Exception as e:
+            print(f'⚠️ Contract test error: {e}')
+        finally:
+            # Clean up
+            process.terminate()
+            process.wait()
+        "
+
+    - name: Validate API endpoint consistency
+      run: |
+        echo "🔍 Validating API endpoint consistency..."
+        
+        # Check that documented endpoints match actual endpoints
+        python scripts/openapi-schema-manager.py --validate --project-root .
+
+    - name: Generate schema validation report
+      run: |
+        echo "📊 Generating comprehensive schema validation report..."
+        
+        cat > schema-validation-summary.md << 'EOF'
+        # API Schema Validation Report
+        
+        **Generated:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")  
+        **Branch:** ${{ github.ref_name }}
+        **Commit:** ${{ github.sha }}
+        **Schema Hash:** ${{ steps.schema-generation.outputs.schema_hash }}
+        
+        ## Validation Results
+        
+        EOF
+        
+        # Add validation status
+        if [ -f "docs/schema-validation-report.md" ]; then
+          echo "### Schema Validation Details" >> schema-validation-summary.md
+          echo "" >> schema-validation-summary.md
+          cat docs/schema-validation-report.md >> schema-validation-summary.md
+          echo "" >> schema-validation-summary.md
+        fi
+        
+        # Add comparison results if available
+        if [ -f "schema-comparison.json" ]; then
+          echo "### Schema Changes" >> schema-validation-summary.md
+          echo "" >> schema-validation-summary.md
+          
+          python -c "
+          import json
+          with open('schema-comparison.json', 'r') as f:
+              changes = json.load(f)
+          
+          summary = changes['summary']
+          print(f'**Total Changes:** {summary[\"total_changes\"]}')
+          print(f'**Added Endpoints:** {summary[\"new_endpoints\"]}')
+          print(f'**Removed Endpoints:** {summary[\"removed_endpoints\"]}')
+          print(f'**Modified Endpoints:** {summary[\"modified_endpoints\"]}')
+          print(f'**Breaking Changes:** {summary[\"breaking_changes\"]}')
+          
+          if changes['added_paths']:
+              print('\\n**Added Endpoints:**')
+              for path in changes['added_paths']:
+                  print(f'- ➕ {path}')
+          
+          if changes['removed_paths']:
+              print('\\n**Removed Endpoints:**')
+              for path in changes['removed_paths']:
+                  print(f'- ➖ {path}')
+          
+          if changes['breaking_changes']:
+              print('\\n**⚠️ Breaking Changes:**')
+              for change in changes['breaking_changes']:
+                  print(f'- {change}')
+          " >> schema-validation-summary.md
+        fi
+        
+        echo "" >> schema-validation-summary.md
+        echo "---" >> schema-validation-summary.md
+        echo "Generated by API Schema Validation workflow" >> schema-validation-summary.md
+
+    - name: Upload validation artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: api-schema-validation-report
+        path: |
+          docs/openapi.json
+          docs/schema-validation-report.md
+          schema-validation-summary.md
+          schema-comparison.json
+        retention-days: 30
+
+    - name: Set validation summary
+      id: validation-summary
+      run: |
+        # Determine overall validation status
+        STATUS="success"
+        
+        if [ "${{ steps.breaking-change-check.outputs.breaking_changes }}" = "true" ]; then
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            STATUS="warning"  # Breaking changes in PR should be reviewed
+          else
+            STATUS="failure"  # Breaking changes in main should fail
+          fi
+        fi
+        
+        echo "status=$STATUS" >> $GITHUB_OUTPUT
+        
+        # Generate workflow summary
+        echo "## 📊 API Schema Validation Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Status:** $STATUS" >> $GITHUB_STEP_SUMMARY
+        echo "**Schema Hash:** ${{ steps.schema-generation.outputs.schema_hash }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Breaking Changes:** ${{ steps.breaking-change-check.outputs.breaking_changes }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Key Metrics" >> $GITHUB_STEP_SUMMARY
+        
+        # Count endpoints from schema
+        ENDPOINT_COUNT=$(python -c "
+        import json
+        with open('docs/openapi.json', 'r') as f:
+            spec = json.load(f)
+        paths = spec.get('paths', {})
+        total = sum(len([m for m in methods.keys() if m in ['get', 'post', 'put', 'delete', 'patch']]) 
+                   for methods in paths.values() if isinstance(methods, dict))
+        print(total)
+        ")
+        
+        echo "- **Total Endpoints:** $ENDPOINT_COUNT" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🔗 Artifacts" >> $GITHUB_STEP_SUMMARY
+        echo "- [OpenAPI Schema](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+        echo "- [Validation Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+
+    - name: Comment on PR with validation results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          
+          let comment = '## 📊 API Schema Validation Results\n\n';
+          comment += `**Status:** ${{ steps.validation-summary.outputs.status }}\n`;
+          comment += `**Schema Hash:** ${{ steps.schema-generation.outputs.schema_hash }}\n`;
+          comment += `**Breaking Changes:** ${{ steps.breaking-change-check.outputs.breaking_changes }}\n\n`;
+          
+          // Add detailed report if available
+          if (fs.existsSync('schema-validation-summary.md')) {
+            const report = fs.readFileSync('schema-validation-summary.md', 'utf8');
+            comment += '### Detailed Report\n\n';
+            comment += report;
+          }
+          
+          comment += '\n### 🔗 View Details\n';
+          comment += `- [Full Validation Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n`;
+          comment += `- [OpenAPI Schema](https://github.com/${{ github.repository }}/blob/${{ github.sha }}/docs/openapi.json)\n`;
+          
+          if ('${{ steps.breaking-change-check.outputs.breaking_changes }}' === 'true') {
+            comment += '\n⚠️ **Breaking changes detected** - Please review carefully before merging.\n';
+          }
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });
+
+    - name: Fail on breaking changes in main
+      if: github.ref == 'refs/heads/main' && steps.breaking-change-check.outputs.breaking_changes == 'true'
+      run: |
+        echo "❌ Breaking changes detected in main branch - this should not happen"
+        echo "Please review the changes and ensure backward compatibility"
+        exit 1

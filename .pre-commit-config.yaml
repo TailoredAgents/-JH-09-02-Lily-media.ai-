@@ -158,6 +158,167 @@ repos:
       - id: shellcheck
         args: [-e, SC1091]
 
+  # API Schema Validation and Management (custom local hooks)
+  - repo: local
+    hooks:
+      # Validate API schema before commit
+      - id: api-schema-validation
+        name: Validate OpenAPI Schema
+        entry: python scripts/openapi-schema-manager.py --validate --project-root .
+        language: system
+        files: ^(backend/api/|app\.py|backend/main\.py|backend/docs/|docs/openapi\.json)
+        pass_filenames: false
+        stages: [commit]
+        verbose: true
+        description: "Validates OpenAPI schema consistency and completeness"
+
+      # Update API schema (manual trigger)
+      - id: api-schema-update
+        name: Update OpenAPI Schema
+        entry: python scripts/openapi-schema-manager.py --update --project-root .
+        language: system
+        files: ^(backend/api/|app\.py|backend/main\.py|backend/docs/)
+        pass_filenames: false
+        stages: [manual]
+        verbose: true
+        description: "Updates OpenAPI schema from current API implementation"
+
+      # Prevent committing mock/placeholder code
+      - id: no-mock-code
+        name: Prevent Mock/Placeholder Code
+        entry: python -c "
+        import sys, re
+        mock_patterns = [
+            r'mock[_\s]*data',
+            r'placeholder[_\s]*\w+',
+            r'todo[:\s]*implement',
+            r'fixme[:\s]*',
+            r'temporary[_\s]*\w+',
+            r'fake[_\s]*data'
+        ]
+        for line_num, line in enumerate(sys.stdin, 1):
+            line_lower = line.lower()
+            for pattern in mock_patterns:
+                if re.search(pattern, line_lower) and 'test' not in line_lower:
+                    print(f'Line {line_num}: Mock/placeholder code detected: {line.strip()}')
+                    sys.exit(1)
+        "
+        language: system
+        types: [python]
+        exclude: ^backend/tests/
+        description: "Prevents committing mock or placeholder code in production"
+
+      # Check for API breaking changes
+      - id: api-breaking-changes
+        name: Check for API Breaking Changes
+        entry: python -c "
+        import subprocess, sys, json
+        try:
+            # Run schema comparison if on a branch
+            result = subprocess.run([
+                'git', 'show', 'main:docs/openapi.json'
+            ], capture_output=True, text=True)
+            
+            if result.returncode == 0:
+                # Main schema exists, compare
+                with open('main-schema.json', 'w') as f:
+                    f.write(result.stdout)
+                
+                # Use our schema manager to detect breaking changes
+                import sys
+                sys.path.append('scripts')
+                from openapi_schema_manager import OpenAPISchemaManager
+                
+                manager = OpenAPISchemaManager()
+                with open('main-schema.json', 'r') as f:
+                    old_schema = json.load(f)
+                with open('docs/openapi.json', 'r') as f:
+                    new_schema = json.load(f)
+                
+                changes = manager.compare_schemas(old_schema, new_schema)
+                
+                if changes['breaking_changes']:
+                    print('⚠️ API Breaking changes detected:')
+                    for change in changes['breaking_changes']:
+                        print(f'  - {change}')
+                    print('Please review these changes carefully.')
+                    # Don't fail, just warn
+                
+        except Exception as e:
+            print(f'Note: Could not check for breaking changes: {e}')
+        "
+        language: system
+        files: ^docs/openapi\.json$
+        pass_filenames: false
+        stages: [commit]
+        description: "Warns about potential API breaking changes"
+
+      # Validate database migration files
+      - id: migration-validation
+        name: Validate Database Migrations
+        entry: python -c "
+        import sys, re, os
+        for filename in sys.argv[1:]:
+            if 'alembic/versions' in filename and filename.endswith('.py'):
+                with open(filename, 'r') as f:
+                    content = f.read()
+                
+                # Check for required migration elements
+                if 'def upgrade():' not in content:
+                    print(f'{filename}: Missing upgrade() function')
+                    sys.exit(1)
+                
+                if 'def downgrade():' not in content:
+                    print(f'{filename}: Missing downgrade() function')
+                    sys.exit(1)
+                
+                # Check for organization_id in new tables
+                if re.search(r'create_table\s*\(', content, re.IGNORECASE):
+                    if 'organization_id' not in content:
+                        print(f'{filename}: New table should include organization_id for multi-tenancy')
+                        # Don't fail, just warn
+        "
+        language: system
+        files: ^alembic/versions/.*\.py$
+        description: "Validates database migration files for completeness"
+
+      # Check for proper error handling in API endpoints
+      - id: api-error-handling
+        name: Check API Error Handling
+        entry: python -c "
+        import sys, re, ast
+        for filename in sys.argv[1:]:
+            if filename.startswith('backend/api/') and filename.endswith('.py'):
+                try:
+                    with open(filename, 'r') as f:
+                        content = f.read()
+                    
+                    # Parse AST to find function definitions with @router decorators
+                    tree = ast.parse(content)
+                    
+                    for node in ast.walk(tree):
+                        if isinstance(node, ast.FunctionDef):
+                            # Check if function has router decorator
+                            has_router = any(
+                                isinstance(d, ast.Attribute) and 
+                                getattr(d.attr, None) in ['get', 'post', 'put', 'delete', 'patch']
+                                for d in node.decorator_list
+                            )
+                            
+                            if has_router:
+                                # Check for try/except or HTTPException
+                                func_str = ast.get_source_segment(content, node) or ''
+                                if 'try:' not in func_str and 'HTTPException' not in func_str:
+                                    print(f'{filename}:{node.lineno}: API endpoint {node.name} should have error handling')
+                                    # Don't fail, just warn
+                                
+                except Exception:
+                    pass  # Skip files that can't be parsed
+        "
+        language: system
+        files: ^backend/api/.*\.py$
+        description: "Checks that API endpoints have proper error handling"
+
 # Configuration for specific tools
 ci:
   autofix_commit_msg: |
