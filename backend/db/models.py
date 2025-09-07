@@ -300,6 +300,7 @@ class UserSetting(Base):
     
     # Image Generation Preferences
     enable_auto_image_generation = Column(Boolean, default=True)
+    default_image_model = Column(String, default="grok2")  # grok2, dalle3, etc.
     preferred_image_style = Column(JSON, default={
         "lighting": "natural",
         "composition": "rule_of_thirds",
@@ -308,6 +309,7 @@ class UserSetting(Base):
     custom_image_prompts = Column(JSON, default={})  # User-defined prompt templates
     image_quality = Column(String, default="high")  # low, medium, high, ultra
     image_aspect_ratio = Column(String, default="1:1")  # 1:1, 16:9, 9:16, 4:5
+    style_vault = Column(JSON, default={})  # Brand consistency vault
     
     # Content preferences
     content_frequency = Column(Integer, default=3)  # posts per week
