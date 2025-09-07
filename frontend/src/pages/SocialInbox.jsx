@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { usePlan } from '../contexts/PlanContext'
+import { usePlanConditionals } from '../hooks/usePlanConditionals'
 import { useSocialInboxWebSocket } from '../hooks/useWebSocket'
 import api from '../services/api'
 import TemplateManager from '../components/TemplateManager'
 import AIEmptyStateSuggestions from '../components/AIEmptyStatesSuggestions'
 import PlanGate from '../components/PlanGate'
+import { FeatureGate, TierGate } from '../components/enhanced/EnhancedPlanGate'
 import {
   MagnifyingGlassIcon,
   FunnelIcon,
@@ -306,31 +308,13 @@ function SocialInbox() {
   }
 
   return (
-    <PlanGate
+    <FeatureGate
       feature="ai_inbox"
-      showUpgradePrompt={true}
-      fallback={
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-            <div className="mb-6">
-              <ChatBubbleLeftRightIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                AI Social Inbox
-              </h2>
-              <p className="text-gray-600 mb-6">
-                Upgrade your plan to access AI-powered social media inbox
-                management, automated responses, and sentiment analysis.
-              </p>
-              <button
-                onClick={() => (window.location.href = '/billing')}
-                className="bg-indigo-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
-              >
-                Upgrade to Access AI Inbox
-              </button>
-            </div>
-          </div>
-        </div>
-      }
+      mode="upgrade"
+      upgradeTitle="AI Social Inbox - Premium Feature"
+      upgradeDescription="Access AI-powered social media inbox management, automated responses, sentiment analysis, and advanced interaction analytics"
+      fallbackMode="upgrade-page"
+      className="min-h-screen bg-gray-50"
     >
       <div className="h-screen flex flex-col">
         {/* Tab Navigation */}
@@ -805,7 +789,7 @@ function SocialInbox() {
           </div>
         )}
       </div>
-    </PlanGate>
+    </FeatureGate>
   )
 }
 

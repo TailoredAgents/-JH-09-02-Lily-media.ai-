@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { usePlan } from '../contexts/PlanContext'
+import { usePlanConditionals } from '../hooks/usePlanConditionals'
 import PlanGate from './PlanGate'
+import EnhancedPlanGate, { FeatureGate, TierGate } from './enhanced/EnhancedPlanGate'
 import { useNotifications } from '../hooks/useNotifications'
 import api from '../services/api'
 import {
@@ -39,6 +41,13 @@ import EditableRulesList from './StyleVault/EditableRulesList'
 
 const StyleVault = ({ userId }) => {
   const { plan, hasAdvancedAnalytics } = usePlan()
+  const { 
+    hasFeature,
+    hasPremiumAI,
+    hasAdvancedAnalytics: hasAdvancedAnalyticsConditional,
+    getButtonState,
+    canPerformAction
+  } = usePlanConditionals()
   const { showSuccess, showError } = useNotifications()
 
   const [styleVault, setStyleVault] = useState({
@@ -593,35 +602,12 @@ const StyleVault = ({ userId }) => {
   }
 
   return (
-    <PlanGate
+    <FeatureGate
       feature="style_vault"
-      fallback={
-        <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-6">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <PaintBrushIcon className="h-8 w-8 text-purple-600" />
-            </div>
-            <div className="ml-4 flex-1">
-              <h3 className="text-lg font-medium text-purple-900">
-                Style Vault
-              </h3>
-              <p className="text-purple-700 mt-1">
-                Create and manage your brand assets, color palettes, and content
-                templates to ensure consistent styling across all your content.
-              </p>
-              <div className="mt-4">
-                <button
-                  onClick={() => (window.location.href = '/billing')}
-                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
-                >
-                  <SparklesIcon className="w-4 h-4 mr-2" />
-                  Upgrade to Access Style Vault
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      }
+      mode="upgrade"
+      upgradeTitle="Style Vault - Premium Feature"
+      upgradeDescription="Create and manage your brand assets, color palettes, and content templates to ensure consistent styling across all your content."
+      className="space-y-6"
     >
       <div className="bg-white rounded-lg shadow">
         {/* Header */}
@@ -1049,7 +1035,7 @@ const StyleVault = ({ userId }) => {
           )}
         </div>
       </div>
-    </PlanGate>
+    </FeatureGate>
   )
 }
 

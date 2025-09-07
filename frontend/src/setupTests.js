@@ -11,7 +11,7 @@ global.importMeta = {
   },
 }
 
-// Polyfill for import.meta
-if (typeof import.meta === 'undefined') {
-  global.import = { meta: global.importMeta }
+// Polyfill for import.meta (compatible with Jest)
+if (typeof global.import === 'undefined') {
+  global.import = { meta: { env: global.importMeta || {} } }
 }
