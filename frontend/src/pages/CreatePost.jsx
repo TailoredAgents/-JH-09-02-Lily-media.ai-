@@ -7,6 +7,12 @@ import ProgressBar from '../components/ProgressBar'
 import RealtimeContentPreview from '../components/RealtimeContentPreview'
 import PlanGate, { UsageLimitIndicator } from '../components/PlanGate'
 import {
+  getIconAltText,
+  getButtonProps,
+  getFormFieldProps,
+  getLoadingProps,
+} from '../utils/accessibility'
+import {
   PhotoIcon,
   DocumentTextIcon,
   SparklesIcon,
@@ -495,7 +501,7 @@ export default function CreatePost() {
           {limits && (
             <div className="flex items-center space-x-4 mt-2">
               <div className="flex items-center space-x-1 text-xs text-gray-500 dark:text-gray-400">
-                <DocumentTextIcon className="h-3 w-3" />
+                <DocumentTextIcon className="h-3 w-3" aria-hidden="true" />
                 <span>
                   {limits.posts?.daily_limit - (limits.posts?.used_today || 0)}/
                   {limits.posts?.daily_limit} posts today
@@ -503,7 +509,7 @@ export default function CreatePost() {
               </div>
               {limits.images?.monthly_limit && (
                 <div className="flex items-center space-x-1 text-xs text-gray-500 dark:text-gray-400">
-                  <PhotoIcon className="h-3 w-3" />
+                  <PhotoIcon className="h-3 w-3" aria-hidden="true" />
                   <span>
                     {limits.images.monthly_limit -
                       (limits.images.used_month || 0)}
@@ -519,8 +525,14 @@ export default function CreatePost() {
             <button
               onClick={() => setShowResearchPanel(!showResearchPanel)}
               className="bg-purple-600 text-white px-4 py-2 rounded-md flex items-center space-x-2 hover:bg-purple-700 transition-colors"
+              aria-label={
+                showResearchPanel
+                  ? 'Hide research insights panel'
+                  : 'Show research insights panel'
+              }
+              aria-expanded={showResearchPanel}
             >
-              <InformationCircleIcon className="h-4 w-4" />
+              <InformationCircleIcon className="h-4 w-4" aria-hidden="true" />
               <span>Research Insights</span>
             </button>
           </PlanGate>
@@ -537,13 +549,18 @@ export default function CreatePost() {
             </h3>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="platform-select"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Platform
               </label>
               <select
+                id="platform-select"
                 value={formData.platform}
                 onChange={(e) => handleChange('platform', e.target.value)}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                aria-describedby="platform-description"
               >
                 {platforms.map((platform) => (
                   <option key={platform.value} value={platform.value}>
@@ -552,21 +569,33 @@ export default function CreatePost() {
                   </option>
                 ))}
               </select>
+              <p id="platform-description" className="sr-only">
+                Choose the social media platform for your post. Character limits
+                vary by platform.
+              </p>
             </div>
 
             {/* Specific Instructions for Lily */}
             <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="lily-instructions"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Specific Instructions for Lily (Optional)
               </label>
               <textarea
+                id="lily-instructions"
                 value={specificInstructions}
                 onChange={(e) => setSpecificInstructions(e.target.value)}
                 rows={3}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Tell Lily what kind of content you want... (e.g., 'Create a motivational post about productivity tips', 'Share industry insights about AI automation', etc.)"
+                aria-describedby="lily-instructions-help"
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p
+                id="lily-instructions-help"
+                className="text-xs text-gray-500 mt-1"
+              >
                 Lily will use your company research data and industry insights
                 to create specific, relevant content based on your instructions.
               </p>
@@ -579,7 +608,7 @@ export default function CreatePost() {
               fallback={
                 <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
                   <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
-                    <PhotoIcon className="h-4 w-4" />
+                    <PhotoIcon className="h-4 w-4" aria-hidden="true" />
                     <span>
                       Image generation unavailable - upgrade to enable AI images
                     </span>
@@ -589,14 +618,19 @@ export default function CreatePost() {
             >
               <div className="mt-4">
                 <div className="flex items-center justify-between mb-2">
-                  <label className="flex items-center cursor-pointer">
+                  <label
+                    htmlFor="skip-image-generation"
+                    className="flex items-center cursor-pointer"
+                  >
                     <input
+                      id="skip-image-generation"
                       type="checkbox"
                       checked={!generateImageWithContent}
                       onChange={(e) =>
                         setGenerateImageWithContent(!e.target.checked)
                       }
                       className="mr-2"
+                      aria-describedby="skip-image-help"
                     />
                     <span className="text-sm text-gray-700 dark:text-gray-300">
                       Don't generate an AI image with this post
@@ -610,7 +644,10 @@ export default function CreatePost() {
                     </div>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                <p
+                  id="skip-image-help"
+                  className="text-xs text-gray-500 dark:text-gray-400 mt-1"
+                >
                   By default, Lily will create an AI-generated image to
                   accompany your post. Uncheck this to create text-only content.
                 </p>
@@ -626,9 +663,20 @@ export default function CreatePost() {
                 onClick={generateAIContent}
                 disabled={contentGenerationProgress}
                 className="bg-blue-600 text-white px-4 py-2 rounded-md flex items-center space-x-2 hover:bg-blue-700 transition-colors disabled:opacity-50"
+                aria-label={
+                  contentGenerationProgress
+                    ? 'Generating AI content, please wait'
+                    : 'Generate AI content using Lily AI'
+                }
+                {...getButtonProps(
+                  'generate AI content',
+                  contentGenerationProgress,
+                  contentGenerationProgress,
+                  true
+                )}
               >
                 {!contentGenerationProgress ? (
-                  <SparklesIcon className="h-4 w-4" />
+                  <SparklesIcon className="h-4 w-4" aria-hidden="true" />
                 ) : null}
                 <span>
                   {contentGenerationProgress

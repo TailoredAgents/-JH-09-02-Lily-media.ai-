@@ -9,6 +9,12 @@ import NotificationSystem from './Notifications/NotificationSystem'
 import ThemeToggle from './ThemeToggle'
 import PlanGate, { UsageLimitIndicator } from './PlanGate'
 import {
+  getIconAltText,
+  getNavLinkProps,
+  getButtonProps,
+  getImageAltText,
+} from '../utils/accessibility'
+import {
   HomeIcon,
   CalendarDaysIcon,
   DocumentTextIcon,
@@ -167,9 +173,12 @@ function Layout({ children }) {
 
             <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white dark:bg-gray-900 px-6 pb-2">
               <div className="flex h-16 shrink-0 items-center">
-                <span className="text-xl font-bold text-gray-900 dark:text-white">
+                <h1
+                  className="text-xl font-bold text-gray-900 dark:text-white"
+                  role="banner"
+                >
                   AI Social Media Manager
-                </span>
+                </h1>
               </div>
               <nav
                 className="flex flex-1 flex-col"
@@ -221,9 +230,12 @@ function Layout({ children }) {
       <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
         <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-6">
           <div className="flex h-16 shrink-0 items-center">
-            <span className="text-xl font-bold text-gray-900 dark:text-white">
+            <h1
+              className="text-xl font-bold text-gray-900 dark:text-white"
+              role="banner"
+            >
               AI Social Media Manager
-            </span>
+            </h1>
           </div>
           <nav
             className="flex flex-1 flex-col"
@@ -292,7 +304,10 @@ function Layout({ children }) {
               {limits && (
                 <div className="hidden lg:flex items-center space-x-4 bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-600">
                   <div className="flex items-center space-x-2">
-                    <ChartBarIcon className="h-4 w-4 text-gray-500" />
+                    <ChartBarIcon
+                      className="h-4 w-4 text-gray-500"
+                      aria-hidden="true"
+                    />
                     <div className="text-xs">
                       <span className="font-medium text-gray-700 dark:text-gray-300">
                         {limits.posts?.daily_limit -
@@ -348,11 +363,22 @@ function Layout({ children }) {
                     className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
                       autopilotMode ? 'bg-green-500' : 'bg-gray-300'
                     } ${loadingAutopilot ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    aria-label={
+                      autopilotMode
+                        ? 'Switch to Review Mode - Currently in Autopilot Mode'
+                        : 'Switch to Autopilot Mode - Currently in Review Mode'
+                    }
                     title={
                       autopilotMode
                         ? 'Switch to Review Mode'
                         : 'Switch to Autopilot Mode'
                     }
+                    role="switch"
+                    aria-checked={autopilotMode}
+                    {...getButtonProps(
+                      'toggle autopilot mode',
+                      loadingAutopilot
+                    )}
                   >
                     <motion.span
                       className="inline-block h-3 w-3 transform rounded-full bg-white shadow-sm"
@@ -370,8 +396,15 @@ function Layout({ children }) {
                 </div>
               </PlanGate>
 
-              <div className="flex items-center space-x-2">
-                <div className="h-2 w-2 bg-green-400 rounded-full"></div>
+              <div
+                className="flex items-center space-x-2"
+                role="status"
+                aria-label="Connection status"
+              >
+                <div
+                  className="h-2 w-2 bg-green-400 rounded-full"
+                  aria-hidden="true"
+                ></div>
                 <span className="text-sm text-gray-600 dark:text-gray-400">
                   Connected
                 </span>
@@ -397,7 +430,10 @@ function Layout({ children }) {
                     <img
                       className="h-8 w-8 rounded-full"
                       src={user.picture}
-                      alt=""
+                      alt={getImageAltText(
+                        'avatar',
+                        user?.name || user?.email || 'User'
+                      )}
                     />
                   ) : (
                     <div

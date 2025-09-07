@@ -4,6 +4,11 @@ import { useEnhancedApi } from '../hooks/useEnhancedApi'
 import { useNotifications } from '../hooks/useNotifications'
 import FocusTrappedModal from './FocusTrappedModal'
 import {
+  getIconAltText,
+  getButtonProps,
+  getFormFieldProps,
+} from '../utils/accessibility'
+import {
   ArrowPathIcon,
   PhotoIcon,
   SparklesIcon,
@@ -136,8 +141,15 @@ export default function RegenerateImageModal({
           {/* Header Info */}
           <div className="flex items-center space-x-3 mb-6">
             <div className="flex-shrink-0">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <ArrowPathIcon className="w-5 h-5 text-blue-600" />
+              <div
+                className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center"
+                role="img"
+                aria-label="Image regeneration"
+              >
+                <ArrowPathIcon
+                  className="w-5 h-5 text-blue-600"
+                  aria-hidden="true"
+                />
               </div>
             </div>
             <div>
@@ -156,7 +168,7 @@ export default function RegenerateImageModal({
               {content.content}
             </p>
             <div className="mt-2 flex items-center space-x-2 text-xs text-gray-500">
-              <PhotoIcon className="w-4 h-4" />
+              <PhotoIcon className="w-4 h-4" aria-hidden="true" />
               <span className="capitalize">
                 {content.platform || 'All platforms'}
               </span>
@@ -180,8 +192,10 @@ export default function RegenerateImageModal({
               disabled={regenerateImage.isPending}
               className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
               required
+              aria-describedby="customPrompt-help"
+              {...getFormFieldProps('customPrompt', true, false)}
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p id="customPrompt-help" className="mt-1 text-xs text-gray-500">
               Be specific about style, colors, composition, and mood
             </p>
           </div>
@@ -199,8 +213,12 @@ export default function RegenerateImageModal({
                   onClick={() => setCustomPrompt(prompt)}
                   disabled={regenerateImage.isPending}
                   className="w-full text-left p-3 text-sm text-gray-600 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-50"
+                  aria-label={`Use suggested prompt: ${prompt}`}
                 >
-                  <SparklesIcon className="w-4 h-4 inline mr-2 text-gray-400" />
+                  <SparklesIcon
+                    className="w-4 h-4 inline mr-2 text-gray-400"
+                    aria-hidden="true"
+                  />
                   {prompt}
                 </button>
               ))}
@@ -223,6 +241,7 @@ export default function RegenerateImageModal({
                 onChange={(e) => setQualityPreset(e.target.value)}
                 disabled={regenerateImage.isPending}
                 className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-50"
+                aria-describedby="qualityPreset-description"
               >
                 {qualityOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -230,7 +249,10 @@ export default function RegenerateImageModal({
                   </option>
                 ))}
               </select>
-              <p className="mt-1 text-xs text-gray-500">
+              <p
+                id="qualityPreset-description"
+                className="mt-1 text-xs text-gray-500"
+              >
                 {
                   qualityOptions.find((opt) => opt.value === qualityPreset)
                     ?.description
@@ -251,6 +273,7 @@ export default function RegenerateImageModal({
                   onChange={(e) => setKeepOriginalContext(e.target.checked)}
                   disabled={regenerateImage.isPending}
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:opacity-50"
+                  aria-describedby="keepContext-description"
                 />
                 <label
                   htmlFor="keepContext"
@@ -259,18 +282,31 @@ export default function RegenerateImageModal({
                   Keep original post context
                 </label>
               </div>
-              <p className="mt-1 text-xs text-gray-500">
+              <p
+                id="keepContext-description"
+                className="mt-1 text-xs text-gray-500"
+              >
                 Include the original post text to inform image generation
               </p>
             </div>
           </div>
 
           {/* Info Banner */}
-          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div
+            className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg"
+            role="note"
+            aria-labelledby="brand-settings-info"
+          >
             <div className="flex">
-              <ExclamationCircleIcon className="h-5 w-5 text-blue-400 mt-0.5 mr-3" />
+              <ExclamationCircleIcon
+                className="h-5 w-5 text-blue-400 mt-0.5 mr-3"
+                aria-hidden="true"
+              />
               <div className="text-sm">
-                <p className="text-blue-800 font-medium mb-1">
+                <p
+                  id="brand-settings-info"
+                  className="text-blue-800 font-medium mb-1"
+                >
                   Your brand settings will be automatically applied
                 </p>
                 <p className="text-blue-700">
@@ -289,15 +325,32 @@ export default function RegenerateImageModal({
             type="submit"
             disabled={regenerateImage.isPending || !customPrompt.trim()}
             className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            aria-label={
+              regenerateImage.isPending
+                ? 'Generating new image, please wait'
+                : 'Generate new image with custom prompt'
+            }
+            {...getButtonProps(
+              'regenerate image',
+              regenerateImage.isPending || !customPrompt.trim(),
+              regenerateImage.isPending,
+              true
+            )}
           >
             {regenerateImage.isPending ? (
               <>
-                <ArrowPathIcon className="animate-spin -ml-1 mr-2 h-4 w-4" />
+                <ArrowPathIcon
+                  className="animate-spin -ml-1 mr-2 h-4 w-4"
+                  aria-hidden="true"
+                />
                 Generating...
               </>
             ) : (
               <>
-                <ArrowPathIcon className="-ml-1 mr-2 h-4 w-4" />
+                <ArrowPathIcon
+                  className="-ml-1 mr-2 h-4 w-4"
+                  aria-hidden="true"
+                />
                 Regenerate Image
               </>
             )}
@@ -307,6 +360,7 @@ export default function RegenerateImageModal({
             onClick={handleClose}
             disabled={regenerateImage.isPending}
             className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            aria-label="Cancel image regeneration and close modal"
           >
             Cancel
           </button>
