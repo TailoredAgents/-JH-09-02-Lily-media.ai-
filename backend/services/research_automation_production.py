@@ -12,7 +12,9 @@ from backend.services.real_trends_service import RealTrendsService
 from backend.services.real_social_research_service import RealSocialResearchService
 from backend.services.web_research_service import WebResearchService
 from backend.services.ai_insights_service import ai_insights_service
+from backend.services.research_monitoring import get_research_monitoring_service, ResearchOperationTracker
 from backend.core.config import get_settings
+from backend.core.feature_flags import ff
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -52,11 +54,44 @@ class ProductionResearchAutomationService:
         self.trends_service = RealTrendsService()
         self.social_research_service = RealSocialResearchService()
         self.web_research_service = WebResearchService()
+        # P0-10c: Initialize research monitoring service
+        self.monitoring_service = get_research_monitoring_service()
         
-    async def execute_comprehensive_research(self, query: ResearchQuery) -> Dict[str, Any]:
-        """Execute comprehensive research using real APIs"""
-        try:
-            research_results = {
+    async def execute_comprehensive_research(self, query: ResearchQuery, user_plan: str = "unknown", 
+                                           user_id: Optional[str] = None, industry: Optional[str] = None) -> Dict[str, Any]:
+        """Execute comprehensive research using real APIs with proper feature gating and monitoring"""
+        
+        # P0-10c: Track research request
+        self.monitoring_service.track_research_request(
+            research_type="comprehensive_research",
+            user_plan=user_plan,
+            industry=industry or "general", 
+            status="started"
+        )
+        
+        # Use monitoring context manager for automatic tracking
+        with ResearchOperationTracker("comprehensive_research", user_plan, industry):
+            try:
+                # P0-10b: RESEARCH FEATURE GATING - Check required research flags
+                research_feature_validation = self._validate_research_features(query)
+                if not research_feature_validation["allowed"]:
+                    # Track feature gating rejection
+                    self.monitoring_service.track_plan_enforcement(
+                        action="feature_blocked",
+                        user_plan=user_plan,
+                        feature="comprehensive_research"
+                    )
+                    self.monitoring_service.track_research_request(
+                        research_type="comprehensive_research",
+                        user_plan=user_plan,
+                        industry=industry or "general",
+                        status="feature_blocked"
+                    )
+                    return research_feature_validation
+                
+                logger.info(f"Research feature validation passed - executing comprehensive research")
+                
+                research_results = {
                 'query': query,
                 'execution_time': datetime.utcnow().isoformat(),
                 'platforms_researched': [],
@@ -72,94 +107,147 @@ class ProductionResearchAutomationService:
                     'research_quality_score': 0,
                     'execution_method': 'production_apis'
                 }
-            }
-            
-            # Execute platform-specific research in parallel
-            research_tasks = []
-            
-            if 'twitter' in query.platforms:
-                research_tasks.append(self._research_twitter(query.keywords[0]))
+                }
                 
-            if 'instagram' in query.platforms:
-                research_tasks.append(self._research_instagram(query.keywords[0]))
+                # Execute platform-specific research in parallel
+                research_tasks = []
+            
+                if 'twitter' in query.platforms:
+                    research_tasks.append(self._research_twitter(query.keywords[0]))
+                    
+                if 'instagram' in query.platforms:
+                    research_tasks.append(self._research_instagram(query.keywords[0]))
+                    
+                if 'linkedin' in query.platforms:
+                    research_tasks.append(self._research_linkedin(query.keywords[0]))
+                    
+                if 'youtube' in query.platforms:
+                    research_tasks.append(self._research_youtube(query.keywords[0]))
                 
-            if 'linkedin' in query.platforms:
-                research_tasks.append(self._research_linkedin(query.keywords[0]))
+                # Execute trends research
+                if query.include_trends:
+                    research_tasks.append(self._research_trends(query.keywords))
                 
-            if 'youtube' in query.platforms:
-                research_tasks.append(self._research_youtube(query.keywords[0]))
+                # Execute web research
+                research_tasks.append(self._research_web_content(query.keywords[0]))
+                
+                # Execute AI insights
+                research_tasks.append(self._get_ai_insights(query.keywords[0]))
             
-            # Execute trends research
-            if query.include_trends:
-                research_tasks.append(self._research_trends(query.keywords))
+                # Run all research tasks concurrently
+                task_results = await asyncio.gather(*research_tasks, return_exceptions=True)
+                
+                # Process results
+                platform_index = 0
+                for i, platform in enumerate(['twitter', 'instagram', 'linkedin', 'youtube']):
+                    if platform in query.platforms:
+                        result = task_results[platform_index]
+                        if not isinstance(result, Exception):
+                            research_results['results']['social_media'][platform] = result
+                            research_results['platforms_researched'].append(platform)
+                            research_results['summary']['platforms_analyzed'] += 1
+                        else:
+                            logger.error(f"Failed to research {platform}: {result}")
+                        platform_index += 1
             
-            # Execute web research
-            research_tasks.append(self._research_web_content(query.keywords[0]))
-            
-            # Execute AI insights
-            research_tasks.append(self._get_ai_insights(query.keywords[0]))
-            
-            # Run all research tasks concurrently
-            task_results = await asyncio.gather(*research_tasks, return_exceptions=True)
-            
-            # Process results
-            platform_index = 0
-            for i, platform in enumerate(['twitter', 'instagram', 'linkedin', 'youtube']):
-                if platform in query.platforms:
-                    result = task_results[platform_index]
-                    if not isinstance(result, Exception):
-                        research_results['results']['social_media'][platform] = result
-                        research_results['platforms_researched'].append(platform)
-                        research_results['summary']['platforms_analyzed'] += 1
-                    else:
-                        logger.error(f"Failed to research {platform}: {result}")
+                # Process trends results
+                if query.include_trends and platform_index < len(task_results):
+                    trends_result = task_results[platform_index]
+                    if not isinstance(trends_result, Exception):
+                        research_results['results']['trends'] = trends_result
                     platform_index += 1
+                
+                # Process web research results
+                if platform_index < len(task_results):
+                    web_result = task_results[platform_index]
+                    if not isinstance(web_result, Exception):
+                        research_results['results']['web_research'] = web_result
+                    platform_index += 1
+                
+                # Process AI insights results
+                if platform_index < len(task_results):
+                    ai_result = task_results[platform_index]
+                    if not isinstance(ai_result, Exception):
+                        research_results['results']['ai_insights'] = ai_result
             
-            # Process trends results
-            if query.include_trends and platform_index < len(task_results):
-                trends_result = task_results[platform_index]
-                if not isinstance(trends_result, Exception):
-                    research_results['results']['trends'] = trends_result
-                platform_index += 1
+                # Calculate summary metrics
+                total_results = 0
+                for category, data in research_results['results'].items():
+                    if isinstance(data, dict):
+                        # Count items in each category
+                        for platform, platform_data in data.items():
+                            if isinstance(platform_data, dict):
+                                for key, value in platform_data.items():
+                                    if isinstance(value, list):
+                                        total_results += len(value)
+                            elif isinstance(platform_data, list):
+                                total_results += len(platform_data)
+                
+                research_results['summary']['total_results'] = total_results
+                research_results['summary']['research_quality_score'] = min(
+                    (research_results['summary']['platforms_analyzed'] * 25) + 
+                    min(total_results * 2, 50), 100
+                )
             
-            # Process web research results
-            if platform_index < len(task_results):
-                web_result = task_results[platform_index]
-                if not isinstance(web_result, Exception):
-                    research_results['results']['web_research'] = web_result
-                platform_index += 1
+                # P0-10c: Track comprehensive research completion metrics
+                quality_score = research_results['summary']['research_quality_score']
+                
+                # Track successful research completion
+                self.monitoring_service.track_research_request(
+                    research_type="comprehensive_research",
+                    user_plan=user_plan,
+                    industry=industry or "general",
+                    status="completed"
+                )
+                
+                # Track content opportunities if high quality
+                if quality_score > 60:
+                    opportunity_count = max(1, total_results // 10)  # Estimate content opportunities
+                    for i in range(min(opportunity_count, 5)):  # Cap at 5 for cardinality
+                        self.monitoring_service.track_content_opportunity(
+                            industry=industry or "general",
+                            urgency="normal",
+                            opportunity_type="research_insight",
+                            quality_score=quality_score
+                        )
+                
+                # Track platform coverage metrics
+                for platform in research_results['platforms_researched']:
+                    self.monitoring_service.track_research_request(
+                        research_type=f"platform_{platform}",
+                        user_plan=user_plan,
+                        industry=industry or "general",
+                        status="completed"
+                    )
+                
+                # Track quota usage for this research operation
+                if user_id:
+                    self.monitoring_service.track_quota_usage(
+                        feature="comprehensive_research",
+                        user_id=user_id,
+                        user_plan=user_plan,
+                        amount=1
+                    )
+                
+                logger.info(f"Completed comprehensive research for {len(query.keywords)} keywords across {len(query.platforms)} platforms")
+                logger.info(f"Research metrics: {total_results} results, quality={quality_score}, platforms={research_results['summary']['platforms_analyzed']}")
+                return research_results
             
-            # Process AI insights results
-            if platform_index < len(task_results):
-                ai_result = task_results[platform_index]
-                if not isinstance(ai_result, Exception):
-                    research_results['results']['ai_insights'] = ai_result
-            
-            # Calculate summary metrics
-            total_results = 0
-            for category, data in research_results['results'].items():
-                if isinstance(data, dict):
-                    # Count items in each category
-                    for platform, platform_data in data.items():
-                        if isinstance(platform_data, dict):
-                            for key, value in platform_data.items():
-                                if isinstance(value, list):
-                                    total_results += len(value)
-                        elif isinstance(platform_data, list):
-                            total_results += len(platform_data)
-            
-            research_results['summary']['total_results'] = total_results
-            research_results['summary']['research_quality_score'] = min(
-                (research_results['summary']['platforms_analyzed'] * 25) + 
-                min(total_results * 2, 50), 100
-            )
-            
-            logger.info(f"Completed comprehensive research for {len(query.keywords)} keywords across {len(query.platforms)} platforms")
-            return research_results
-            
-        except Exception as e:
-            logger.error(f"Failed to execute comprehensive research: {e}")
-            raise
+            except Exception as e:
+                # P0-10c: Track research errors
+                self.monitoring_service.track_research_error(
+                    error_type=type(e).__name__,
+                    component="comprehensive_research",
+                    severity="error"
+                )
+                self.monitoring_service.track_research_request(
+                    research_type="comprehensive_research",
+                    user_plan=user_plan,
+                    industry=industry or "general",
+                    status="failed"
+                )
+                logger.error(f"Failed to execute comprehensive research: {e}")
+                raise
     
     async def _research_twitter(self, topic: str) -> Dict[str, Any]:
         """Research Twitter using real API data"""
@@ -497,3 +585,146 @@ class ProductionResearchAutomationService:
         except Exception as e:
             logger.error(f"Failed to generate research summary: {e}")
             raise
+    
+    def _validate_research_features(self, query: ResearchQuery) -> Dict[str, Any]:
+        """
+        P0-10b: Validate research feature flags before execution
+        
+        Args:
+            query: Research query to validate
+            
+        Returns:
+            Dict with validation results and blocked features
+        """
+        try:
+            validation_result = {
+                "allowed": True,
+                "blocked_features": [],
+                "warning_features": [],
+                "feature_checks": []
+            }
+            
+            # Check core research feature flag
+            if not ff("ENABLE_DEEP_RESEARCH"):
+                validation_result["allowed"] = False
+                validation_result["blocked_features"].append({
+                    "feature": "deep_research",
+                    "flag": "ENABLE_DEEP_RESEARCH",
+                    "reason": "Deep research functionality is currently disabled"
+                })
+                logger.warning("Research blocked: ENABLE_DEEP_RESEARCH flag disabled")
+            
+            validation_result["feature_checks"].append({
+                "flag": "ENABLE_DEEP_RESEARCH",
+                "enabled": ff("ENABLE_DEEP_RESEARCH"),
+                "required": True
+            })
+            
+            # Check AI-powered features for insights
+            if not ff("AI_CONTENT_GENERATION"):
+                validation_result["warning_features"].append({
+                    "feature": "ai_insights",
+                    "flag": "AI_CONTENT_GENERATION", 
+                    "reason": "AI insights will be limited without AI content generation"
+                })
+                logger.info("AI insights may be limited: AI_CONTENT_GENERATION disabled")
+            
+            validation_result["feature_checks"].append({
+                "flag": "AI_CONTENT_GENERATION",
+                "enabled": ff("AI_CONTENT_GENERATION"),
+                "required": False
+            })
+            
+            # Check advanced features for enhanced research
+            if not ff("ADVANCED_MEMORY"):
+                validation_result["warning_features"].append({
+                    "feature": "enhanced_research",
+                    "flag": "ADVANCED_MEMORY",
+                    "reason": "Research insights storage and retrieval will be basic without advanced memory"
+                })
+            
+            validation_result["feature_checks"].append({
+                "flag": "ADVANCED_MEMORY", 
+                "enabled": ff("ADVANCED_MEMORY"),
+                "required": False
+            })
+            
+            # Check vector search for semantic analysis
+            if not ff("VECTOR_SEARCH"):
+                validation_result["warning_features"].append({
+                    "feature": "semantic_analysis",
+                    "flag": "VECTOR_SEARCH",
+                    "reason": "Semantic similarity analysis will be unavailable"
+                })
+            
+            validation_result["feature_checks"].append({
+                "flag": "VECTOR_SEARCH",
+                "enabled": ff("VECTOR_SEARCH"), 
+                "required": False
+            })
+            
+            # Platform-specific feature validation
+            platform_features = {
+                "twitter": "Social media platform research",
+                "instagram": "Visual content analysis", 
+                "linkedin": "Professional network insights",
+                "youtube": "Video content trends"
+            }
+            
+            for platform in query.platforms:
+                if platform in platform_features:
+                    # All platforms currently allowed, but this provides extension point
+                    validation_result["feature_checks"].append({
+                        "platform": platform,
+                        "description": platform_features[platform],
+                        "enabled": True,
+                        "required": False
+                    })
+            
+            # Advanced research features validation
+            if query.include_competitors and not ff("ADVANCED_ANALYTICS"):
+                validation_result["blocked_features"].append({
+                    "feature": "competitor_analysis",
+                    "flag": "ADVANCED_ANALYTICS",
+                    "reason": "Competitor analysis requires advanced analytics features"
+                })
+                logger.warning("Competitor analysis blocked: ADVANCED_ANALYTICS disabled")
+            
+            validation_result["feature_checks"].append({
+                "flag": "ADVANCED_ANALYTICS",
+                "enabled": ff("ADVANCED_ANALYTICS"),
+                "required": query.include_competitors
+            })
+            
+            # Check if any critical features are blocked
+            if validation_result["blocked_features"]:
+                validation_result["allowed"] = False
+                logger.error(f"Research blocked due to {len(validation_result['blocked_features'])} feature restrictions")
+                
+                return {
+                    "status": "feature_blocked",
+                    "allowed": False,
+                    "message": f"Research execution blocked by {len(validation_result['blocked_features'])} feature restrictions",
+                    "blocked_features": validation_result["blocked_features"],
+                    "warning_features": validation_result["warning_features"],
+                    "feature_checks": validation_result["feature_checks"],
+                    "resolution": "Enable required feature flags or contact administrator",
+                    "blocked_at": datetime.utcnow().isoformat()
+                }
+            
+            # Log warnings but allow execution
+            if validation_result["warning_features"]:
+                logger.info(f"Research proceeding with {len(validation_result['warning_features'])} feature warnings")
+            
+            logger.info(f"Research feature validation passed - {len(validation_result['feature_checks'])} features checked")
+            return {"allowed": True, "validation_result": validation_result}
+            
+        except Exception as e:
+            logger.error(f"Research feature validation failed: {e}")
+            return {
+                "status": "validation_error",
+                "allowed": False,
+                "message": f"Feature validation failed: {str(e)}",
+                "error": str(e),
+                "blocked_at": datetime.utcnow().isoformat()
+            }
