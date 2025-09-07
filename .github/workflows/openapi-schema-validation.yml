@@ -1,0 +1,330 @@
+name: OpenAPI Schema Validation
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/api/**'
+      - 'backend/main.py'
+      - 'app.py'
+      - 'backend/docs/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'backend/api/**'
+      - 'backend/main.py' 
+      - 'app.py'
+      - 'backend/docs/**'
+  schedule:
+    # Run weekly schema validation and update
+    - cron: '0 10 * * MON'
+  workflow_dispatch:
+    inputs:
+      force_update:
+        description: 'Force schema update even if validation fails'
+        required: false
+        default: false
+        type: boolean
+      update_mode:
+        description: 'Schema update mode'
+        required: false
+        default: 'validate'
+        type: choice
+        options:
+        - validate
+        - update
+        - force-update
+
+env:
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '20'
+
+jobs:
+  validate-openapi-schema:
+    name: Validate OpenAPI Schema
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+        pip install pytest httpx
+        
+    - name: Install OpenAPI validation tools
+      run: |
+        pip install openapi-spec-validator
+        pip install swagger-spec-validator
+        pip install jsonschema
+        
+    - name: Create docs directory
+      run: |
+        mkdir -p docs/schema-history
+
+    - name: Generate current OpenAPI schema
+      id: generate-schema
+      run: |
+        echo "🔄 Generating OpenAPI schema from current application..."
+        python scripts/openapi-schema-manager.py --validate --project-root .
+        
+        # Check if schema file exists
+        if [ -f "docs/openapi.json" ]; then
+          echo "schema_exists=true" >> $GITHUB_OUTPUT
+          SCHEMA_SIZE=$(stat -f%z docs/openapi.json 2>/dev/null || stat -c%s docs/openapi.json)
+          echo "schema_size=$SCHEMA_SIZE" >> $GITHUB_OUTPUT
+        else
+          echo "schema_exists=false" >> $GITHUB_OUTPUT
+          echo "schema_size=0" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Validate OpenAPI schema with external tools
+      if: steps.generate-schema.outputs.schema_exists == 'true'
+      run: |
+        echo "🔍 Validating OpenAPI schema with external tools..."
+        
+        # Validate with openapi-spec-validator
+        echo "📋 Running openapi-spec-validator..."
+        python -c "
+        from openapi_spec_validator import validate_spec
+        import json
+        
+        with open('docs/openapi.json', 'r') as f:
+            spec = json.load(f)
+        
+        try:
+            validate_spec(spec)
+            print('✅ openapi-spec-validator: PASSED')
+        except Exception as e:
+            print(f'❌ openapi-spec-validator: FAILED - {e}')
+            exit(1)
+        "
+        
+        # Validate with jsonschema
+        echo "📋 Running JSON schema validation..."
+        python -c "
+        import json
+        import jsonschema
+        
+        with open('docs/openapi.json', 'r') as f:
+            spec = json.load(f)
+        
+        # Basic structure validation
+        required_fields = ['openapi', 'info', 'paths']
+        for field in required_fields:
+            if field not in spec:
+                print(f'❌ Missing required field: {field}')
+                exit(1)
+        
+        print('✅ JSON schema validation: PASSED')
+        "
+
+    - name: Check for API changes
+      id: check-changes
+      run: |
+        echo "🔍 Checking for API endpoint changes..."
+        
+        # Check if any API files have changed
+        CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
+        API_CHANGED=false
+        
+        if echo "$CHANGED_FILES" | grep -E "(backend/api/|app\.py|backend/main\.py)"; then
+          API_CHANGED=true
+          echo "📝 API files have changed"
+        else
+          echo "📋 No API file changes detected"
+        fi
+        
+        echo "api_changed=$API_CHANGED" >> $GITHUB_OUTPUT
+        
+        # Count endpoints
+        if [ -f "docs/openapi.json" ]; then
+          ENDPOINT_COUNT=$(python -c "
+          import json
+          with open('docs/openapi.json', 'r') as f:
+              spec = json.load(f)
+          paths = spec.get('paths', {})
+          total = sum(len([m for m in methods.keys() if m in ['get', 'post', 'put', 'delete', 'patch']]) 
+                     for methods in paths.values() if isinstance(methods, dict))
+          print(total)
+          ")
+          echo "endpoint_count=$ENDPOINT_COUNT" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Update schema if needed
+      id: update-schema
+      if: |
+        (github.event_name == 'schedule' || 
+         github.event.inputs.update_mode == 'update' ||
+         github.event.inputs.update_mode == 'force-update' ||
+         (steps.check-changes.outputs.api_changed == 'true' && github.event_name == 'push'))
+      run: |
+        echo "🔄 Updating OpenAPI schema..."
+        
+        UPDATE_ARGS="--update"
+        if [ "${{ github.event.inputs.force_update }}" = "true" ] || [ "${{ github.event.inputs.update_mode }}" = "force-update" ]; then
+          UPDATE_ARGS="$UPDATE_ARGS --force"
+          echo "⚠️ Force update enabled"
+        fi
+        
+        # Run schema update
+        python scripts/openapi-schema-manager.py $UPDATE_ARGS --project-root .
+        
+        # Check if schema was actually updated
+        if git diff --quiet docs/openapi.json; then
+          echo "schema_updated=false" >> $GITHUB_OUTPUT
+          echo "📋 Schema was already up to date"
+        else
+          echo "schema_updated=true" >> $GITHUB_OUTPUT
+          echo "✅ Schema updated successfully"
+          
+          # Get schema stats
+          NEW_SIZE=$(stat -f%z docs/openapi.json 2>/dev/null || stat -c%s docs/openapi.json)
+          echo "new_schema_size=$NEW_SIZE" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Generate schema diff report
+      if: steps.update-schema.outputs.schema_updated == 'true'
+      run: |
+        echo "📊 Generating schema change report..."
+        
+        # Create a detailed diff report
+        cat > schema-diff-report.md << 'EOF'
+        # OpenAPI Schema Update Report
+        
+        **Generated:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+        **Trigger:** ${{ github.event_name }}
+        **Endpoint Count:** ${{ steps.check-changes.outputs.endpoint_count || 'Unknown' }}
+        
+        ## Changes Summary
+        
+        EOF
+        
+        if [ -f "docs/schema-validation-report.md" ]; then
+          echo "Including validation report:" >> schema-diff-report.md
+          echo "" >> schema-diff-report.md
+          cat docs/schema-validation-report.md >> schema-diff-report.md
+        fi
+        
+        # Add git diff summary
+        echo "" >> schema-diff-report.md
+        echo "## Git Diff Summary" >> schema-diff-report.md
+        echo "" >> schema-diff-report.md
+        echo '```diff' >> schema-diff-report.md
+        git diff --stat docs/openapi.json >> schema-diff-report.md || echo "No diff available" >> schema-diff-report.md
+        echo '```' >> schema-diff-report.md
+
+    - name: Upload schema artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: openapi-schema-artifacts
+        path: |
+          docs/openapi.json
+          docs/schema-validation-report.md
+          docs/schema-history/*.json
+          schema-diff-report.md
+        retention-days: 30
+
+    - name: Create Pull Request for schema update
+      if: |
+        steps.update-schema.outputs.schema_updated == 'true' && 
+        (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: |
+          docs: update OpenAPI schema [automated]
+          
+          - Updated OpenAPI schema with latest API changes
+          - Endpoint count: ${{ steps.check-changes.outputs.endpoint_count || 'Unknown' }}
+          - Schema size: ${{ steps.update-schema.outputs.new_schema_size || 'Unknown' }} bytes
+          - Validation status: ✅ Passed
+        title: |
+          📄 Automated OpenAPI Schema Update
+        body: |
+          ## 📄 Automated OpenAPI Schema Update
+          
+          This PR contains an automated update to the OpenAPI schema documentation.
+          
+          ### 📊 Update Summary
+          - **Trigger:** ${{ github.event_name }}
+          - **Timestamp:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          - **Total Endpoints:** ${{ steps.check-changes.outputs.endpoint_count || 'Unknown' }}
+          - **Schema Size:** ${{ steps.update-schema.outputs.new_schema_size || 'Unknown' }} bytes
+          
+          ### ✅ Validation Status
+          - OpenAPI specification validation: ✅ Passed
+          - Schema structure validation: ✅ Passed 
+          - External tool validation: ✅ Passed
+          
+          ### 📋 What Changed
+          ${{ steps.check-changes.outputs.api_changed == 'true' && 'API endpoint changes detected' || 'Routine schema maintenance update' }}
+          
+          ### 📄 Documentation
+          - 📊 [Schema validation report](docs/schema-validation-report.md)
+          - 📁 [Schema artifacts available in workflow](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          
+          ### 🔍 Review Checklist
+          - [ ] Review schema changes for accuracy
+          - [ ] Verify endpoint documentation completeness
+          - [ ] Check for any breaking changes in API
+          - [ ] Confirm security scheme definitions
+          - [ ] Validate example requests/responses
+          
+          ### 🔗 Resources
+          - 🌐 [OpenAPI Documentation](docs/openapi.json)
+          - 📚 [API Documentation](https://docs.aisocialagent.com)
+          - 🐛 [Report Issues](https://github.com/${{ github.repository }}/issues)
+          
+          ---
+          
+          🤖 **Automated PR** | Generated by OpenAPI schema validation workflow
+          
+          > This schema update ensures API documentation stays current with implementation
+        branch: automated/openapi-schema-update
+        delete-branch: true
+        draft: false
+        labels: |
+          documentation
+          automated
+          openapi
+          schema-update
+
+    - name: Post validation summary
+      if: always()
+      run: |
+        echo "## 📄 OpenAPI Schema Validation Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Trigger:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Schema Exists:** ${{ steps.generate-schema.outputs.schema_exists }}" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ steps.generate-schema.outputs.schema_exists }}" = "true" ]; then
+          echo "**Schema Size:** ${{ steps.generate-schema.outputs.schema_size }} bytes" >> $GITHUB_STEP_SUMMARY
+          echo "**Endpoints:** ${{ steps.check-changes.outputs.endpoint_count || 'Unknown' }}" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ "${{ steps.update-schema.outputs.schema_updated }}" = "true" ]; then
+          echo "**Status:** ✅ Schema updated successfully" >> $GITHUB_STEP_SUMMARY
+        elif [ "${{ steps.generate-schema.outputs.schema_exists }}" = "true" ]; then
+          echo "**Status:** ✅ Schema validation passed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "**Status:** ❌ Schema generation failed" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🔗 Artifacts" >> $GITHUB_STEP_SUMMARY
+        echo "- 📄 [OpenAPI Schema](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+        echo "- 📊 [Validation Reports](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,1706 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "AI Social Media Content Agent",
+    "description": "Complete autonomous social media management platform with security hardening",
+    "version": "2.0.0",
+    "x-generated-at": "2025-09-07T14:25:36.966484+00:00",
+    "x-generator": "lily-media-openapi-manager",
+    "x-schema-version": "dd01268b7d73f703"
+  },
+  "paths": {
+    "/api/auth/register": {
+      "post": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Register User",
+        "description": "Register new user with local authentication - requires admin-generated registration key",
+        "operationId": "register_user_api_auth_register_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Login User",
+        "description": "Login user with local authentication and 2FA support",
+        "operationId": "login_user_api_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Get Current User Profile",
+        "description": "Get current user profile",
+        "operationId": "get_current_user_profile_api_auth_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfile"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/auth/refresh": {
+      "post": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Refresh Token",
+        "description": "Refresh access token using refresh token from cookie",
+        "operationId": "refresh_token_api_auth_refresh_post",
+        "parameters": [
+          {
+            "name": "refresh_token",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Refresh Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Logout User",
+        "description": "Logout user and blacklist refresh token",
+        "operationId": "logout_user_api_auth_logout_post",
+        "parameters": [
+          {
+            "name": "refresh_token",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Refresh Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/verify": {
+      "get": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Verify Token",
+        "description": "Verify if current token is valid",
+        "operationId": "verify_token_api_auth_verify_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/2fa/status": {
+      "get": {
+        "tags": [
+          "two-factor-authentication"
+        ],
+        "summary": "Get 2Fa Status",
+        "description": "Get current 2FA status for the user",
+        "operationId": "get_2fa_status_api_2fa_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TwoFactorStatusResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/2fa/setup": {
+      "post": {
+        "tags": [
+          "two-factor-authentication"
+        ],
+        "summary": "Setup 2Fa",
+        "description": "Initiate 2FA setup - generate QR code and backup codes\nThis doesn't enable 2FA until verification is completed",
+        "operationId": "setup_2fa_api_2fa_setup_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Enable2FARequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Setup2FAResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/2fa/verify-setup": {
+      "post": {
+        "tags": [
+          "two-factor-authentication"
+        ],
+        "summary": "Verify 2Fa Setup",
+        "description": "Verify TOTP code and enable 2FA",
+        "operationId": "verify_2fa_setup_api_2fa_verify_setup_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Verify2FASetupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/2fa/disable": {
+      "post": {
+        "tags": [
+          "two-factor-authentication"
+        ],
+        "summary": "Disable 2Fa",
+        "description": "Disable 2FA for the user",
+        "operationId": "disable_2fa_api_2fa_disable_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Disable2FARequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/2fa/regenerate-backup-codes": {
+      "post": {
+        "tags": [
+          "two-factor-authentication"
+        ],
+        "summary": "Regenerate Backup Codes",
+        "description": "Regenerate backup codes for 2FA",
+        "operationId": "regenerate_backup_codes_api_2fa_regenerate_backup_codes_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegenerateBackupCodesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegenerateBackupCodesResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/2fa/verify": {
+      "post": {
+        "tags": [
+          "two-factor-authentication"
+        ],
+        "summary": "Verify 2Fa Code",
+        "description": "Utility endpoint to verify a 2FA code\nUseful for sensitive operations that require 2FA verification",
+        "operationId": "verify_2fa_code_api_2fa_verify_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "summary": "Root",
+        "description": "Root endpoint for service status",
+        "operationId": "root__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      },
+      "head": {
+        "summary": "Root Head",
+        "description": "HEAD endpoint for health checks",
+        "operationId": "root_head__head",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health Check",
+        "description": "Comprehensive health check with P0-13b security status",
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/render-health": {
+      "get": {
+        "summary": "Render Health",
+        "description": "Render-specific health check",
+        "operationId": "render_health_render_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notifications/": {
+      "get": {
+        "summary": "Notifications Fallback",
+        "description": "Fallback for notifications endpoint",
+        "operationId": "notifications_fallback_api_notifications__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/logs": {
+      "get": {
+        "summary": "System Logs Fallback",
+        "description": "Fallback for system logs endpoint",
+        "operationId": "system_logs_fallback_api_system_logs_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/logs/stats": {
+      "get": {
+        "summary": "System Logs Stats Fallback",
+        "description": "Fallback for system logs stats endpoint",
+        "operationId": "system_logs_stats_fallback_api_system_logs_stats_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workflow/status/summary": {
+      "get": {
+        "summary": "Workflow Status Fallback",
+        "description": "Fallback for workflow status endpoint",
+        "operationId": "workflow_status_fallback_api_workflow_status_summary_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/metrics": {
+      "get": {
+        "summary": "Metrics Fallback",
+        "description": "Fallback for metrics endpoint",
+        "operationId": "metrics_fallback_api_metrics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/autonomous/research/latest": {
+      "get": {
+        "summary": "Autonomous Research Fallback",
+        "description": "Fallback for autonomous research endpoint",
+        "operationId": "autonomous_research_fallback_api_autonomous_research_latest_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{full_path}": {
+      "options": {
+        "summary": "Options Handler",
+        "description": "Handle CORS preflight requests for any path",
+        "operationId": "options_handler__full_path__options",
+        "parameters": [
+          {
+            "name": "full_path",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Full Path"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/integrations/instagram/post": {
+      "post": {
+        "tags": [
+          "integrations"
+        ],
+        "summary": "Create Instagram Post",
+        "description": "\n                Create a new Instagram post with media content.\n                \n                **Features:**\n                - Support for images, videos, carousels, and reels\n                - Automatic hashtag optimization\n                - Location tagging support\n                - Publishing rate limit compliance\n                \n                **Rate Limits:**\n                - 25 posts per hour per Instagram Business Account\n                - Content publishing API limits apply\n                \n                **Media Requirements:**\n                - Images: JPG, PNG (max 8MB, aspect ratio 1:1, 4:5, or 1.91:1)\n                - Videos: MP4, MOV (max 100MB, max 60s for feed, 90s for reels)\n                - Carousels: 2-10 items maximum\n                ",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "caption",
+                  "media_urls",
+                  "media_type"
+                ],
+                "properties": {
+                  "caption": {
+                    "type": "string",
+                    "maxLength": 2200,
+                    "description": "Post caption with optional hashtags",
+                    "example": "Check out this amazing sunset! #photography #nature #beautiful"
+                  },
+                  "media_urls": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "minItems": 1,
+                    "maxItems": 10,
+                    "description": "URLs of media files to post",
+                    "example": [
+                      "https://example.com/image1.jpg",
+                      "https://example.com/image2.jpg"
+                    ]
+                  },
+                  "media_type": {
+                    "type": "string",
+                    "enum": [
+                      "IMAGE",
+                      "VIDEO",
+                      "CAROUSEL_ALBUM",
+                      "REELS"
+                    ],
+                    "description": "Type of Instagram media",
+                    "example": "CAROUSEL_ALBUM"
+                  },
+                  "location_id": {
+                    "type": "string",
+                    "description": "Instagram location ID for geo-tagging",
+                    "nullable": true,
+                    "example": "213385402"
+                  },
+                  "hashtags": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "maxItems": 30,
+                    "description": "Additional hashtags to include",
+                    "example": [
+                      "sunset",
+                      "photography",
+                      "nature"
+                    ]
+                  },
+                  "schedule_for": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Schedule post for future publishing",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Post created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "instagram_post_id": {
+                      "type": "string",
+                      "example": "18052716124312345"
+                    },
+                    "permalink": {
+                      "type": "string",
+                      "example": "https://www.instagram.com/p/ABC123/"
+                    },
+                    "content_id": {
+                      "type": "integer",
+                      "example": 12345
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Instagram account not connected or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string",
+                      "example": "Instagram account not connected"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string",
+                      "example": "Publishing rate limit exceeded. Try again in 1 hour."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string",
+                      "example": "Failed to create Instagram post: Media processing failed"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/integrations/facebook/post": {
+      "post": {
+        "tags": [
+          "integrations"
+        ],
+        "summary": "Create Facebook Post",
+        "description": "\n                Create a new Facebook post on connected Page.\n                \n                **Features:**\n                - Text posts with optional media\n                - Link sharing with automatic preview\n                - Photo and video uploads\n                - Scheduled publishing\n                - Audience targeting\n                \n                **Rate Limits:**\n                - 600 requests per 10 minutes per Page\n                - Content posting limits may apply based on Page type\n                \n                **Media Support:**\n                - Images: JPG, PNG, GIF (max 4MB)\n                - Videos: MP4, MOV (max 1GB, max 240 minutes)\n                ",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "message"
+                ],
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "maxLength": 63206,
+                    "description": "Post message content",
+                    "example": "Exciting news! We're launching our new product line. Learn more at our website."
+                  },
+                  "media_urls": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "description": "URLs of media files to attach",
+                    "example": [
+                      "https://example.com/product-image.jpg"
+                    ]
+                  },
+                  "link": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "Link to include in post",
+                    "nullable": true,
+                    "example": "https://example.com/new-product"
+                  },
+                  "scheduled_publish_time": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Schedule post for future publishing",
+                    "nullable": true
+                  },
+                  "targeting": {
+                    "type": "object",
+                    "description": "Audience targeting options",
+                    "properties": {
+                      "countries": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "Target countries (ISO codes)"
+                      },
+                      "age_min": {
+                        "type": "integer",
+                        "minimum": 13
+                      },
+                      "age_max": {
+                        "type": "integer",
+                        "maximum": 65
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Post created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "facebook_post_id": {
+                      "type": "string",
+                      "example": "123456789_987654321"
+                    },
+                    "content_id": {
+                      "type": "integer",
+                      "example": 12345
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/integrations/tiktok/video": {
+      "post": {
+        "tags": [
+          "integrations"
+        ],
+        "summary": "Upload TikTok Video",
+        "description": "\n                Upload a video to TikTok with comprehensive options.\n                \n                **Features:**\n                - Video upload with description\n                - Privacy controls (public, friends, private)\n                - Interactive features (duet, stitch, comments)\n                - Brand content settings\n                - Auto music addition\n                \n                **Rate Limits:**\n                - Very strict: 10 requests per day per developer app\n                - Production apps may have higher limits\n                \n                **Video Requirements:**\n                - Format: MP4, WebM, MOV\n                - Resolution: 720x1280 minimum (9:16 aspect ratio recommended)\n                - Duration: 15 seconds to 10 minutes\n                - Size: Up to 4GB\n                ",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "video_url",
+                  "description"
+                ],
+                "properties": {
+                  "video_url": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "URL of video file to upload",
+                    "example": "https://example.com/video.mp4"
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 2200,
+                    "description": "Video description with hashtags",
+                    "example": "Amazing dance moves! #dance #trending #fyp"
+                  },
+                  "privacy_level": {
+                    "type": "string",
+                    "enum": [
+                      "PUBLIC_TO_EVERYONE",
+                      "MUTUAL_FOLLOW_FRIENDS",
+                      "FOLLOWER_OF_CREATOR",
+                      "SELF_ONLY"
+                    ],
+                    "default": "PUBLIC_TO_EVERYONE",
+                    "description": "Video privacy setting"
+                  },
+                  "disable_duet": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Disable duet feature for this video"
+                  },
+                  "disable_stitch": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Disable stitch feature for this video"
+                  },
+                  "disable_comment": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Disable comments on this video"
+                  },
+                  "brand_content_toggle": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Mark as branded content"
+                  },
+                  "auto_add_music": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Auto-add music from TikTok library"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Video uploaded successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "publish_id": {
+                      "type": "string",
+                      "example": "v0f034gf0f30f03f0"
+                    },
+                    "content_id": {
+                      "type": "integer",
+                      "example": 12345
+                    },
+                    "platform": {
+                      "type": "string",
+                      "example": "tiktok"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/integrations/metrics/collection": {
+      "get": {
+        "tags": [
+          "integrations"
+        ],
+        "summary": "Get Metrics Collection Status",
+        "description": "\n                Get real-time metrics collection status across all connected platforms.\n                \n                **Features:**\n                - Platform-specific collection status\n                - Last collection timestamps\n                - Collection intervals and schedules\n                - Total metrics count\n                - Error reporting\n                \n                **Collection Intervals:**\n                - Twitter: Every 15 minutes\n                - Instagram: Every hour\n                - Facebook: Every hour\n                - LinkedIn: Every 2 hours\n                - TikTok: Every 2 hours\n                ",
+        "responses": {
+          "200": {
+            "description": "Metrics collection status retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "collection_status": {
+                      "type": "object",
+                      "properties": {
+                        "last_update": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "platforms": {
+                          "type": "object",
+                          "properties": {
+                            "twitter": {
+                              "type": "object",
+                              "properties": {
+                                "status": {
+                                  "type": "string",
+                                  "example": "active"
+                                },
+                                "last_collection": {
+                                  "type": "string",
+                                  "format": "date-time"
+                                },
+                                "next_collection": {
+                                  "type": "string",
+                                  "format": "date-time"
+                                },
+                                "metrics_count": {
+                                  "type": "integer",
+                                  "example": 150
+                                },
+                                "error_count": {
+                                  "type": "integer",
+                                  "example": 0
+                                }
+                              }
+                            },
+                            "instagram": {
+                              "type": "object",
+                              "properties": {
+                                "status": {
+                                  "type": "string",
+                                  "example": "active"
+                                },
+                                "last_collection": {
+                                  "type": "string",
+                                  "format": "date-time"
+                                },
+                                "next_collection": {
+                                  "type": "string",
+                                  "format": "date-time"
+                                },
+                                "metrics_count": {
+                                  "type": "integer",
+                                  "example": 89
+                                },
+                                "error_count": {
+                                  "type": "integer",
+                                  "example": 1
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "total_metrics": {
+                          "type": "integer",
+                          "example": 1247
+                        }
+                      }
+                    },
+                    "last_collection": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "platforms": {
+                      "type": "object",
+                      "description": "Platform-specific status details"
+                    },
+                    "metrics_count": {
+                      "type": "integer",
+                      "example": 1247
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/quota/status": {
+      "get": {
+        "tags": [
+          "integrations"
+        ],
+        "summary": "Get API Quota Status",
+        "description": "\n                Get current API quota utilization across all platforms.\n                \n                **Features:**\n                - Real-time quota monitoring\n                - Platform-specific limits\n                - Utilization percentages\n                - Reset times and windows\n                - Burst capacity status\n                \n                **Quota Limits:**\n                - Twitter: 300 requests per 15 minutes\n                - Instagram: 200 requests per hour\n                - Facebook: 600 requests per 10 minutes\n                - LinkedIn: 100 requests per hour\n                - TikTok: 10 requests per day (very restrictive)\n                ",
+        "responses": {
+          "200": {
+            "description": "Quota status retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "quotas": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "object",
+                        "properties": {
+                          "platform": {
+                            "type": "string"
+                          },
+                          "current_usage": {
+                            "type": "integer"
+                          },
+                          "quota_limit": {
+                            "type": "integer"
+                          },
+                          "utilization_percent": {
+                            "type": "number",
+                            "format": "float"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "normal",
+                              "warning",
+                              "critical",
+                              "exceeded"
+                            ]
+                          },
+                          "reset_time": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "time_window": {
+                            "type": "integer",
+                            "description": "Window in seconds"
+                          },
+                          "burst_available": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    },
+                    "overall_status": {
+                      "type": "string",
+                      "enum": [
+                        "healthy",
+                        "degraded",
+                        "critical"
+                      ]
+                    },
+                    "critical_platforms": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Disable2FARequest": {
+        "properties": {
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Password",
+            "description": "Current account password"
+          },
+          "verification_code": {
+            "type": "string",
+            "title": "Verification Code",
+            "description": "TOTP code or backup code"
+          }
+        },
+        "type": "object",
+        "required": [
+          "password",
+          "verification_code"
+        ],
+        "title": "Disable2FARequest",
+        "description": "Request to disable 2FA"
+      },
+      "Enable2FARequest": {
+        "properties": {
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Password",
+            "description": "Current account password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "password"
+        ],
+        "title": "Enable2FARequest",
+        "description": "Request to enable 2FA - requires current password verification"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "LoginRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "title": "Password"
+          },
+          "totp_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Totp Code"
+          },
+          "backup_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Backup Code"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "LoginRequest"
+      },
+      "RegenerateBackupCodesRequest": {
+        "properties": {
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Password",
+            "description": "Current account password"
+          },
+          "totp_code": {
+            "type": "string",
+            "maxLength": 6,
+            "minLength": 6,
+            "title": "Totp Code",
+            "description": "6-digit TOTP code"
+          }
+        },
+        "type": "object",
+        "required": [
+          "password",
+          "totp_code"
+        ],
+        "title": "RegenerateBackupCodesRequest",
+        "description": "Request to regenerate backup codes"
+      },
+      "RegenerateBackupCodesResponse": {
+        "properties": {
+          "backup_codes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Backup Codes",
+            "description": "New backup recovery codes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "backup_codes"
+        ],
+        "title": "RegenerateBackupCodesResponse",
+        "description": "Response with new backup codes",
+        "example": {
+          "backup_codes": [
+            "A1B2-C3D4",
+            "E5F6-G7H8",
+            "I9J0-K1L2"
+          ]
+        }
+      },
+      "RegisterRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "username": {
+            "type": "string",
+            "title": "Username"
+          },
+          "password": {
+            "type": "string",
+            "title": "Password"
+          },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name",
+            "default": ""
+          },
+          "registration_key": {
+            "type": "string",
+            "title": "Registration Key"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "username",
+          "password",
+          "registration_key"
+        ],
+        "title": "RegisterRequest"
+      },
+      "Setup2FAResponse": {
+        "properties": {
+          "qr_code": {
+            "type": "string",
+            "title": "Qr Code",
+            "description": "QR code data URL for authenticator app"
+          },
+          "manual_entry_key": {
+            "type": "string",
+            "title": "Manual Entry Key",
+            "description": "Manual entry key for authenticator app"
+          },
+          "backup_codes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Backup Codes",
+            "description": "Backup recovery codes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "qr_code",
+          "manual_entry_key",
+          "backup_codes"
+        ],
+        "title": "Setup2FAResponse",
+        "description": "Response for 2FA setup initiation",
+        "example": {
+          "backup_codes": [
+            "A1B2-C3D4",
+            "E5F6-G7H8",
+            "I9J0-K1L2"
+          ],
+          "manual_entry_key": "JBSWY3DPEHPK3PXP",
+          "qr_code": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."
+        }
+      },
+      "TokenResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "token_type": {
+            "type": "string",
+            "title": "Token Type",
+            "default": "bearer"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "username": {
+            "type": "string",
+            "title": "Username"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "user_id",
+          "email",
+          "username"
+        ],
+        "title": "TokenResponse"
+      },
+      "TwoFactorStatusResponse": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "description": "Whether 2FA is enabled"
+          },
+          "backup_codes_remaining": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Backup Codes Remaining",
+            "description": "Number of unused backup codes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "enabled"
+        ],
+        "title": "TwoFactorStatusResponse",
+        "description": "Response showing 2FA status",
+        "example": {
+          "backup_codes_remaining": 8,
+          "enabled": true
+        }
+      },
+      "UserProfile": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "username": {
+            "type": "string",
+            "title": "Username"
+          },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "tier": {
+            "type": "string",
+            "title": "Tier"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "email",
+          "username",
+          "full_name",
+          "is_active",
+          "tier",
+          "created_at"
+        ],
+        "title": "UserProfile"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "Verify2FASetupRequest": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "maxLength": 6,
+            "minLength": 6,
+            "title": "Token",
+            "description": "6-digit TOTP code from authenticator app"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token"
+        ],
+        "title": "Verify2FASetupRequest",
+        "description": "Request to verify and activate 2FA"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      },
+      "Auth0Bearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Auth0 JWT token obtained from authentication flow"
+      },
+      "LocalJWT": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Local JWT token for development and testing"
+      }
+    },
+    "examples": {
+      "InstagramPostExample": {
+        "summary": "Instagram Carousel Post",
+        "description": "Example of creating a carousel post with multiple images",
+        "value": {
+          "caption": "Amazing sunset collection from our recent trip! 🌅 #photography #travel #sunset #nature",
+          "media_urls": [
+            "https://example.com/sunset1.jpg",
+            "https://example.com/sunset2.jpg",
+            "https://example.com/sunset3.jpg"
+          ],
+          "media_type": "CAROUSEL_ALBUM",
+          "hashtags": [
+            "golden hour",
+            "landscape",
+            "vacation"
+          ]
+        }
+      },
+      "FacebookPostExample": {
+        "summary": "Facebook Business Post",
+        "description": "Example of a business post with link and targeting",
+        "value": {
+          "message": "🚀 Exciting news! We're launching our new AI-powered social media management platform. Join thousands of businesses already using our solution to boost their social media presence.\n\nKey features:\n✅ AI content generation\n✅ Multi-platform posting\n✅ Advanced analytics\n✅ Automation workflows\n\nLearn more and start your free trial today!",
+          "link": "https://aisocialagent.com/signup",
+          "targeting": {
+            "countries": [
+              "US",
+              "CA",
+              "GB"
+            ],
+            "age_min": 25,
+            "age_max": 55
+          }
+        }
+      },
+      "TikTokVideoExample": {
+        "summary": "TikTok Dance Video",
+        "description": "Example of uploading a dance video with all features enabled",
+        "value": {
+          "video_url": "https://example.com/dance-video.mp4",
+          "description": "Learning this trending dance! Who wants to see the tutorial? 💃 #dance #trending #fyp #tutorial #viral",
+          "privacy_level": "PUBLIC_TO_EVERYONE",
+          "disable_duet": false,
+          "disable_stitch": false,
+          "disable_comment": false,
+          "brand_content_toggle": false,
+          "auto_add_music": true
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "Auth0Bearer": []
+    },
+    {
+      "LocalJWT": []
+    }
+  ],
+  "externalDocs": {
+    "description": "Complete API Documentation and Guides",
+    "url": "https://docs.aisocialagent.com"
+  }
+}
