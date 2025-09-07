@@ -49,7 +49,7 @@ except ImportError as e:
 
 # Validate environment on startup
 try:
-    from backend.core.env_validator_simple import validate_on_startup
+    from backend.core.env_validator import validate_on_startup
     validate_on_startup()
     logger.info("Environment validation completed")
 except Exception as e:
@@ -73,21 +73,27 @@ try:
 except Exception as e:
     logger.warning("Could not add ProxyHeadersMiddleware: %s", e)
 
-# Setup comprehensive security middleware
+# Setup comprehensive security middleware with P0-13b migration support
 security_middleware_success = False
 try:
-    from backend.core.security_middleware import setup_security_middleware
     from backend.core.audit_logger import AuditTrackingMiddleware, AuditLogger
     
     # Initialize audit logger and add audit tracking middleware
     audit_logger = AuditLogger()
     app.add_middleware(AuditTrackingMiddleware, audit_logger=audit_logger)
     
-    # Setup all security middleware
-    setup_security_middleware(app, environment=environment)
-    security_middleware_success = True
+    # P0-13b: Use migration-friendly security middleware setup
+    try:
+        from backend.core.security_middleware_factory import setup_security_middleware_with_migration
+        security_middleware_success = setup_security_middleware_with_migration(app, environment=environment)
+        logger.info("P0-13b: Distributed security middleware configured for {} environment".format(environment))
+    except ImportError:
+        # Fallback to legacy security middleware
+        from backend.core.security_middleware import setup_security_middleware
+        setup_security_middleware(app, environment=environment)
+        security_middleware_success = True
+        logger.info("Legacy security middleware configured for {} environment".format(environment))
     
-    logger.info("Security middleware configured for {} environment".format(environment))
 except Exception as e:
     logger.error("Failed to setup security middleware: {}".format(e))
 
@@ -147,7 +153,7 @@ if not security_middleware_success:
                 "https://socialmedia-api-wxip.onrender.com",
                 "https://www.lily-ai-socialmedia.com",
                 "https://lily-ai-socialmedia.com"
-                # REMOVED localhost from production CORS - security risk
+                # Production locked: localhost removed for security
             ]
             logger.warning("No CORS environment variables found, using current production domains as fallback")
         
@@ -244,7 +250,16 @@ async def root_head():
 
 @app.get("/health")
 async def health_check():
-    """Comprehensive health check"""
+    """Comprehensive health check with P0-13b security status"""
+    
+    # Get security middleware status
+    security_status = {}
+    try:
+        from backend.core.security_middleware_factory import get_security_middleware_status
+        security_status = get_security_middleware_status()
+    except Exception as e:
+        security_status = {"error": str(e)}
+    
     return {
         "status": "healthy",
         "version": "2.0.0",
@@ -268,6 +283,10 @@ async def health_check():
             "openai": "available" if os.getenv("OPENAI_API_KEY") else "missing_key",
             "database": "configured" if os.getenv("DATABASE_URL") else "not_configured",
             "redis": "configured" if os.getenv("REDIS_URL") else "not_configured"
+        },
+        "security": {
+            "middleware_status": security_status,
+            "p0_13b_compliance": security_status.get("distributed_enabled", False)
         }
     }
 
