@@ -87,7 +87,12 @@ def get_admin_user(
     current_user: User = Depends(get_current_active_user)
 ) -> User:
     """Require admin user for protected routes"""
-    if current_user.tier not in ["pro", "enterprise"]:
+    # Use plan-based logic instead of legacy tier system
+    if current_user.plan and current_user.plan.name in ["pro", "enterprise"]:
+        return current_user
+    elif current_user.tier in ["pro", "enterprise"]:  # Fallback for legacy users
+        return current_user
+    else:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"

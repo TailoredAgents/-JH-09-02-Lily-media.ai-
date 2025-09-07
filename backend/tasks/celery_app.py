@@ -20,6 +20,7 @@ celery_app = Celery(
         "backend.tasks.token_health_tasks",  # Token refresh and health
         "backend.tasks.x_polling_tasks",  # X mentions polling
         "backend.tasks.webhook_watchdog_tasks",  # GA Checklist: DLQ watchdog
+        "backend.tasks.subscription_cleanup_tasks",  # P1-5c: Subscription cleanup jobs
         # Disabled heavy tasks to prevent memory issues
         # "backend.tasks.content_tasks",  # CrewAI - uses 500MB+
         # "backend.tasks.research_tasks",  # CrewAI - uses 500MB+ 
@@ -71,6 +72,7 @@ celery_app.conf.update(
         'backend.tasks.webhook_watchdog_tasks.*': {'queue': 'webhook_watchdog', 'priority': 9},
         'backend.tasks.lightweight_research_tasks.*': {'queue': 'research', 'priority': 5},
         'backend.tasks.autonomous_scheduler.*': {'queue': 'autonomous', 'priority': 4},
+        'backend.tasks.subscription_cleanup_tasks.*': {'queue': 'subscription_cleanup', 'priority': 6},
     },
     
     # Dead Letter Queue configuration
@@ -131,6 +133,12 @@ celery_app.conf.task_queues = {
     'autonomous': {
         'exchange': 'autonomous',
         'routing_key': 'autonomous',
+        'durable': True,
+        'auto_delete': False,
+    },
+    'subscription_cleanup': {
+        'exchange': 'subscription_cleanup',
+        'routing_key': 'subscription_cleanup',
         'durable': True,
         'auto_delete': False,
     },
@@ -199,5 +207,34 @@ celery_app.conf.beat_schedule = {
         'task': 'backend.tasks.webhook_watchdog_tasks.scan_dlq_watchdog',
         'schedule': 60.0 * 60.0,  # Every hour
         'options': {'queue': 'webhook_watchdog', 'expires': 1800},  # 30 min expiry
+    },
+    
+    # P1-5c: Subscription cleanup jobs
+    # Daily subscription maintenance - comprehensive cleanup at 1 AM UTC
+    'daily-subscription-maintenance': {
+        'task': 'backend.tasks.subscription_cleanup_tasks.daily_subscription_maintenance',
+        'schedule': 60.0 * 60.0 * 24,  # Daily
+        'options': {'queue': 'subscription_cleanup', 'expires': 7200},  # 2 hour expiry
+    },
+    
+    # Expired trial cleanup - every 6 hours
+    'cleanup-expired-trials': {
+        'task': 'backend.tasks.subscription_cleanup_tasks.cleanup_expired_trials',
+        'schedule': 60.0 * 60.0 * 6,  # Every 6 hours
+        'options': {'queue': 'subscription_cleanup', 'expires': 3600},  # 1 hour expiry
+    },
+    
+    # Stripe subscription sync - every 4 hours
+    'stripe-subscription-sync': {
+        'task': 'backend.tasks.subscription_cleanup_tasks.sync_stripe_subscription_status',
+        'schedule': 60.0 * 60.0 * 4,  # Every 4 hours
+        'options': {'queue': 'subscription_cleanup', 'expires': 1800},  # 30 min expiry
+    },
+    
+    # Overdue subscription handling - every 12 hours
+    'handle-overdue-subscriptions': {
+        'task': 'backend.tasks.subscription_cleanup_tasks.handle_overdue_subscriptions',
+        'schedule': 60.0 * 60.0 * 12,  # Every 12 hours
+        'options': {'queue': 'subscription_cleanup', 'expires': 3600},  # 1 hour expiry
     },
 }
