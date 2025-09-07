@@ -28,6 +28,7 @@ from backend.core.encryption import encrypt_token
 from backend.auth.social_oauth import SocialOAuthManager
 from backend.integrations.connection_health import compute_connection_health
 from backend.core.api_version import create_versioned_router
+from backend.services.plan_aware_social_service import get_plan_aware_social_service
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
@@ -178,7 +179,8 @@ def get_user_organization_id(user: User) -> str:
 async def start_oauth_flow(
     platform: str,
     request: Request,
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
 ) -> OAuthStartResponse:
     """
     Initiate partner OAuth flow for a platform
@@ -186,6 +188,7 @@ async def start_oauth_flow(
     Args:
         platform: OAuth platform (meta, x)
         current_user: Authenticated user from JWT
+        db: Database session for plan validation
         
     Returns:
         OAuth authorization URL and state
@@ -202,6 +205,44 @@ async def start_oauth_flow(
                     "error": "invalid_platform",
                     "message": f"Platform '{platform}' is not supported",
                     "supported_platforms": list(PLATFORM_CONFIGS.keys())
+                }
+            )
+        
+        # SECURITY FIX: Add plan enforcement to prevent bypass
+        plan_service = get_plan_aware_social_service(db)
+        
+        # Map platform names between old and new OAuth flows
+        platform_mapping = {
+            "meta": "facebook",  # Meta OAuth uses Facebook platform internally 
+            "x": "twitter"       # X OAuth uses Twitter platform internally
+        }
+        
+        internal_platform = platform_mapping.get(platform, platform)
+        
+        enforcement_result = await plan_service.enforce_connection_limit(
+            user_id=current_user.id,
+            platform=internal_platform
+        )
+        
+        if not enforcement_result["allowed"]:
+            # Log the bypass attempt for security monitoring
+            logger.warning(
+                f"Partner OAuth connection attempt blocked for user {current_user.id} on {platform}: "
+                f"{enforcement_result['reason']} - {enforcement_result['message']}"
+            )
+            
+            # Return plan enforcement error with upgrade suggestions
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "error": "connection_not_allowed",
+                    "reason": enforcement_result["reason"],
+                    "message": enforcement_result["message"],
+                    "current_plan": enforcement_result.get("plan"),
+                    "suggested_plans": enforcement_result.get("suggested_plans", []),
+                    "current_usage": enforcement_result.get("current_usage"),
+                    "upgrade_required": True,
+                    "oauth_flow": "partner"
                 }
             )
         
@@ -703,6 +744,34 @@ async def connect_meta_account(
         Connection details with encrypted tokens persisted
     """
     try:
+        # SECURITY FIX: Add plan enforcement before completing connection
+        plan_service = get_plan_aware_social_service(db)
+        enforcement_result = await plan_service.enforce_connection_limit(
+            user_id=current_user.id,
+            platform="facebook"  # Meta OAuth maps to Facebook internally
+        )
+        
+        if not enforcement_result["allowed"]:
+            # Log the callback bypass attempt
+            logger.warning(
+                f"Partner OAuth Meta connection blocked for user {current_user.id}: "
+                f"{enforcement_result['reason']} - {enforcement_result['message']}"
+            )
+            
+            # Return plan enforcement error
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "error": "connection_not_allowed",
+                    "reason": enforcement_result["reason"], 
+                    "message": enforcement_result["message"],
+                    "current_plan": enforcement_result.get("plan"),
+                    "suggested_plans": enforcement_result.get("suggested_plans", []),
+                    "upgrade_required": True,
+                    "oauth_flow": "partner"
+                }
+            )
+        
         # Read cached user tokens
         state_store = get_state_store()
         cached_tokens = state_store.read_tokens(request.state)
@@ -930,6 +999,34 @@ async def connect_x_account(
         Connection details with encrypted tokens persisted
     """
     try:
+        # SECURITY FIX: Add plan enforcement before completing connection
+        plan_service = get_plan_aware_social_service(db)
+        enforcement_result = await plan_service.enforce_connection_limit(
+            user_id=current_user.id,
+            platform="twitter"  # X OAuth maps to Twitter internally
+        )
+        
+        if not enforcement_result["allowed"]:
+            # Log the callback bypass attempt
+            logger.warning(
+                f"Partner OAuth X connection blocked for user {current_user.id}: "
+                f"{enforcement_result['reason']} - {enforcement_result['message']}"
+            )
+            
+            # Return plan enforcement error
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "error": "connection_not_allowed",
+                    "reason": enforcement_result["reason"], 
+                    "message": enforcement_result["message"],
+                    "current_plan": enforcement_result.get("plan"),
+                    "suggested_plans": enforcement_result.get("suggested_plans", []),
+                    "upgrade_required": True,
+                    "oauth_flow": "partner"
+                }
+            )
+        
         # Read cached tokens
         state_store = get_state_store()
         cached_tokens = state_store.read_tokens(request.state)
