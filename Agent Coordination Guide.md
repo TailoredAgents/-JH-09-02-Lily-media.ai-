@@ -47,12 +47,12 @@
 - [x] **P0-8d**: Implement comprehensive error taxonomy mapping ✅
 
 #### 🟡 P1 HIGH PRIORITY TASKS (Agent 1 Responsible)
-- [ ] **P1-2a**: Implement environment validator on boot
-- [ ] **P1-2b**: Lock production CORS configuration
-- [ ] **P1-2c**: Document key rotation procedures
-- [ ] **P1-5a**: Migrate from legacy tier system to plan_id
-- [ ] **P1-5b**: Implement webhook event idempotency store
-- [ ] **P1-5c**: Add automated subscription cleanup jobs
+- [x] **P1-2a**: Implement environment validator on boot ✅
+- [x] **P1-2b**: Lock production CORS configuration ✅
+- [x] **P1-2c**: Document key rotation procedures ✅
+- [x] **P1-5a**: Migrate from legacy tier system to plan_id ✅
+- [x] **P1-5b**: Implement webhook event idempotency store ✅
+- [x] **P1-5c**: Add automated subscription cleanup jobs ✅
 - [ ] **P1-10a**: Enhance billing consumer protection with in-app cancellation
 - [ ] **P1-10b**: Improve trial and renewal term disclosures
 - [ ] **P1-10c**: Complete WCAG 2.1 AA accessibility compliance
@@ -299,7 +299,7 @@
 ## 📊 Task Distribution Summary
 
 ### Agent Task Counts:
-- **🔒 AGENT 1**: 1 Blocker + 11 P0 + 10 P1 + 6 P2 + 25 Tests = **53 Total Tasks** ✅ **P0 COMPLETED (12/12)**
+- **🔒 AGENT 1**: 1 Blocker + 11 P0 + 10 P1 + 6 P2 + 25 Tests = **53 Total Tasks** ✅ **P0 + P1 CORE COMPLETED (18/25)**
 - **🛡️ AGENT 2**: 1 Blocker + 18 P0 + 24 P1 + 6 P2 + 49 Tests = **98 Total Tasks**  
 - **🎨 AGENT 3**: 0 Blockers + 4 P0 + 4 P1 + 4 P2 + 15 Tests = **27 Total Tasks** ✅ **COMPLETED**
 
@@ -489,7 +489,7 @@ P2 Tasks: 16 → [X] → 0 ✅
 Tests Passing: 0 → [X] → 89 ✅
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🔒 AGENT 1 METRICS: [12/12 P0 COMPLETE] ✅ Critical Blocker + All P0 Tasks
+🔒 AGENT 1 METRICS: [18/25 CORE COMPLETE] ✅ Critical Blocker + All P0 + P1 Core Tasks
 🛡️ AGENT 2 METRICS: [X/98] Complete  
 🎨 AGENT 3 METRICS: [X/27] Complete
 ```
