@@ -102,48 +102,71 @@ class StartupHealthGates:
         ]
     
     async def _check_environment_config(self) -> HealthCheckResult:
-        """Validate environment configuration"""
+        """Comprehensive environment validation using EnvironmentValidator"""
         start_time = time.time()
         
         try:
-            issues = []
+            from backend.core.env_validator import validate_environment
             
-            # Check required environment variables
-            required_vars = [
-                "DATABASE_URL", "REDIS_URL", "SECRET_KEY",
-                "CORS_ORIGINS", "ENVIRONMENT"
-            ]
-            
-            for var in required_vars:
-                if not hasattr(self.settings, var.lower()) or not getattr(self.settings, var.lower(), None):
-                    issues.append(f"Missing required environment variable: {var}")
-            
-            # Check environment is production-ready
-            if hasattr(self.settings, 'environment'):
-                env = self.settings.environment.lower()
-                if env not in ['production', 'staging']:
-                    issues.append(f"Environment '{env}' is not production-ready")
-            
-            # Check debug mode is disabled
-            if hasattr(self.settings, 'debug') and self.settings.debug:
-                issues.append("Debug mode is enabled - should be disabled in production")
+            # Run comprehensive environment validation
+            validation_result = validate_environment()
             
             duration_ms = (time.time() - start_time) * 1000
             
-            if issues:
+            if not validation_result["validation_passed"]:
+                # Critical errors found
+                error_count = len(validation_result["errors"])
+                warning_count = len(validation_result["warnings"])
+                
                 return HealthCheckResult(
                     name="environment_config",
                     status=HealthCheckStatus.FAIL,
                     duration_ms=duration_ms,
-                    message=f"Environment configuration issues: {'; '.join(issues)}",
-                    details={"issues": issues}
+                    message=f"Environment validation failed: {error_count} errors, {warning_count} warnings",
+                    details={
+                        "errors": validation_result["errors"],
+                        "warnings": validation_result["warnings"],
+                        "required_completeness": validation_result["required_completeness"],
+                        "overall_completeness": validation_result["configuration_completeness"],
+                        "missing_required": validation_result["summary"]["missing_required"],
+                        "recommendations": validation_result["recommendations"]
+                    }
                 )
             
+            # Check if there are warnings that should be highlighted
+            warning_count = len(validation_result["warnings"])
+            rec_count = len(validation_result["recommendations"])
+            
+            if warning_count > 0 or rec_count > 0:
+                return HealthCheckResult(
+                    name="environment_config",
+                    status=HealthCheckStatus.WARN,
+                    duration_ms=duration_ms,
+                    message=f"Environment validation passed with {warning_count} warnings and {rec_count} recommendations",
+                    details={
+                        "warnings": validation_result["warnings"],
+                        "recommendations": validation_result["recommendations"],
+                        "required_completeness": validation_result["required_completeness"],
+                        "overall_completeness": validation_result["configuration_completeness"],
+                        "environment": validation_result["environment"],
+                        "provided_variables": validation_result["provided_variables"],
+                        "total_variables": validation_result["total_variables"]
+                    }
+                )
+            
+            # All good - no errors or warnings
             return HealthCheckResult(
                 name="environment_config",
                 status=HealthCheckStatus.PASS,
                 duration_ms=duration_ms,
-                message="Environment configuration is valid"
+                message=f"Environment validation passed - {validation_result['configuration_completeness']}% complete",
+                details={
+                    "environment": validation_result["environment"],
+                    "required_completeness": validation_result["required_completeness"],
+                    "overall_completeness": validation_result["configuration_completeness"],
+                    "provided_variables": validation_result["provided_variables"],
+                    "total_variables": validation_result["total_variables"]
+                }
             )
             
         except Exception as e:
@@ -152,7 +175,7 @@ class StartupHealthGates:
                 name="environment_config",
                 status=HealthCheckStatus.FAIL,
                 duration_ms=duration_ms,
-                message=f"Environment config check failed: {str(e)}"
+                message=f"Environment validation check failed: {str(e)}"
             )
     
     async def _check_database_connectivity(self) -> HealthCheckResult:
