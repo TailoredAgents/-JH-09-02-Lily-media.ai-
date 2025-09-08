@@ -1,3 +1,8 @@
+🚿 **PRESSURE WASHING IMPLEMENTATION**: See PRESSURE_WASHING_TODO.md for all features to implement
+- When working on pressure washing features, ALWAYS check PRESSURE_WASHING_TODO.md first
+- Update PRESSURE_WASHING_TODO.md as you plan and implement features
+- Use PRESSURE_WASHING_TODO.md for multi-agent coordination
+
 - Only write production-ready code, no mock, fake, demo, or placeholder code
 - Always write production ready code
 - Never create mock data, designs, or code
@@ -5,22 +10,28 @@
 - when finished make changes, test build, commit to remote git repo
 - Unless explicity required, you (claude) will do everything you can to avoid manual intervention during the process of fixing, update, or editing this project
 
-# Current System Status (September 2025) - Pressure Washing Industry Focus
+# Current System Status (December 2024) - Pressure Washing Industry Focus
 
-## Pressure Washing Industry Specialization Complete ✅
-- **COMPLETED**: Pivoted from generic social media management to pressure washing industry focus
-- **Landing Page**: Completely redesigned for pressure washing companies with job booking focus
-- **AI Training**: Specialized responses for soft wash vs pressure wash, chemical safety, surface types
-- **Integration Ready**: Works with Housecall Pro, Jobber, ServiceTitan, and calendar systems
-- **Industry Metrics**: Tracks jobs booked, revenue generated, not just engagement rates
+## 🔴 IMPORTANT: Read PRESSURE_WASHING_TODO.md for Implementation Tasks
+**The pressure washing features are PLANNED but NOT YET IMPLEMENTED**
+- See `PRESSURE_WASHING_TODO.md` for the complete implementation roadmap
+- Update that file daily with progress and new requirements
+- Use it for multi-agent coordination and task planning
 
-## Pressure Washing Customer Journey Complete ✅
-- **DM→BOOKING FLOW**: Automated response system for pricing inquiries and job scheduling
-- **Industry Knowledge**: AI trained on pressure washing terminology, chemical safety, and surface types
-- **Weather Integration**: Handles rain delays and seasonal service promotions automatically
-- **Lead Qualification**: Captures customer photos, surface details, and scheduling preferences
-- **Before/After Automation**: Creates compelling transformation posts showcasing work quality
-- **Field Service Integration**: Direct booking to calendars and CRM systems
+## Pressure Washing Industry Pivot Status 🔶
+- **COMPLETED**: Landing page messaging and documentation updated
+- **IN PROGRESS**: Planning implementation of pressure washing features
+- **NOT STARTED**: AI training for pressure washing terminology
+- **NOT STARTED**: Field service software integrations
+- **NOT STARTED**: DM→Booking conversion flow
+
+## Pressure Washing Customer Journey (PLANNED) 🔶
+- **DM→BOOKING FLOW**: [TO BUILD] Automated response system for pricing inquiries
+- **Industry Knowledge**: [TO BUILD] AI training on pressure washing terminology
+- **Weather Integration**: [TO BUILD] Rain delay and seasonal promotion handling
+- **Lead Qualification**: [TO BUILD] Photo capture and surface detail collection
+- **Before/After Automation**: [TO BUILD] Transformation post creation
+- **Field Service Integration**: [TO BUILD] Housecall Pro, Jobber connections
 
 ## Current Production Deployment (Render.com) 🚿
 - **Main API**: https://socialmedia-api-wxip.onrender.com (FastAPI backend)
@@ -47,15 +58,16 @@
 - **Import Conflicts**: Resolved encryption module import issues
 - **Test Coverage**: Comprehensive unit and integration test suites
 
-## Current Pressure Washing Capabilities
-- ✅ Industry-specific AI responses (soft wash vs pressure wash)
-- ✅ DM→Booking conversion flow with lead qualification
-- ✅ Before/after transformation post automation
-- ✅ Chemical safety and plant protection education
-- ✅ Weather-aware scheduling and rain delay management
-- ✅ Field service software integration (Housecall Pro, Jobber)
-- ✅ Revenue and job booking analytics
-- ✅ Seasonal service promotion automation
+## Planned Pressure Washing Capabilities (See PRESSURE_WASHING_TODO.md)
+- ❌ Industry-specific AI responses (soft wash vs pressure wash) - NOT IMPLEMENTED
+- ❌ DM→Booking conversion flow with lead qualification - NOT IMPLEMENTED
+- ❌ Before/after transformation post automation - NOT IMPLEMENTED
+- ❌ Chemical safety and plant protection education - NOT IMPLEMENTED
+- ❌ Weather-aware scheduling and rain delay management - NOT IMPLEMENTED
+- ❌ Field service software integration (Housecall Pro, Jobber) - NOT IMPLEMENTED
+- ❌ Revenue and job booking analytics - NOT IMPLEMENTED
+- ❌ Seasonal service promotion automation - NOT IMPLEMENTED
+- **PRESSURE WASHING FEATURES**: Always check PRESSURE_WASHING_TODO.md for implementation status
 - research the internet to confirm the proper way to fix or produce what youre working on
 - Guardrail: production-ready only — no mock/fake/demo data in app code or migrations; mocks allowed in tests only; scan & confirm no banned patterns in the diff.
 - Never create placeholder files
