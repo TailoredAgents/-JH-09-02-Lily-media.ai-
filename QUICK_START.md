@@ -1,6 +1,6 @@
-# Quick Start Guide - Lily Media AI
+# Quick Start Guide - Lily Media AI for Pressure Washing
 
-Get up and running with Lily Media AI in minutes!
+Get your pressure washing social media automation running in minutes!
 
 ## 🚀 One-Command Setup
 
@@ -11,11 +11,11 @@ python scripts/setup_wizard.py
 
 The setup wizard will guide you through:
 - ✅ System requirements check
-- ✅ Environment configuration  
-- ✅ AI services setup
+- ✅ Pressure washing industry configuration  
+- ✅ AI services setup for exterior cleaning
 - ✅ Social platform integrations
-- ✅ Database setup
-- ✅ Startup scripts creation
+- ✅ Field service software connections (Housecall Pro, Jobber)
+- ✅ Database setup and job tracking
 
 ## 📋 Prerequisites
 

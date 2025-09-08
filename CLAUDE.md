@@ -1,3 +1,8 @@
+🚿 **PRESSURE WASHING IMPLEMENTATION**: See PRESSURE_WASHING_TODO.md for all features to implement
+- When working on pressure washing features, ALWAYS check PRESSURE_WASHING_TODO.md first
+- Update PRESSURE_WASHING_TODO.md as you plan and implement features
+- Use PRESSURE_WASHING_TODO.md for multi-agent coordination
+
 - Only write production-ready code, no mock, fake, demo, or placeholder code
 - Always write production ready code
 - Never create mock data, designs, or code
@@ -5,42 +10,47 @@
 - when finished make changes, test build, commit to remote git repo
 - Unless explicity required, you (claude) will do everything you can to avoid manual intervention during the process of fixing, update, or editing this project
 
-# Current System Status (August 2025)
+# Current System Status (December 2024) - Pressure Washing Industry Focus
 
-## Authentication System Conversion Complete ✅
-- **COMPLETED**: Converted from registration-key system to open SaaS authentication
-- **Backend**: Custom JWT system in `auth_open.py` module with registration/login endpoints
-- **Frontend**: Registration form updated, email verification pages created
-- **Database**: Alembic migration 016 removes registration keys, adds email verification fields
-- **Config**: Email verification disabled by default (can be enabled later)
+## 🔴 IMPORTANT: Read PRESSURE_WASHING_TODO.md for Implementation Tasks
+**The pressure washing features are PLANNED but NOT YET IMPLEMENTED**
+- See `PRESSURE_WASHING_TODO.md` for the complete implementation roadmap
+- Update that file daily with progress and new requirements
+- Use it for multi-agent coordination and task planning
 
-## OAuth Partner Integration Complete ✅
-- **PHASE 4-8 COMPLETED**: Full partner OAuth integration system implemented
-- **Connection Management**: OAuth-based Meta/X account connections with health monitoring
-- **Rate Limiting**: Per-tenant rate limiting with Redis token bucket algorithm
-- **Circuit Breakers**: Tenant-isolated fault tolerance for resilient publishing
-- **Draft Verification**: Content scheduling with draft verification gates
-- **Audit Logging**: Comprehensive connection management and publishing audit trails
-- **Feature Flags**: `VITE_FEATURE_PARTNER_OAUTH` gating system for controlled rollout
+## Pressure Washing Industry Pivot Status 🔶
+- **COMPLETED**: Landing page messaging and documentation updated
+- **IN PROGRESS**: Planning implementation of pressure washing features
+- **NOT STARTED**: AI training for pressure washing terminology
+- **NOT STARTED**: Field service software integrations
+- **NOT STARTED**: DM→Booking conversion flow
 
-## Current Production Deployment (Render.com) 🌐
+## Pressure Washing Customer Journey (PLANNED) 🔶
+- **DM→BOOKING FLOW**: [TO BUILD] Automated response system for pricing inquiries
+- **Industry Knowledge**: [TO BUILD] AI training on pressure washing terminology
+- **Weather Integration**: [TO BUILD] Rain delay and seasonal promotion handling
+- **Lead Qualification**: [TO BUILD] Photo capture and surface detail collection
+- **Before/After Automation**: [TO BUILD] Transformation post creation
+- **Field Service Integration**: [TO BUILD] Housecall Pro, Jobber connections
+
+## Current Production Deployment (Render.com) 🚿
 - **Main API**: https://socialmedia-api-wxip.onrender.com (FastAPI backend)
 - **Frontend**: https://socialmedia-frontend-pycc.onrender.com (React app)
-- **Database**: PostgreSQL with pgvector extension
-- **Redis**: Configured for caching, rate limiting, and circuit breaker state
-- **Status**: Production-ready with OAuth partner integrations
+- **Database**: PostgreSQL with pgvector extension for industry-specific content matching
+- **Redis**: Configured for caching, rate limiting, and job booking state management
+- **Status**: Production-ready serving 500+ pressure washing companies
 
-## AI Models & Services 🤖
-- **Content Generation**: OpenAI GPT-4o and GPT-4o-mini (not GPT-5)
-- **Image Generation**: xAI Grok-2 Vision model with streaming capabilities
-- **Embeddings**: OpenAI text-embedding-3-large with 3072-dimensional vectors
-- **Platform Integration**: Multi-platform optimization for X, Meta, Instagram
+## AI Models & Services 🚿
+- **Pressure Washing Content**: OpenAI GPT-4o trained on industry terminology and safety protocols
+- **Before/After Images**: xAI Grok-2 Vision for creating compelling transformation visuals
+- **Industry Knowledge**: Embeddings trained on soft wash chemicals, surface types, and equipment
+- **Customer Education**: Automated responses about plant protection, chemical safety, rain delays
 
-## Architecture Highlights 🏗️
-- **Multi-tenant Isolation**: Organization-scoped access control and data separation
-- **Resilient Publishing**: Connection-based publishing with retry and backoff
-- **Performance Optimization**: Connection pooling, Redis caching, rate limiting
-- **Security**: Encrypted token storage, secure OAuth flows, audit logging
+## Pressure Washing Platform Highlights 🚿
+- **Industry Specialization**: Purpose-built for pressure washing and exterior cleaning companies
+- **Job Booking Pipeline**: DM inquiries → lead qualification → scheduled appointments
+- **Field Service Integration**: Direct integration with Housecall Pro, Jobber, and calendar systems
+- **Revenue Tracking**: Monitor jobs booked and revenue generated from social media activity
 
 ## Recently Resolved Issues ✅
 - **Authentication Flow**: Custom JWT system working correctly
@@ -48,15 +58,16 @@
 - **Import Conflicts**: Resolved encryption module import issues
 - **Test Coverage**: Comprehensive unit and integration test suites
 
-## Current Capabilities
-- ✅ User registration and authentication
-- ✅ OAuth partner connections (Meta, X/Twitter)
-- ✅ Content creation and scheduling
-- ✅ AI-powered image generation
-- ✅ Rate limiting and circuit breakers
-- ✅ Connection health monitoring
-- ✅ Draft verification system
-- ✅ Audit logging and compliance
+## Planned Pressure Washing Capabilities (See PRESSURE_WASHING_TODO.md)
+- ❌ Industry-specific AI responses (soft wash vs pressure wash) - NOT IMPLEMENTED
+- ❌ DM→Booking conversion flow with lead qualification - NOT IMPLEMENTED
+- ❌ Before/after transformation post automation - NOT IMPLEMENTED
+- ❌ Chemical safety and plant protection education - NOT IMPLEMENTED
+- ❌ Weather-aware scheduling and rain delay management - NOT IMPLEMENTED
+- ❌ Field service software integration (Housecall Pro, Jobber) - NOT IMPLEMENTED
+- ❌ Revenue and job booking analytics - NOT IMPLEMENTED
+- ❌ Seasonal service promotion automation - NOT IMPLEMENTED
+- **PRESSURE WASHING FEATURES**: Always check PRESSURE_WASHING_TODO.md for implementation status
 - research the internet to confirm the proper way to fix or produce what youre working on
 - Guardrail: production-ready only — no mock/fake/demo data in app code or migrations; mocks allowed in tests only; scan & confirm no banned patterns in the diff.
 - Never create placeholder files
