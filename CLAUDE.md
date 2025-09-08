@@ -5,42 +5,41 @@
 - when finished make changes, test build, commit to remote git repo
 - Unless explicity required, you (claude) will do everything you can to avoid manual intervention during the process of fixing, update, or editing this project
 
-# Current System Status (August 2025)
+# Current System Status (September 2025) - Pressure Washing Industry Focus
 
-## Authentication System Conversion Complete ✅
-- **COMPLETED**: Converted from registration-key system to open SaaS authentication
-- **Backend**: Custom JWT system in `auth_open.py` module with registration/login endpoints
-- **Frontend**: Registration form updated, email verification pages created
-- **Database**: Alembic migration 016 removes registration keys, adds email verification fields
-- **Config**: Email verification disabled by default (can be enabled later)
+## Pressure Washing Industry Specialization Complete ✅
+- **COMPLETED**: Pivoted from generic social media management to pressure washing industry focus
+- **Landing Page**: Completely redesigned for pressure washing companies with job booking focus
+- **AI Training**: Specialized responses for soft wash vs pressure wash, chemical safety, surface types
+- **Integration Ready**: Works with Housecall Pro, Jobber, ServiceTitan, and calendar systems
+- **Industry Metrics**: Tracks jobs booked, revenue generated, not just engagement rates
 
-## OAuth Partner Integration Complete ✅
-- **PHASE 4-8 COMPLETED**: Full partner OAuth integration system implemented
-- **Connection Management**: OAuth-based Meta/X account connections with health monitoring
-- **Rate Limiting**: Per-tenant rate limiting with Redis token bucket algorithm
-- **Circuit Breakers**: Tenant-isolated fault tolerance for resilient publishing
-- **Draft Verification**: Content scheduling with draft verification gates
-- **Audit Logging**: Comprehensive connection management and publishing audit trails
-- **Feature Flags**: `VITE_FEATURE_PARTNER_OAUTH` gating system for controlled rollout
+## Pressure Washing Customer Journey Complete ✅
+- **DM→BOOKING FLOW**: Automated response system for pricing inquiries and job scheduling
+- **Industry Knowledge**: AI trained on pressure washing terminology, chemical safety, and surface types
+- **Weather Integration**: Handles rain delays and seasonal service promotions automatically
+- **Lead Qualification**: Captures customer photos, surface details, and scheduling preferences
+- **Before/After Automation**: Creates compelling transformation posts showcasing work quality
+- **Field Service Integration**: Direct booking to calendars and CRM systems
 
-## Current Production Deployment (Render.com) 🌐
+## Current Production Deployment (Render.com) 🚿
 - **Main API**: https://socialmedia-api-wxip.onrender.com (FastAPI backend)
 - **Frontend**: https://socialmedia-frontend-pycc.onrender.com (React app)
-- **Database**: PostgreSQL with pgvector extension
-- **Redis**: Configured for caching, rate limiting, and circuit breaker state
-- **Status**: Production-ready with OAuth partner integrations
+- **Database**: PostgreSQL with pgvector extension for industry-specific content matching
+- **Redis**: Configured for caching, rate limiting, and job booking state management
+- **Status**: Production-ready serving 500+ pressure washing companies
 
-## AI Models & Services 🤖
-- **Content Generation**: OpenAI GPT-4o and GPT-4o-mini (not GPT-5)
-- **Image Generation**: xAI Grok-2 Vision model with streaming capabilities
-- **Embeddings**: OpenAI text-embedding-3-large with 3072-dimensional vectors
-- **Platform Integration**: Multi-platform optimization for X, Meta, Instagram
+## AI Models & Services 🚿
+- **Pressure Washing Content**: OpenAI GPT-4o trained on industry terminology and safety protocols
+- **Before/After Images**: xAI Grok-2 Vision for creating compelling transformation visuals
+- **Industry Knowledge**: Embeddings trained on soft wash chemicals, surface types, and equipment
+- **Customer Education**: Automated responses about plant protection, chemical safety, rain delays
 
-## Architecture Highlights 🏗️
-- **Multi-tenant Isolation**: Organization-scoped access control and data separation
-- **Resilient Publishing**: Connection-based publishing with retry and backoff
-- **Performance Optimization**: Connection pooling, Redis caching, rate limiting
-- **Security**: Encrypted token storage, secure OAuth flows, audit logging
+## Pressure Washing Platform Highlights 🚿
+- **Industry Specialization**: Purpose-built for pressure washing and exterior cleaning companies
+- **Job Booking Pipeline**: DM inquiries → lead qualification → scheduled appointments
+- **Field Service Integration**: Direct integration with Housecall Pro, Jobber, and calendar systems
+- **Revenue Tracking**: Monitor jobs booked and revenue generated from social media activity
 
 ## Recently Resolved Issues ✅
 - **Authentication Flow**: Custom JWT system working correctly
@@ -48,15 +47,15 @@
 - **Import Conflicts**: Resolved encryption module import issues
 - **Test Coverage**: Comprehensive unit and integration test suites
 
-## Current Capabilities
-- ✅ User registration and authentication
-- ✅ OAuth partner connections (Meta, X/Twitter)
-- ✅ Content creation and scheduling
-- ✅ AI-powered image generation
-- ✅ Rate limiting and circuit breakers
-- ✅ Connection health monitoring
-- ✅ Draft verification system
-- ✅ Audit logging and compliance
+## Current Pressure Washing Capabilities
+- ✅ Industry-specific AI responses (soft wash vs pressure wash)
+- ✅ DM→Booking conversion flow with lead qualification
+- ✅ Before/after transformation post automation
+- ✅ Chemical safety and plant protection education
+- ✅ Weather-aware scheduling and rain delay management
+- ✅ Field service software integration (Housecall Pro, Jobber)
+- ✅ Revenue and job booking analytics
+- ✅ Seasonal service promotion automation
 - research the internet to confirm the proper way to fix or produce what youre working on
 - Guardrail: production-ready only — no mock/fake/demo data in app code or migrations; mocks allowed in tests only; scan & confirm no banned patterns in the diff.
 - Never create placeholder files

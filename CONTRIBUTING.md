@@ -1,6 +1,6 @@
-# Contributing to AI Social Media Content Agent
+# Contributing to Lily Media AI for Pressure Washing
 
-Thank you for your interest in contributing to the AI Social Media Content Agent! This document provides guidelines and information for contributors.
+Thank you for your interest in contributing to Lily Media AI! This document provides guidelines for contributing to our pressure washing industry-focused social media automation platform.
 
 ## 🤝 How to Contribute
 

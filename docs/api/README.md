@@ -1,6 +1,6 @@
-# Lily Media AI - API Documentation
+# Lily Media AI - API Documentation for Pressure Washing
 
-Welcome to the comprehensive API documentation for Lily Media AI, your complete AI-powered social media management platform.
+Welcome to the comprehensive API documentation for Lily Media AI, the first social media management platform built specifically for the pressure washing industry.
 
 ## 📚 Documentation Overview
 

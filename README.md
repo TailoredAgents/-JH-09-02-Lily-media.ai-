@@ -891,14 +891,14 @@ tail -f backend/logs/api.log
 grep "ERROR" backend/logs/*.log
 ```
 
-### Performance Metrics
+### Pressure Washing Business Metrics
 
 Key metrics to monitor:
-- **API Response Times**: < 200ms average
-- **Cache Hit Rate**: > 80%
-- **Database Query Performance**: < 50ms average
-- **Background Job Processing**: < 30s average
-- **Error Rate**: < 1%
+- **Jobs Booked from Social**: Track monthly conversions from DMs to scheduled jobs
+- **Revenue Generated**: Monitor additional income attributed to social media activity
+- **Response Time**: Average 45-second response to customer inquiries
+- **Lead Conversion Rate**: Percentage of social media inquiries that become paying customers
+- **Seasonal Performance**: Track effectiveness of seasonal service promotions
 
 ---
 
@@ -1142,28 +1142,28 @@ This software is protected under:
 
 ---
 
-## 🗺️ Roadmap
+## 🗺️ Pressure Washing Industry Roadmap
 
-### Version 2.1 (Next Quarter)
-- [ ] Advanced video content generation
-- [ ] Multi-language content support
-- [ ] Enhanced analytics dashboard
-- [ ] Mobile app development
+### Version 2.1 (Next Quarter) - Enhanced Job Conversion
+- [ ] Photo-to-estimate AI for instant ballpark quotes
+- [ ] Advanced before/after gallery automation
+- [ ] Integration with more field service software (ServiceTitan, ServiceM8)
+- [ ] Mobile app for on-site social media management
 
-### Version 2.2 (Next Half)
-- [ ] AI-powered image generation
-- [ ] Advanced workflow automation
-- [ ] Enterprise team collaboration
-- [ ] White-label solutions
+### Version 2.2 (Next Half) - Industry Expansion
+- [ ] Window cleaning specialization features
+- [ ] Soft washing chemical calculator integration
+- [ ] Franchise and multi-location management
+- [ ] White-label solutions for pressure washing consultants
 
-### Version 3.0 (Next Year)
-- [ ] Machine learning content optimization
-- [ ] Voice-to-content conversion
-- [ ] Advanced competitor analysis
-- [ ] Global expansion features
+### Version 3.0 (Next Year) - Advanced Automation
+- [ ] Equipment maintenance and scheduling automation
+- [ ] Customer retention and follow-up campaigns
+- [ ] Local market analysis and competitive intelligence
+- [ ] Expansion to related industries (roof cleaning, concrete sealing)
 
 ---
 
-**🚀 Ready to revolutionize your social media management with AI? Follow the setup guide above and start creating engaging content across all platforms!**
+**🚿 Ready to turn your social media followers into paying pressure washing customers? Follow the setup guide above and start booking jobs while you're on-site!**
 
-*For technical support or business inquiries, please contact our team or create an issue in the GitHub repository.*
+*For technical support or to learn how Lily AI can grow your pressure washing business, please contact our team or create an issue in the GitHub repository.*
