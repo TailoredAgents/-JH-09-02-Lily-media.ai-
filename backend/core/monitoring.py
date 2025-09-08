@@ -127,7 +127,98 @@ class PrometheusMetrics:
             registry=self.registry
         )
         
-        logger.info("Prometheus metrics initialized successfully")
+        # P0-11a: Missing Prometheus Metrics for Plan Limits, Webhooks, and Quality
+        
+        # Plan Limit Enforcement Metrics (4 metrics)
+        self.plan_limit_checks_total = Counter(
+            'plan_limit_checks_total',
+            'Total plan limit checks performed',
+            ['plan_type', 'feature', 'result'],
+            registry=self.registry
+        )
+        
+        self.plan_limit_violations_total = Counter(
+            'plan_limit_violations_total',
+            'Total plan limit violations blocked',
+            ['plan_type', 'feature', 'violation_type'],
+            registry=self.registry
+        )
+        
+        self.plan_quota_usage_percent = Histogram(
+            'plan_quota_usage_percent',
+            'Current plan quota usage as percentage',
+            ['plan_type', 'feature'],
+            buckets=[10, 25, 50, 75, 90, 95, 98, 99, 100],
+            registry=self.registry
+        )
+        
+        self.plan_upgrade_suggestions_total = Counter(
+            'plan_upgrade_suggestions_total',
+            'Total plan upgrade suggestions shown to users',
+            ['current_plan', 'suggested_plan', 'trigger'],
+            registry=self.registry
+        )
+        
+        # Webhook Reliability Metrics (4 metrics)
+        self.webhook_validations_total = Counter(
+            'webhook_validations_total',
+            'Total webhook signature validations',
+            ['platform', 'result', 'threat_level'],
+            registry=self.registry
+        )
+        
+        self.webhook_validation_duration_seconds = Histogram(
+            'webhook_validation_duration_seconds',
+            'Webhook signature validation duration',
+            ['platform'],
+            registry=self.registry
+        )
+        
+        self.webhook_threats_detected_total = Counter(
+            'webhook_threats_detected_total',
+            'Total webhook security threats detected',
+            ['platform', 'threat_type'],
+            registry=self.registry
+        )
+        
+        self.webhook_delivery_success_rate = Gauge(
+            'webhook_delivery_success_rate',
+            'Current webhook delivery success rate percentage',
+            ['platform'],
+            registry=self.registry
+        )
+        
+        # Image Quality Monitoring Metrics (4 metrics) 
+        self.image_quality_scores_distribution = Histogram(
+            'image_quality_scores_distribution',
+            'Distribution of image quality scores',
+            ['model', 'platform', 'quality_preset'],
+            buckets=[10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 98, 100],
+            registry=self.registry
+        )
+        
+        self.image_quality_threshold_breaches_total = Counter(
+            'image_quality_threshold_breaches_total',
+            'Total image quality threshold breaches',
+            ['model', 'platform', 'threshold_type'],
+            registry=self.registry
+        )
+        
+        self.image_fallback_generations_total = Counter(
+            'image_fallback_generations_total',
+            'Total text-only fallbacks due to poor image quality',
+            ['model', 'platform', 'fallback_reason'],
+            registry=self.registry
+        )
+        
+        self.image_regeneration_requests_total = Counter(
+            'image_regeneration_requests_total',
+            'Total image regeneration requests due to quality issues',
+            ['model', 'platform', 'retry_reason'],
+            registry=self.registry
+        )
+        
+        logger.info("Prometheus metrics initialized successfully with P0-11a plan limits, webhooks, and quality metrics")
     
     def record_http_request(self, method: str, endpoint: str, status_code: int, duration: float):
         """Record HTTP request metrics"""
@@ -202,6 +293,118 @@ class PrometheusMetrics:
         if not PROMETHEUS_AVAILABLE:
             return
         self.db_connections_active.set(count)
+    
+    # P0-11a: Methods for recording plan limits, webhooks, and quality metrics
+    
+    def record_plan_limit_check(self, plan_type: str, feature: str, result: str):
+        """Record plan limit check"""
+        if not PROMETHEUS_AVAILABLE:
+            return
+        self.plan_limit_checks_total.labels(
+            plan_type=plan_type,
+            feature=feature,
+            result=result
+        ).inc()
+    
+    def record_plan_limit_violation(self, plan_type: str, feature: str, violation_type: str):
+        """Record plan limit violation"""
+        if not PROMETHEUS_AVAILABLE:
+            return
+        self.plan_limit_violations_total.labels(
+            plan_type=plan_type,
+            feature=feature,
+            violation_type=violation_type
+        ).inc()
+    
+    def record_plan_quota_usage(self, plan_type: str, feature: str, usage_percent: float):
+        """Record plan quota usage percentage"""
+        if not PROMETHEUS_AVAILABLE:
+            return
+        self.plan_quota_usage_percent.labels(
+            plan_type=plan_type,
+            feature=feature
+        ).observe(usage_percent)
+    
+    def record_plan_upgrade_suggestion(self, current_plan: str, suggested_plan: str, trigger: str):
+        """Record plan upgrade suggestion shown to user"""
+        if not PROMETHEUS_AVAILABLE:
+            return
+        self.plan_upgrade_suggestions_total.labels(
+            current_plan=current_plan,
+            suggested_plan=suggested_plan,
+            trigger=trigger
+        ).inc()
+    
+    def record_webhook_validation(self, platform: str, result: str, threat_level: str):
+        """Record webhook signature validation"""
+        if not PROMETHEUS_AVAILABLE:
+            return
+        self.webhook_validations_total.labels(
+            platform=platform,
+            result=result,
+            threat_level=threat_level
+        ).inc()
+    
+    def record_webhook_validation_time(self, platform: str, duration_seconds: float):
+        """Record webhook validation duration"""
+        if not PROMETHEUS_AVAILABLE:
+            return
+        self.webhook_validation_duration_seconds.labels(platform=platform).observe(duration_seconds)
+    
+    def record_webhook_threat(self, platform: str, threat_type: str):
+        """Record webhook security threat detected"""
+        if not PROMETHEUS_AVAILABLE:
+            return
+        self.webhook_threats_detected_total.labels(
+            platform=platform,
+            threat_type=threat_type
+        ).inc()
+    
+    def update_webhook_success_rate(self, platform: str, success_rate: float):
+        """Update webhook delivery success rate"""
+        if not PROMETHEUS_AVAILABLE:
+            return
+        self.webhook_delivery_success_rate.labels(platform=platform).set(success_rate)
+    
+    def record_image_quality_score(self, model: str, platform: str, quality_preset: str, score: float):
+        """Record image quality score"""
+        if not PROMETHEUS_AVAILABLE:
+            return
+        self.image_quality_scores_distribution.labels(
+            model=model,
+            platform=platform,
+            quality_preset=quality_preset
+        ).observe(score)
+    
+    def record_image_quality_breach(self, model: str, platform: str, threshold_type: str):
+        """Record image quality threshold breach"""
+        if not PROMETHEUS_AVAILABLE:
+            return
+        self.image_quality_threshold_breaches_total.labels(
+            model=model,
+            platform=platform,
+            threshold_type=threshold_type
+        ).inc()
+    
+    def record_image_fallback(self, model: str, platform: str, fallback_reason: str):
+        """Record image fallback to text-only"""
+        if not PROMETHEUS_AVAILABLE:
+            return
+        self.image_fallback_generations_total.labels(
+            model=model,
+            platform=platform,
+            fallback_reason=fallback_reason
+        ).inc()
+    
+    def record_image_regeneration(self, model: str, platform: str, retry_reason: str):
+        """Record image regeneration request"""
+        if not PROMETHEUS_AVAILABLE:
+            return
+        self.image_regeneration_requests_total.labels(
+            model=model,
+            platform=platform,
+            retry_reason=retry_reason
+        ).inc()
     
     def get_metrics(self) -> str:
         """Get metrics in Prometheus format"""
