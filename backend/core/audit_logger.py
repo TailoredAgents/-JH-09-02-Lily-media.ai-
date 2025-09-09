@@ -104,6 +104,14 @@ class AuditEventType(Enum):
     LEAD_MEDIA_ATTACHED = "lead_media_attached"
     LEAD_MEDIA_NOTIFICATION_SENT = "lead_media_notification_sent"
     
+    # Job Management (PW-DM-ADD-001)
+    JOB_CREATED = "job_created"
+    JOB_UPDATED = "job_updated"
+    JOB_STATUS_CHANGED = "job_status_changed"
+    JOB_RESCHEDULED = "job_rescheduled"
+    JOB_COMPLETED = "job_completed"
+    JOB_CANCELED = "job_canceled"
+    
     # Media Storage (PW-SEC-ADD-001)
     MEDIA_UPLOAD_URL_GENERATED = "media_upload_url_generated"
     MEDIA_DOWNLOAD_URL_GENERATED = "media_download_url_generated"

@@ -60,6 +60,7 @@ from . import (
     pw_quotes,  # PW-PRICING-ADD-002: Pressure washing quote endpoints with status lifecycle
     secure_media,  # PW-SEC-ADD-001: Secure media storage with signed URLs
     leads,  # PW-DM-ADD-002: Lead management and media attachment API
+    jobs,  # PW-DM-ADD-001: Job management and scheduling API
 )
 
 # Import CSRF router
@@ -131,6 +132,7 @@ ROUTERS = [
     pw_quotes.router,  # PW-PRICING-ADD-002: Pressure washing quote endpoints with status lifecycle
     secure_media.router,  # PW-SEC-ADD-001: Secure media storage with signed URLs
     leads.router,  # PW-DM-ADD-002: Lead management and media attachment API
+    jobs.router,  # PW-DM-ADD-001: Job management and scheduling API
 ]
 
 # Add CSRF router if available

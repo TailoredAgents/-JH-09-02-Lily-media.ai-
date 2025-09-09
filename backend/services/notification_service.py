@@ -58,6 +58,14 @@ class NotificationType(str, Enum):
     LEAD_MEDIA_RECEIVED = "lead_media_received"
     LEAD_CREATED_FROM_DM = "lead_created_from_dm"
     LEAD_QUOTE_GENERATED = "lead_quote_generated"
+    
+    # Job management events (PW-DM-ADD-001)
+    JOB_CREATED = "job_created"
+    JOB_STATUS_CHANGED = "job_status_changed"
+    JOB_SCHEDULED = "job_scheduled"
+    JOB_RESCHEDULED = "job_rescheduled"
+    JOB_COMPLETED = "job_completed"
+    JOB_OVERDUE = "job_overdue"
 
 class NotificationPriority(str, Enum):
     """Notification priority levels"""

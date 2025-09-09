@@ -1748,6 +1748,144 @@ class MediaAsset(Base):
         return new_status in valid_transitions.get(self.status, [])
 
 
+class Job(Base):
+    """
+    PW-DM-ADD-001: Job model for scheduled pressure washing work
+    
+    Converts accepted quotes into first-class job objects with scheduling fields
+    to track booked work from quote acceptance to job completion.
+    """
+    __tablename__ = "jobs"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    organization_id = Column(String, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    # Source relationships
+    lead_id = Column(String, ForeignKey("leads.id", ondelete="SET NULL"), nullable=True, index=True)
+    quote_id = Column(String, ForeignKey("quotes.id", ondelete="SET NULL"), nullable=True, index=True)
+    
+    # Job details
+    job_number = Column(String(50), unique=True, index=True)  # Human-readable job number
+    service_type = Column(String(100), nullable=False)  # Main service type for the job
+    service_details = Column(JSON, default={})  # Detailed service breakdown from quote
+    
+    # Location and scheduling
+    address = Column(Text, nullable=False)  # Service location address
+    scheduled_for = Column(DateTime(timezone=True), nullable=True, index=True)  # Scheduled start time
+    duration_minutes = Column(Integer, nullable=True)  # Estimated job duration
+    
+    # Crew assignment (optional)
+    crew = Column(JSON, default={})  # Crew assignments: {"lead_tech": "John", "crew_size": 2, "equipment": [...]}
+    crew_notes = Column(Text, nullable=True)  # Special instructions for crew
+    
+    # Job lifecycle status
+    status = Column(String(20), nullable=False, default="scheduled", index=True)
+    # Status values: scheduled, in_progress, completed, canceled, rescheduled
+    
+    # Status transitions tracking
+    started_at = Column(DateTime(timezone=True), nullable=True)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    canceled_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # Job results and completion data
+    completion_notes = Column(Text, nullable=True)  # Notes from crew upon completion
+    completion_photos = Column(JSON, default=[])  # Media asset IDs for before/after photos
+    customer_satisfaction = Column(Integer, nullable=True)  # 1-5 rating from customer
+    
+    # Pricing information (copied from quote at job creation)
+    estimated_cost = Column(Numeric(10, 2), nullable=False)  # Total cost from quote
+    actual_cost = Column(Numeric(10, 2), nullable=True)  # Actual cost if different
+    currency = Column(String(3), nullable=False, default="USD")
+    
+    # Internal tracking
+    internal_notes = Column(Text, nullable=True)  # Internal notes for job management
+    priority = Column(String(10), default="normal")  # normal, high, urgent
+    
+    # Customer information (denormalized for easy access)
+    customer_name = Column(String, nullable=True)
+    customer_phone = Column(String, nullable=True)
+    customer_email = Column(String, nullable=True, index=True)
+    
+    # Audit fields
+    created_by_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    updated_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    organization = relationship("Organization", backref="jobs")
+    lead = relationship("Lead", backref="jobs")
+    quote = relationship("Quote", backref="jobs")
+    created_by = relationship("User", foreign_keys=[created_by_id])
+    updated_by = relationship("User", foreign_keys=[updated_by_id])
+    
+    # Indexes for performance and multi-tenancy
+    __table_args__ = (
+        Index('ix_jobs_org_status', organization_id, status),
+        Index('ix_jobs_org_scheduled', organization_id, scheduled_for),
+        Index('ix_jobs_org_customer', organization_id, customer_email),
+        Index('ix_jobs_org_created', organization_id, created_at),
+        Index('ix_jobs_status_scheduled', status, scheduled_for),
+    )
+    
+    def __repr__(self):
+        return f"<Job(id={self.id}, org={self.organization_id}, status={self.status}, scheduled={self.scheduled_for})>"
+    
+    def can_transition_to(self, new_status: str) -> bool:
+        """Check if status transition is allowed for job lifecycle"""
+        valid_transitions = {
+            "scheduled": ["in_progress", "canceled", "rescheduled"],
+            "rescheduled": ["scheduled", "in_progress", "canceled"],
+            "in_progress": ["completed", "canceled"],
+            "completed": [],  # Terminal state
+            "canceled": []    # Terminal state
+        }
+        return new_status in valid_transitions.get(self.status, [])
+    
+    def is_overdue(self) -> bool:
+        """Check if job is overdue (scheduled time has passed but not completed)"""
+        if not self.scheduled_for or self.status in ["completed", "canceled"]:
+            return False
+        from datetime import datetime, timezone
+        return datetime.now(timezone.utc) > self.scheduled_for
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert Job to dictionary for API responses"""
+        return {
+            "id": self.id,
+            "organization_id": self.organization_id,
+            "lead_id": self.lead_id,
+            "quote_id": self.quote_id,
+            "job_number": self.job_number,
+            "service_type": self.service_type,
+            "service_details": self.service_details,
+            "address": self.address,
+            "scheduled_for": self.scheduled_for.isoformat() if self.scheduled_for else None,
+            "duration_minutes": self.duration_minutes,
+            "crew": self.crew,
+            "crew_notes": self.crew_notes,
+            "status": self.status,
+            "started_at": self.started_at.isoformat() if self.started_at else None,
+            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "canceled_at": self.canceled_at.isoformat() if self.canceled_at else None,
+            "completion_notes": self.completion_notes,
+            "completion_photos": self.completion_photos,
+            "customer_satisfaction": self.customer_satisfaction,
+            "estimated_cost": float(self.estimated_cost) if self.estimated_cost else 0.0,
+            "actual_cost": float(self.actual_cost) if self.actual_cost else None,
+            "currency": self.currency,
+            "internal_notes": self.internal_notes,
+            "priority": self.priority,
+            "customer_name": self.customer_name,
+            "customer_phone": self.customer_phone,
+            "customer_email": self.customer_email,
+            "created_by_id": self.created_by_id,
+            "updated_by_id": self.updated_by_id,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
 # P1-5b: Webhook Event Idempotency Store Models
 
 class WebhookIdempotencyRecord(Base):
