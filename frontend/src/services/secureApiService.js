@@ -1,11 +1,12 @@
 import { error as logError, info as logInfo } from '../utils/logger.js'
 import errorReporter from '../utils/errorReporter.jsx'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 
 /**
  * Enhanced API Service with Secure Token Management
- * 
+ *
  * SECURITY IMPROVEMENTS:
  * - Automatic token refresh on 401 responses
  * - No localStorage token storage (XSS protection)
@@ -124,7 +125,9 @@ class SecureApiService {
     }
 
     // Add CSRF token for state-changing requests
-    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(config.method?.toUpperCase())) {
+    if (
+      ['POST', 'PUT', 'PATCH', 'DELETE'].includes(config.method?.toUpperCase())
+    ) {
       if (!this.csrfToken) {
         this.csrfToken = this._getCSRFTokenFromCookie()
       }
@@ -132,7 +135,10 @@ class SecureApiService {
       if (this.csrfToken) {
         config.headers['X-CSRF-Token'] = this.csrfToken
       } else {
-        console.warn('No CSRF token available for state-changing request:', endpoint)
+        console.warn(
+          'No CSRF token available for state-changing request:',
+          endpoint
+        )
       }
     }
 
@@ -180,24 +186,28 @@ class SecureApiService {
       const errorData = await response.json().catch(() => ({}))
 
       // Handle 401 Unauthorized - attempt token refresh
-      if (response.status === 401 && !isRetry && endpoint !== '/api/auth/refresh') {
+      if (
+        response.status === 401 &&
+        !isRetry &&
+        endpoint !== '/api/auth/refresh'
+      ) {
         logInfo('Access token expired, attempting refresh')
-        
+
         try {
           // Attempt token refresh using HTTP-only cookie
           await this._refreshAccessToken()
           logInfo('Token refresh successful, retrying original request')
-          
+
           // Retry original request with new token
           return await this._requestWithRetry(endpoint, options, true)
         } catch (refreshError) {
           logError('Token refresh failed', refreshError)
-          
+
           // Notify auth context of authentication failure
           if (this.tokenRefreshCallback) {
             this.tokenRefreshCallback(null) // Clear token
           }
-          
+
           throw new Error('Authentication session expired')
         }
       }
@@ -209,7 +219,11 @@ class SecureApiService {
 
         // Retry the request once with new CSRF token
         if (options.retryCSRF !== false) {
-          return this._requestWithRetry(endpoint, { ...options, retryCSRF: false }, isRetry)
+          return this._requestWithRetry(
+            endpoint,
+            { ...options, retryCSRF: false },
+            isRetry
+          )
         }
       }
 
@@ -221,8 +235,9 @@ class SecureApiService {
         errorData.detail || `HTTP error! status: ${response.status}`
       )
 
-      throw new Error(errorData.detail || `HTTP error! status: ${response.status}`)
-
+      throw new Error(
+        errorData.detail || `HTTP error! status: ${response.status}`
+      )
     } catch (error) {
       logError(`API request failed: ${endpoint}`, error)
       throw error
@@ -240,7 +255,7 @@ class SecureApiService {
     }
 
     this.refreshPromise = this._performTokenRefresh()
-    
+
     try {
       const result = await this.refreshPromise
       return result
@@ -265,10 +280,10 @@ class SecureApiService {
       }
 
       const data = await response.json()
-      
+
       // Update access token in memory
       this.token = data.access_token
-      
+
       // Notify auth context of new token
       if (this.tokenRefreshCallback) {
         this.tokenRefreshCallback(data.access_token)
@@ -276,7 +291,6 @@ class SecureApiService {
 
       logInfo('Access token refreshed successfully')
       return data
-      
     } catch (error) {
       logError('Token refresh failed', error)
       // Clear invalid token
@@ -314,10 +328,10 @@ class SecureApiService {
     const result = await this.request('/api/auth/logout', {
       method: 'POST',
     })
-    
+
     // Clear token on logout
     this.token = null
-    
+
     return result
   }
 
@@ -376,7 +390,9 @@ class SecureApiService {
   }
 
   async getAllMemory(page = 1, limit = 20) {
-    const response = await this.request(`/api/memory/?page=${page}&limit=${limit}`)
+    const response = await this.request(
+      `/api/memory/?page=${page}&limit=${limit}`
+    )
     return response.content || []
   }
 
@@ -562,6 +578,78 @@ class SecureApiService {
 
   async getSystemStats() {
     return this.request('/api/admin/stats')
+  }
+
+  // PW-FE-REPLACE-001: Service Jobs API endpoints
+  async getJobs(params = {}) {
+    const queryParams = new URLSearchParams()
+
+    if (params.range) {
+      queryParams.append('range', params.range)
+    }
+    if (params.start_date) {
+      queryParams.append('start_date', params.start_date)
+    }
+    if (params.end_date) {
+      queryParams.append('end_date', params.end_date)
+    }
+    if (params.status) {
+      queryParams.append('status', params.status)
+    }
+    if (params.page) {
+      queryParams.append('page', params.page.toString())
+    }
+    if (params.limit) {
+      queryParams.append('limit', params.limit.toString())
+    }
+
+    const url = queryParams.toString()
+      ? `/api/v1/jobs?${queryParams.toString()}`
+      : '/api/v1/jobs'
+
+    return this.request(url)
+  }
+
+  async getJob(jobId) {
+    return this.request(`/api/v1/jobs/${jobId}`)
+  }
+
+  async updateJob(jobId, data) {
+    return this.request(`/api/v1/jobs/${jobId}`, {
+      method: 'PATCH',
+      body: data,
+    })
+  }
+
+  async rescheduleJob(jobId, scheduledFor) {
+    return this.request(`/api/v1/jobs/${jobId}`, {
+      method: 'PATCH',
+      body: {
+        scheduled_for: scheduledFor,
+      },
+    })
+  }
+
+  // PW-FE-REPLACE-001: Weather API endpoints
+  async checkJobWeather(jobId) {
+    return this.request(`/api/v1/weather/check?job_id=${jobId}`)
+  }
+
+  async getWeatherStatus() {
+    return this.request('/api/v1/weather/status')
+  }
+
+  async rescheduleJobWeather(jobId) {
+    return this.request(`/api/v1/weather/reschedule/job/${jobId}`, {
+      method: 'POST',
+    })
+  }
+
+  async runWeatherRescheduling(force = false) {
+    return this.request('/api/v1/weather/run', {
+      method: 'POST',
+      body: { force },
+    })
   }
 }
 
