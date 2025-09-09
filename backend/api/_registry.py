@@ -62,6 +62,7 @@ from . import (
     leads,  # PW-DM-ADD-002: Lead management and media attachment API
     jobs,  # PW-DM-ADD-001: Job management and scheduling API
     weather,  # PW-WEATHER-ADD-001: Weather thresholds and job rescheduling API
+    business_analytics,  # PW-ANALYTICS-ADD-001: Business KPIs analytics with org-scoped data
 )
 
 # Import CSRF router
@@ -135,6 +136,7 @@ ROUTERS = [
     leads.router,  # PW-DM-ADD-002: Lead management and media attachment API
     jobs.router,  # PW-DM-ADD-001: Job management and scheduling API
     weather.router,  # PW-WEATHER-ADD-001: Weather thresholds and job rescheduling API
+    business_analytics.router,  # PW-ANALYTICS-ADD-001: Business KPIs analytics with org-scoped data
 ]
 
 # Add CSRF router if available
