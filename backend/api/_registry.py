@@ -57,6 +57,7 @@ from . import (
     error_taxonomy,  # Comprehensive error taxonomy mapping and classification
     pw_settings,  # PW-SETTINGS-ADD-001: Pressure washing settings namespaces API
     pw_pricing,  # PW-PRICING-ADD-001: Pressure washing pricing engine with org-scoping
+    pw_quotes,  # PW-PRICING-ADD-002: Pressure washing quote endpoints with status lifecycle
 )
 
 # Import CSRF router
@@ -125,6 +126,7 @@ ROUTERS = [
     error_taxonomy.router,  # Comprehensive error taxonomy mapping and classification
     pw_settings.router,  # PW-SETTINGS-ADD-001: Pressure washing settings namespaces API
     pw_pricing.router,  # PW-PRICING-ADD-001: Pressure washing pricing engine with org-scoping
+    pw_quotes.router,  # PW-PRICING-ADD-002: Pressure washing quote endpoints with status lifecycle
 ]
 
 # Add CSRF router if available

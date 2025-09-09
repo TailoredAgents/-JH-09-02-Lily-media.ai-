@@ -1522,6 +1522,132 @@ class PricingRule(Base):
         }
 
 
+class Quote(Base):
+    """
+    PW-PRICING-ADD-002: Organization-scoped quotes with status lifecycle
+    
+    Converts pricing computations into customer quotes that can be accepted/declined
+    to track lead conversion from DM inquiries to booked jobs.
+    """
+    __tablename__ = "quotes"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    organization_id = Column(String, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    # Customer information (until Lead model exists)
+    customer_email = Column(String, nullable=False, index=True)
+    customer_name = Column(String)
+    customer_phone = Column(String)
+    customer_address = Column(Text)
+    
+    # Quote content and pricing
+    line_items = Column(JSON, nullable=False, default=[])  # Detailed breakdown from pricing engine
+    subtotal = Column(Numeric(10, 2), nullable=False)
+    discounts = Column(Numeric(10, 2), nullable=False, default=0.00)
+    tax_amount = Column(Numeric(10, 2), nullable=False, default=0.00)
+    total = Column(Numeric(10, 2), nullable=False)
+    currency = Column(String(3), nullable=False, default="USD")
+    
+    # Quote lifecycle status
+    status = Column(String(20), nullable=False, default="draft", index=True)
+    # Status values: draft, sent, accepted, declined, expired
+    
+    # Status transitions tracking
+    sent_at = Column(DateTime(timezone=True))
+    accepted_at = Column(DateTime(timezone=True))
+    declined_at = Column(DateTime(timezone=True))
+    expired_at = Column(DateTime(timezone=True))
+    
+    # Quote metadata
+    quote_number = Column(String(50), unique=True, index=True)  # Human-readable quote number
+    valid_until = Column(DateTime(timezone=True))  # Quote expiration
+    notes = Column(Text)  # Internal notes
+    customer_notes = Column(Text)  # Notes visible to customer
+    
+    # Source tracking
+    source = Column(String(50), default="manual")  # manual, dm_inquiry, website, phone
+    source_metadata = Column(JSON, default={})  # Additional source context
+    
+    # Related pricing data
+    pricing_rule_id = Column(Integer, ForeignKey("pricing_rules.id"), nullable=True)
+    pricing_snapshot = Column(JSON)  # Snapshot of pricing computation for audit
+    
+    # Audit fields
+    created_by_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    updated_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    organization = relationship("Organization", backref="quotes")
+    pricing_rule = relationship("PricingRule", backref="quotes")
+    created_by = relationship("User", foreign_keys=[created_by_id])
+    updated_by = relationship("User", foreign_keys=[updated_by_id])
+    
+    # Indexes for performance and multi-tenancy
+    __table_args__ = (
+        Index('ix_quotes_org_status', organization_id, status),
+        Index('ix_quotes_org_customer', organization_id, customer_email),
+        Index('ix_quotes_org_created', organization_id, created_at),
+        Index('ix_quotes_valid_until', valid_until),
+    )
+    
+    def __repr__(self):
+        return f"<Quote(id={self.id}, org={self.organization_id}, status={self.status}, total={self.total})>"
+    
+    def to_dict(self):
+        """Convert quote to dictionary for API responses"""
+        return {
+            "id": self.id,
+            "organization_id": self.organization_id,
+            "quote_number": self.quote_number,
+            "customer_email": self.customer_email,
+            "customer_name": self.customer_name,
+            "customer_phone": self.customer_phone,
+            "customer_address": self.customer_address,
+            "line_items": self.line_items,
+            "subtotal": float(self.subtotal) if self.subtotal else 0.0,
+            "discounts": float(self.discounts) if self.discounts else 0.0,
+            "tax_amount": float(self.tax_amount) if self.tax_amount else 0.0,
+            "total": float(self.total) if self.total else 0.0,
+            "currency": self.currency,
+            "status": self.status,
+            "sent_at": self.sent_at.isoformat() if self.sent_at else None,
+            "accepted_at": self.accepted_at.isoformat() if self.accepted_at else None,
+            "declined_at": self.declined_at.isoformat() if self.declined_at else None,
+            "expired_at": self.expired_at.isoformat() if self.expired_at else None,
+            "valid_until": self.valid_until.isoformat() if self.valid_until else None,
+            "notes": self.notes,
+            "customer_notes": self.customer_notes,
+            "source": self.source,
+            "source_metadata": self.source_metadata,
+            "pricing_rule_id": self.pricing_rule_id,
+            "created_by_id": self.created_by_id,
+            "updated_by_id": self.updated_by_id,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None
+        }
+    
+    @property
+    def is_expired(self):
+        """Check if quote has expired"""
+        from datetime import datetime, timezone
+        if not self.valid_until:
+            return False
+        return datetime.now(timezone.utc) > self.valid_until
+    
+    def can_transition_to(self, new_status: str) -> bool:
+        """Check if status transition is allowed"""
+        valid_transitions = {
+            "draft": ["sent", "declined"],
+            "sent": ["accepted", "declined", "expired"],
+            "accepted": [],  # Terminal state
+            "declined": [],  # Terminal state  
+            "expired": []    # Terminal state
+        }
+        return new_status in valid_transitions.get(self.status, [])
+
+
 # P1-5b: Webhook Event Idempotency Store Models
 
 class WebhookIdempotencyRecord(Base):

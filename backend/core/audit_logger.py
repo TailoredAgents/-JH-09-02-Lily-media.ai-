@@ -85,6 +85,15 @@ class AuditEventType(Enum):
     # Settings Management
     SETTINGS_UPDATED = "settings_updated"
     SETTINGS_ACCESSED = "settings_accessed"
+    
+    # Quote Management
+    QUOTE_CREATED = "quote_created"
+    QUOTE_UPDATED = "quote_updated"
+    QUOTE_DELETED = "quote_deleted"
+    QUOTE_SENT = "quote_sent"
+    QUOTE_ACCEPTED = "quote_accepted"
+    QUOTE_DECLINED = "quote_declined"
+    QUOTE_EXPIRED = "quote_expired"
 
 
 class AuditLog(Base):
