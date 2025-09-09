@@ -53,6 +53,11 @@ class NotificationType(str, Enum):
     CONTENT_SCHEDULED = "content_scheduled"
     WORKFLOW_COMPLETED = "workflow_completed"
     WORKFLOW_FAILED = "workflow_failed"
+    
+    # Lead management events (PW-DM-ADD-002)
+    LEAD_MEDIA_RECEIVED = "lead_media_received"
+    LEAD_CREATED_FROM_DM = "lead_created_from_dm"
+    LEAD_QUOTE_GENERATED = "lead_quote_generated"
 
 class NotificationPriority(str, Enum):
     """Notification priority levels"""
@@ -584,9 +589,83 @@ class NotificationService:
             "message": f"Update on your goal '{goal.title}'",
             "priority": "medium"
         })
+    
+    # PW-DM-ADD-002: Lead media notification methods
+    
+    async def send_lead_media_notification(
+        self,
+        lead_id: str,
+        media_asset_id: str,
+        organization_id: str,
+        user_id: int
+    ) -> None:
+        """
+        Send internal notification about lead media received
+        
+        Args:
+            lead_id: Lead ID that received media
+            media_asset_id: Media asset ID that was attached
+            organization_id: Organization ID for context
+            user_id: User ID who processed the attachment
+        """
+        try:
+            # Get lead information to create meaningful notification
+            db = next(get_db())
+            try:
+                from backend.db.models import Lead, MediaAsset
+                
+                lead = db.query(Lead).filter(
+                    Lead.id == lead_id,
+                    Lead.organization_id == organization_id
+                ).first()
+                
+                media_asset = db.query(MediaAsset).filter(
+                    MediaAsset.id == media_asset_id,
+                    MediaAsset.organization_id == organization_id
+                ).first()
+                
+                if not lead or not media_asset:
+                    logger.warning(f"Could not find lead {lead_id} or media {media_asset_id} for notification")
+                    return
+                
+                # Create notification for the user/team
+                contact_name = lead.contact_name or "Customer"
+                platform = lead.source_platform or "social media"
+                
+                await self.create_notification(
+                    user_id=user_id,
+                    title=f"📸 New Media from {contact_name}",
+                    message=f"{contact_name} has uploaded photos for their {platform} inquiry. Lead ID: {lead_id[:8]}... Review and update quote if needed.",
+                    notification_type=NotificationType.LEAD_MEDIA_RECEIVED,
+                    priority=NotificationPriority.HIGH,
+                    metadata={
+                        "lead_id": lead_id,
+                        "media_asset_id": media_asset_id,
+                        "contact_name": contact_name,
+                        "source_platform": lead.source_platform,
+                        "filename": media_asset.filename,
+                        "file_size": media_asset.file_size,
+                        "priority_score": lead.priority_score,
+                        "pricing_intent": lead.pricing_intent,
+                        "action_url": f"/leads/{lead_id}"
+                    }
+                )
+                
+                logger.info(f"Sent lead media notification for lead {lead_id} to user {user_id}")
+                
+            finally:
+                db.close()
+                
+        except Exception as e:
+            logger.error(f"Failed to send lead media notification: {e}")
+            # Don't raise exception as this is auxiliary functionality
 
 # Global notification service instance
 notification_service = NotificationService()
+
+def get_notification_service() -> NotificationService:
+    """Factory function to get notification service instance"""
+    return notification_service
 
 # Social media notification trigger functions
 
@@ -691,6 +770,7 @@ __all__ = [
     "NotificationPriority",
     "NotificationMessage",
     "notification_service",
+    "get_notification_service",
     "websocket_manager",
     "trigger_post_published_notification",
     "trigger_post_failed_notification",

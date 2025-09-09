@@ -1,7 +1,8 @@
 """
-Unit tests for PW-DM-REPLACE-001: DM Lead Creation Service
+Unit tests for PW-DM-REPLACE-001 & PW-DM-ADD-002: DM Lead Creation Service
 
-Tests for intent detection, lead creation from DMs, and auto-quote generation.
+Tests for intent detection, lead creation from DMs, auto-quote generation, 
+and photo upload response functionality.
 """
 
 import pytest
@@ -231,6 +232,107 @@ class TestDMLeadService:
         
         assert "pressure_washing" in services
         assert len(services) == 1
+    
+    @patch('backend.services.dm_lead_service.get_media_storage_service')
+    @patch('backend.api.social_inbox._send_platform_response')
+    def test_send_photo_upload_response_success(self, mock_platform_response, mock_storage_service):
+        """Test successful photo upload response sending (PW-DM-ADD-002)"""
+        # Mock high-priority lead
+        lead = Mock(spec=Lead)
+        lead.id = "lead-123"
+        lead.pricing_intent = "quote_request"
+        lead.priority_score = 85.0
+        lead.contact_name = "John Doe"
+        
+        # Mock interaction
+        interaction = Mock(spec=SocialInteraction)
+        interaction.id = "interaction-123"
+        interaction.platform = "facebook"
+        interaction.external_id = "fb_msg_123"
+        
+        # Mock storage service
+        mock_storage_instance = Mock()
+        mock_storage_instance.generate_upload_url.return_value = (
+            "asset-456", 
+            "https://s3.amazonaws.com/bucket/signed-url"
+        )
+        mock_storage_service.return_value = mock_storage_instance
+        
+        # Mock database
+        mock_response = Mock()
+        mock_response.id = "response-789"
+        self.mock_db.add.return_value = None
+        self.mock_db.commit.return_value = None
+        self.mock_db.refresh.return_value = None
+        
+        with patch('backend.services.dm_lead_service.InteractionResponse', return_value=mock_response):
+            result = self.service._send_photo_upload_response(
+                lead, interaction, "org-123", self.mock_db, 1
+            )
+        
+        # Verify upload URL was generated
+        mock_storage_instance.generate_upload_url.assert_called_once_with(
+            organization_id="org-123",
+            filename="customer_photo.jpg",
+            mime_type="image/jpeg",
+            file_size=10 * 1024 * 1024,
+            lead_id="lead-123",
+            ttl_minutes=60
+        )
+        
+        # Verify response was created and sent
+        self.mock_db.add.assert_called()
+        self.mock_db.commit.assert_called()
+        
+        assert result is True
+    
+    def test_send_photo_upload_response_low_intent(self):
+        """Test photo upload response not sent for low-intent leads"""
+        # Mock low-intent lead
+        lead = Mock(spec=Lead)
+        lead.pricing_intent = "service_interest"  # Low intent
+        lead.priority_score = 45.0
+        
+        interaction = Mock()
+        
+        result = self.service._send_photo_upload_response(
+            lead, interaction, "org-123", self.mock_db, 1
+        )
+        
+        assert result is False
+    
+    def test_send_photo_upload_response_low_priority(self):
+        """Test photo upload response not sent for low-priority leads"""
+        # Mock low-priority lead
+        lead = Mock(spec=Lead)
+        lead.pricing_intent = "quote_request"
+        lead.priority_score = 45.0  # Below threshold
+        
+        interaction = Mock()
+        
+        result = self.service._send_photo_upload_response(
+            lead, interaction, "org-123", self.mock_db, 1
+        )
+        
+        assert result is False
+    
+    def test_create_photo_upload_message_formatting(self):
+        """Test photo upload message formatting"""
+        lead = Mock(spec=Lead)
+        lead.contact_name = "Alice Johnson"
+        
+        upload_url = "https://example.com/upload/xyz"
+        asset_id = "asset-123"
+        
+        message = self.service._create_photo_upload_message(lead, upload_url, asset_id)
+        
+        # Verify message contains expected elements
+        assert "Alice Johnson" in message
+        assert upload_url in message
+        assert "📸" in message
+        assert "1 hour" in message
+        assert "pressure washing" in message.lower()
+        assert "photos" in message.lower()
 
 
 class TestLeadQuoteService:

@@ -297,12 +297,188 @@ class DMLeadService:
                 logger.error(f"Failed to auto-generate quote for lead {lead.id}: {e}")
                 # Don't fail lead creation if auto-quote fails
             
+            # PW-DM-ADD-002: Generate photo upload link and send response to customer
+            try:
+                upload_response_sent = self._send_photo_upload_response(
+                    lead, interaction, organization_id, db, user_id
+                )
+                if upload_response_sent:
+                    logger.info(f"Sent photo upload response for lead {lead.id}")
+                else:
+                    logger.debug(f"No photo upload response needed for lead {lead.id}")
+            except Exception as e:
+                logger.error(f"Failed to send photo upload response for lead {lead.id}: {e}")
+                # Don't fail lead creation if photo response fails
+            
             return lead
             
         except Exception as e:
             db.rollback()
             logger.error(f"Error creating lead from DM {interaction.id}: {str(e)}")
             raise
+    
+    def _send_photo_upload_response(
+        self,
+        lead: Lead,
+        interaction: "SocialInteraction",
+        organization_id: str,
+        db: Session,
+        user_id: int
+    ) -> bool:
+        """
+        Send photo upload link response to customer if lead qualifies
+        
+        Args:
+            lead: Created lead object
+            interaction: Original DM interaction
+            organization_id: Organization ID for multi-tenancy
+            db: Database session
+            user_id: User ID for audit
+        
+        Returns:
+            bool: True if response was sent, False if not needed
+        """
+        try:
+            # Only send upload response for high-intent leads
+            if lead.pricing_intent not in ["quote_request", "price_inquiry"]:
+                logger.debug(f"Lead {lead.id} intent {lead.pricing_intent} doesn't warrant photo upload response")
+                return False
+            
+            # Only send if priority score is high enough (indicates genuine interest)
+            if lead.priority_score < 60.0:
+                logger.debug(f"Lead {lead.id} priority score {lead.priority_score} too low for photo upload")
+                return False
+            
+            # Generate upload URL for customer photos
+            from backend.services.media_storage_service import get_media_storage_service
+            storage_service = get_media_storage_service()
+            
+            # Create a generic upload URL for customer photos
+            asset_id, upload_url = storage_service.generate_upload_url(
+                organization_id=organization_id,
+                filename="customer_photo.jpg",  # Generic filename, will be updated on upload
+                mime_type="image/jpeg",
+                file_size=10 * 1024 * 1024,  # 10MB max for customer photos
+                lead_id=lead.id,
+                ttl_minutes=60  # Give customer 1 hour to upload
+            )
+            
+            # Create user-friendly response message
+            response_text = self._create_photo_upload_message(lead, upload_url, asset_id)
+            
+            # Send response back to customer via existing DM response mechanism
+            success = self._send_dm_response(interaction, response_text, db, user_id)
+            
+            if success:
+                # Log successful photo response
+                audit_logger = get_audit_logger()
+                audit_logger.log_event(
+                    event_type=AuditEventType.LEAD_PHOTO_UPLOAD_SENT,
+                    user_id=str(user_id),
+                    organization_id=organization_id,
+                    details={
+                        "lead_id": lead.id,
+                        "interaction_id": interaction.id,
+                        "asset_id": asset_id,
+                        "upload_expires_hours": 1
+                    }
+                )
+                
+                logger.info(f"Sent photo upload response for lead {lead.id}")
+                return True
+            else:
+                logger.warning(f"Failed to send photo upload response for lead {lead.id}")
+                return False
+            
+        except Exception as e:
+            logger.error(f"Error sending photo upload response for lead {lead.id}: {e}")
+            return False
+    
+    def _create_photo_upload_message(self, lead: Lead, upload_url: str, asset_id: str) -> str:
+        """
+        Create user-friendly message with photo upload instructions
+        """
+        contact_name = lead.contact_name or "there"
+        
+        message = f"""Hi {contact_name}! 📸
+
+Thanks for your interest in our pressure washing services! To provide you with the most accurate quote, we'd love to see photos of the areas you need cleaned.
+
+Please upload your photos here: {upload_url}
+
+What photos help us most:
+• Overall view of the surface/area
+• Close-ups of any stains or problem areas  
+• Multiple angles if possible
+
+This link expires in 1 hour for security. We'll review your photos and get back to you with a detailed quote soon!
+
+Questions? Just reply to this message. 🚿✨"""
+        
+        return message
+    
+    def _send_dm_response(
+        self, 
+        interaction: "SocialInteraction",
+        response_text: str,
+        db: Session,
+        user_id: int
+    ) -> bool:
+        """
+        Send response back to customer via platform API
+        
+        Args:
+            interaction: Original DM interaction
+            response_text: Response message to send
+            db: Database session
+            user_id: User ID for audit
+        
+        Returns:
+            bool: True if response was queued successfully
+        """
+        try:
+            from backend.db.models import InteractionResponse
+            
+            # Create response record
+            response = InteractionResponse(
+                interaction_id=interaction.id,
+                user_id=user_id,
+                response_text=response_text,
+                response_type="auto",  # Automated response
+                template_id=None,
+                platform=interaction.platform
+            )
+            
+            db.add(response)
+            db.commit()
+            db.refresh(response)
+            
+            # Queue background task to send via platform API
+            # This would normally be done via BackgroundTasks, but since we're in a service,
+            # we'll use the same pattern as the webhook background tasks
+            from backend.api.social_inbox import _send_platform_response
+            import asyncio
+            
+            # Schedule the platform response
+            asyncio.create_task(_send_platform_response(
+                response_id=str(response.id),
+                platform=interaction.platform,
+                external_id=interaction.external_id,
+                response_text=response_text
+            ))
+            
+            # Update interaction status
+            interaction.status = 'responded'
+            interaction.last_updated_at = datetime.now(timezone.utc)
+            db.commit()
+            
+            logger.info(f"Queued photo upload response for interaction {interaction.id}")
+            return True
+            
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Failed to send DM response for interaction {interaction.id}: {e}")
+            return False
     
     def _determine_services(self, extracted_surfaces: Dict[str, Any], intent: str) -> List[str]:
         """
@@ -342,6 +518,7 @@ class LeadAuditEventType:
     LEAD_UPDATED = "lead_updated" 
     LEAD_STATUS_CHANGED = "lead_status_changed"
     LEAD_CONVERTED_TO_QUOTE = "lead_converted_to_quote"
+    LEAD_PHOTO_UPLOAD_SENT = "lead_photo_upload_sent"
 
 
 def get_dm_lead_service() -> DMLeadService:

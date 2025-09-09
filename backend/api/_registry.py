@@ -59,6 +59,7 @@ from . import (
     pw_pricing,  # PW-PRICING-ADD-001: Pressure washing pricing engine with org-scoping
     pw_quotes,  # PW-PRICING-ADD-002: Pressure washing quote endpoints with status lifecycle
     secure_media,  # PW-SEC-ADD-001: Secure media storage with signed URLs
+    leads,  # PW-DM-ADD-002: Lead management and media attachment API
 )
 
 # Import CSRF router
@@ -129,6 +130,7 @@ ROUTERS = [
     pw_pricing.router,  # PW-PRICING-ADD-001: Pressure washing pricing engine with org-scoping
     pw_quotes.router,  # PW-PRICING-ADD-002: Pressure washing quote endpoints with status lifecycle
     secure_media.router,  # PW-SEC-ADD-001: Secure media storage with signed URLs
+    leads.router,  # PW-DM-ADD-002: Lead management and media attachment API
 ]
 
 # Add CSRF router if available

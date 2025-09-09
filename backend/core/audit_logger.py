@@ -95,11 +95,14 @@ class AuditEventType(Enum):
     QUOTE_DECLINED = "quote_declined"
     QUOTE_EXPIRED = "quote_expired"
     
-    # Lead Management (PW-DM-REPLACE-001)
+    # Lead Management (PW-DM-REPLACE-001, PW-DM-ADD-002)
     LEAD_CREATED = "lead_created"
     LEAD_UPDATED = "lead_updated"
     LEAD_STATUS_CHANGED = "lead_status_changed"
     LEAD_CONVERTED_TO_QUOTE = "lead_converted_to_quote"
+    LEAD_PHOTO_UPLOAD_SENT = "lead_photo_upload_sent"
+    LEAD_MEDIA_ATTACHED = "lead_media_attached"
+    LEAD_MEDIA_NOTIFICATION_SENT = "lead_media_notification_sent"
     
     # Media Storage (PW-SEC-ADD-001)
     MEDIA_UPLOAD_URL_GENERATED = "media_upload_url_generated"
