@@ -18,14 +18,7 @@ from backend.services.quote_service import (
     QuoteService, QuoteCreationRequest, QuoteUpdateRequest
 )
 from backend.services.settings_resolver import SettingsResolver
-# RBAC permissions - simplified for now
-def require_permission(user_id: int, organization_id: str, permission: str, db) -> None:
-    """Simplified permission check - replace with proper RBAC later"""
-    pass  # For now, allow all operations for valid users
-
-def get_user_permissions(user_id: int, organization_id: str, db) -> list:
-    """Simplified permissions - replace with proper RBAC later"""
-    return ["quotes.create", "quotes.read", "quotes.update", "quotes.send"]
+from backend.middleware.tenant_context import get_tenant_context, TenantContext
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/quotes", tags=["Quote Management"])
@@ -144,55 +137,21 @@ class QuoteListResponse(BaseModel):
     has_more: bool
 
 
-# Multi-tenant organization filtering
-def get_organization_id(x_organization_id: Optional[str] = Header(None)) -> str:
-    """Extract and validate organization ID from header"""
-    if not x_organization_id:
-        raise HTTPException(
-            status_code=400, 
-            detail="X-Organization-ID header is required for quote operations"
-        )
-    return x_organization_id
-
-
-def verify_organization_access(
-    organization_id: str,
-    current_user: User,
-    db: Session
-) -> Organization:
-    """Verify user has access to organization and return org object"""
-    # Check if organization exists
-    organization = db.query(Organization).filter(Organization.id == organization_id).first()
-    if not organization:
-        raise HTTPException(status_code=404, detail="Organization not found")
-    
-    # Check if user belongs to organization (owner or member)
-    user_permissions = get_user_permissions(current_user.id, organization_id, db)
-    if not any(perm.startswith('quotes.') for perm in user_permissions):
-        raise HTTPException(
-            status_code=403, 
-            detail="Insufficient permissions for quote operations in this organization"
-        )
-    
-    return organization
 
 
 # API Endpoints
 @router.post("", response_model=QuoteResponse)
 async def create_quote(
     request: QuoteCreateRequest,
-    organization_id: str = Depends(get_organization_id),
+    tenant_context: TenantContext = Depends(get_tenant_context),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
     Create a new quote from customer details and surface measurements
     
-    Requires: quotes.create permission in the organization
+    Multi-tenant access is automatically enforced by TenantContext
     """
-    # Verify organization access and permissions
-    verify_organization_access(organization_id, current_user, db)
-    require_permission(current_user.id, organization_id, "quotes.create", db)
     
     try:
         # Convert Pydantic model to service model
@@ -200,7 +159,7 @@ async def create_quote(
         location_dict = request.location.model_dump() if request.location else None
         
         quote_request = QuoteCreationRequest(
-            organization_id=organization_id,
+            organization_id=str(tenant_context.organization_id),
             customer_email=request.customer_email,
             service_types=request.service_types,
             surfaces=surfaces_dict,
@@ -232,25 +191,22 @@ async def create_quote(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Error creating quote for org {organization_id}: {str(e)}")
+        logger.error(f"Error creating quote for org {tenant_context.organization_id}: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error creating quote")
 
 
 @router.get("/{quote_id}", response_model=QuoteResponse)
 async def get_quote(
     quote_id: str,
-    organization_id: str = Depends(get_organization_id),
+    tenant_context: TenantContext = Depends(get_tenant_context),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
     Get a specific quote by ID
     
-    Requires: quotes.read permission in the organization
+    Multi-tenant access is automatically enforced by TenantContext
     """
-    # Verify organization access and permissions
-    verify_organization_access(organization_id, current_user, db)
-    require_permission(current_user.id, organization_id, "quotes.read", db)
     
     try:
         # Initialize quote service
@@ -258,7 +214,7 @@ async def get_quote(
         quote_service = QuoteService(settings_resolver)
         
         # Get quote
-        quote = quote_service.get_quote(quote_id, organization_id, db)
+        quote = quote_service.get_quote(quote_id, str(tenant_context.organization_id), db)
         if not quote:
             raise HTTPException(status_code=404, detail="Quote not found")
         
@@ -267,13 +223,13 @@ async def get_quote(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting quote {quote_id} for org {organization_id}: {str(e)}")
+        logger.error(f"Error getting quote {quote_id} for org {tenant_context.organization_id}: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error retrieving quote")
 
 
 @router.get("", response_model=QuoteListResponse)
 async def list_quotes(
-    organization_id: str = Depends(get_organization_id),
+    tenant_context: TenantContext = Depends(get_tenant_context),
     status: Optional[str] = Query(None, description="Filter by quote status"),
     customer_email: Optional[str] = Query(None, description="Filter by customer email"),
     limit: int = Query(50, ge=1, le=100, description="Number of quotes to return"),
@@ -284,11 +240,8 @@ async def list_quotes(
     """
     List quotes for the organization with optional filtering
     
-    Requires: quotes.read permission in the organization
+    Multi-tenant access is automatically enforced by TenantContext
     """
-    # Verify organization access and permissions
-    verify_organization_access(organization_id, current_user, db)
-    require_permission(current_user.id, organization_id, "quotes.read", db)
     
     try:
         # Initialize quote service
@@ -297,7 +250,7 @@ async def list_quotes(
         
         # Get quotes
         quotes = quote_service.list_quotes(
-            organization_id=organization_id,
+            organization_id=str(tenant_context.organization_id),
             db=db,
             status=status,
             customer_email=customer_email,
@@ -320,7 +273,7 @@ async def list_quotes(
         )
         
     except Exception as e:
-        logger.error(f"Error listing quotes for org {organization_id}: {str(e)}")
+        logger.error(f"Error listing quotes for org {tenant_context.organization_id}: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error listing quotes")
 
 
@@ -328,18 +281,15 @@ async def list_quotes(
 async def update_quote(
     quote_id: str,
     request: QuoteUpdateRequest,
-    organization_id: str = Depends(get_organization_id),
+    tenant_context: TenantContext = Depends(get_tenant_context),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
     Update quote status and details
     
-    Requires: quotes.update permission in the organization
+    Multi-tenant access is automatically enforced by TenantContext
     """
-    # Verify organization access and permissions
-    verify_organization_access(organization_id, current_user, db)
-    require_permission(current_user.id, organization_id, "quotes.update", db)
     
     try:
         # Convert Pydantic model to service model
@@ -356,7 +306,7 @@ async def update_quote(
         
         # Update quote
         quote = quote_service.update_quote(
-            quote_id, organization_id, update_request, db, current_user.id
+            quote_id, str(tenant_context.organization_id), update_request, db, current_user.id
         )
         
         return QuoteResponse(**quote.to_dict())
@@ -364,25 +314,22 @@ async def update_quote(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Error updating quote {quote_id} for org {organization_id}: {str(e)}")
+        logger.error(f"Error updating quote {quote_id} for org {tenant_context.organization_id}: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error updating quote")
 
 
 @router.post("/{quote_id}/send", response_model=QuoteResponse)
 async def send_quote(
     quote_id: str,
-    organization_id: str = Depends(get_organization_id),
+    tenant_context: TenantContext = Depends(get_tenant_context),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
     Send a quote to customer (mark as sent)
     
-    Requires: quotes.send permission in the organization
+    Multi-tenant access is automatically enforced by TenantContext
     """
-    # Verify organization access and permissions
-    verify_organization_access(organization_id, current_user, db)
-    require_permission(current_user.id, organization_id, "quotes.send", db)
     
     try:
         # Create update request to change status to sent
@@ -394,7 +341,7 @@ async def send_quote(
         
         # Update quote status
         quote = quote_service.update_quote(
-            quote_id, organization_id, update_request, db, current_user.id
+            quote_id, str(tenant_context.organization_id), update_request, db, current_user.id
         )
         
         return QuoteResponse(**quote.to_dict())
@@ -402,25 +349,22 @@ async def send_quote(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Error sending quote {quote_id} for org {organization_id}: {str(e)}")
+        logger.error(f"Error sending quote {quote_id} for org {tenant_context.organization_id}: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error sending quote")
 
 
 @router.post("/{quote_id}/accept", response_model=QuoteResponse)
 async def accept_quote(
     quote_id: str,
-    organization_id: str = Depends(get_organization_id),
+    tenant_context: TenantContext = Depends(get_tenant_context),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
     Mark quote as accepted by customer
     
-    Requires: quotes.update permission in the organization
+    Multi-tenant access is automatically enforced by TenantContext
     """
-    # Verify organization access and permissions
-    verify_organization_access(organization_id, current_user, db)
-    require_permission(current_user.id, organization_id, "quotes.update", db)
     
     try:
         # Create update request to change status to accepted
@@ -432,7 +376,7 @@ async def accept_quote(
         
         # Update quote status
         quote = quote_service.update_quote(
-            quote_id, organization_id, update_request, db, current_user.id
+            quote_id, str(tenant_context.organization_id), update_request, db, current_user.id
         )
         
         return QuoteResponse(**quote.to_dict())
@@ -440,25 +384,22 @@ async def accept_quote(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Error accepting quote {quote_id} for org {organization_id}: {str(e)}")
+        logger.error(f"Error accepting quote {quote_id} for org {tenant_context.organization_id}: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error accepting quote")
 
 
 @router.post("/{quote_id}/decline", response_model=QuoteResponse)
 async def decline_quote(
     quote_id: str,
-    organization_id: str = Depends(get_organization_id),
+    tenant_context: TenantContext = Depends(get_tenant_context),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
     Mark quote as declined by customer
     
-    Requires: quotes.update permission in the organization
+    Multi-tenant access is automatically enforced by TenantContext
     """
-    # Verify organization access and permissions
-    verify_organization_access(organization_id, current_user, db)
-    require_permission(current_user.id, organization_id, "quotes.update", db)
     
     try:
         # Create update request to change status to declined
@@ -470,7 +411,7 @@ async def decline_quote(
         
         # Update quote status
         quote = quote_service.update_quote(
-            quote_id, organization_id, update_request, db, current_user.id
+            quote_id, str(tenant_context.organization_id), update_request, db, current_user.id
         )
         
         return QuoteResponse(**quote.to_dict())
@@ -478,5 +419,5 @@ async def decline_quote(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Error declining quote {quote_id} for org {organization_id}: {str(e)}")
+        logger.error(f"Error declining quote {quote_id} for org {tenant_context.organization_id}: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error declining quote")
