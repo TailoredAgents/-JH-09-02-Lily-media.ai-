@@ -1013,3 +1013,73 @@ async def delete_registration_key(
     )
     
     return {"message": "Registration key deleted successfully"}
+
+# P1-5a: Tier to Plan Migration Endpoints
+
+@router.get("/migration/tier-to-plan/status")
+async def get_tier_migration_status(
+    current_admin: AdminAuthUser = Depends(require_admin_or_higher),
+    db: Session = Depends(get_db)
+) -> Dict[str, Any]:
+    """P1-5a: Get tier to plan migration status"""
+    try:
+        from backend.utils.tier_to_plan_migration import get_migration_status_report
+        
+        report = get_migration_status_report(db)
+        
+        # Log the action
+        await admin_auth._log_audit_event(
+            current_admin.admin_id,
+            "TIER_MIGRATION_STATUS_CHECK",
+            "system",
+            "tier_migration",
+            {"status": report["migration_status"]},
+            db_session=db
+        )
+        
+        return report
+        
+    except Exception as e:
+        logger.error(f"Failed to get tier migration status: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve migration status"
+        )
+
+@router.post("/migration/tier-to-plan/execute")
+async def execute_tier_migration(
+    current_admin: AdminAuthUser = Depends(require_super_admin),
+    db: Session = Depends(get_db)
+) -> Dict[str, Any]:
+    """P1-5a: Execute tier to plan migration (super admin only)"""
+    try:
+        from backend.utils.tier_to_plan_migration import run_migration_if_needed
+        
+        # Execute migration
+        result = run_migration_if_needed(db)
+        
+        # Log the action
+        await admin_auth._log_audit_event(
+            current_admin.admin_id,
+            "TIER_MIGRATION_EXECUTED",
+            "system",
+            "tier_migration",
+            {
+                "migration_run": result.get("migration_run", False),
+                "stats": result.get("stats", {}),
+                "verification": result.get("verification", {})
+            },
+            db_session=db
+        )
+        
+        return {
+            "message": "Tier migration completed successfully" if result.get("migration_run") else "No migration was needed",
+            "result": result
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to execute tier migration: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Migration failed: {str(e)}"
+        )

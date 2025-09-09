@@ -136,6 +136,41 @@ const CheckoutSuccess = ({ planName, sessionId }) => {
           </div>
         </div>
         
+        {/* P1-10b: Renewal Terms Disclosure */}
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-4 flex items-center">
+            <InformationCircleIcon className="h-5 w-5 mr-2" />
+            Important: Renewal Information
+          </h3>
+          
+          <div className="space-y-3 text-sm text-blue-800 dark:text-blue-200">
+            <div className="flex items-start space-x-2">
+              <CheckCircleIcon className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+              <span>
+                <strong>Automatic Renewal:</strong> Your {planName} subscription will automatically renew each billing cycle
+              </span>
+            </div>
+            <div className="flex items-start space-x-2">
+              <CheckCircleIcon className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+              <span>
+                <strong>Easy Cancellation:</strong> Cancel anytime through your billing settings - no fees or penalties
+              </span>
+            </div>
+            <div className="flex items-start space-x-2">
+              <CheckCircleIcon className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+              <span>
+                <strong>Notification:</strong> You'll receive email reminders before each renewal
+              </span>
+            </div>
+            <div className="flex items-start space-x-2">
+              <CheckCircleIcon className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+              <span>
+                <strong>Control:</strong> Update payment methods, change plans, or cancel through your account at any time
+              </span>
+            </div>
+          </div>
+        </div>
+        
         {/* Next Steps */}
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">

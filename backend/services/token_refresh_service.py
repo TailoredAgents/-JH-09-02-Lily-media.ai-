@@ -11,6 +11,7 @@ from backend.core.config import get_settings
 from backend.core.encryption import encrypt_token, decrypt_token
 from backend.core.http_client import get_http_client
 from backend.db.models import SocialConnection, SocialAudit
+from backend.services.oauth_token_monitoring import monitor_token_refresh, complete_token_refresh_monitoring
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
@@ -54,12 +55,26 @@ class TokenRefreshService:
         try:
             logger.info(f"Starting Meta token refresh for connection {connection.id}")
             
+            # Start monitoring the refresh operation
+            operation_id = await monitor_token_refresh(
+                platform="meta",
+                connection_id=connection.id,
+                organization_id=connection.organization_id,
+                old_expiry=connection.token_expires_at
+            )
+            
             if not self.meta_app_id or not self.meta_app_secret:
+                await complete_token_refresh_monitoring(
+                    operation_id, False, None, "Meta app credentials not configured"
+                )
                 return False, None, "Meta app credentials not configured"
             
             # Get current user token
             encrypted_user_token = connection.access_tokens.get("access_token")
             if not encrypted_user_token:
+                await complete_token_refresh_monitoring(
+                    operation_id, False, None, "No user access token found"
+                )
                 return False, None, "No user access token found"
             
             user_access_token = decrypt_token(encrypted_user_token)
@@ -79,6 +94,9 @@ class TokenRefreshService:
             # Step 2: Validate token via debug endpoint
             is_valid = await self._validate_meta_token(new_user_token)
             if not is_valid:
+                await complete_token_refresh_monitoring(
+                    operation_id, False, None, "User token validation failed"
+                )
                 return False, None, "User token validation failed"
             
             # Step 3: Re-derive page access token
@@ -87,6 +105,9 @@ class TokenRefreshService:
                 new_page_token = await self._get_page_access_token(page_id, new_user_token)
             except Exception as e:
                 logger.error(f"Failed to re-derive page token: {e}")
+                await complete_token_refresh_monitoring(
+                    operation_id, False, None, f"Page token derivation failed: {str(e)}"
+                )
                 return False, None, f"Page token derivation failed: {str(e)}"
             
             # Step 4: Update connection with new tokens
@@ -115,11 +136,25 @@ class TokenRefreshService:
             
             success_msg = f"Meta token refresh successful, expires: {new_expires_at}"
             logger.info(f"Meta token refresh completed for connection {connection.id}: {success_msg}")
+            
+            # Complete monitoring with success
+            await complete_token_refresh_monitoring(
+                operation_id, True, new_expires_at
+            )
+            
             return True, new_expires_at, success_msg
             
         except Exception as e:
             error_msg = f"Meta token refresh failed: {str(e)}"
             logger.error(f"Meta token refresh error for connection {connection.id}: {error_msg}")
+            
+            # Complete monitoring with failure
+            try:
+                await complete_token_refresh_monitoring(
+                    operation_id, False, None, error_msg
+                )
+            except:
+                pass  # Don't let monitoring failures break the main flow
             
             # Create failure audit log
             try:
@@ -150,12 +185,26 @@ class TokenRefreshService:
         try:
             logger.info(f"Starting X token refresh for connection {connection.id}")
             
+            # Start monitoring the refresh operation
+            operation_id = await monitor_token_refresh(
+                platform="x",
+                connection_id=connection.id,
+                organization_id=connection.organization_id,
+                old_expiry=connection.token_expires_at
+            )
+            
             if not self.x_client_id or not self.x_client_secret:
+                await complete_token_refresh_monitoring(
+                    operation_id, False, None, "X client credentials not configured"
+                )
                 return False, None, "X client credentials not configured"
             
             # Get current refresh token
             encrypted_refresh_token = connection.access_tokens.get("refresh_token")
             if not encrypted_refresh_token:
+                await complete_token_refresh_monitoring(
+                    operation_id, False, None, "No refresh token found"
+                )
                 return False, None, "No refresh token found"
             
             refresh_token = decrypt_token(encrypted_refresh_token)
@@ -165,6 +214,9 @@ class TokenRefreshService:
                 new_tokens = await self._refresh_x_oauth_tokens(refresh_token)
             except Exception as e:
                 logger.error(f"X OAuth2 token refresh failed: {e}")
+                await complete_token_refresh_monitoring(
+                    operation_id, False, None, f"Token refresh API call failed: {str(e)}"
+                )
                 return False, None, f"Token refresh API call failed: {str(e)}"
             
             # Calculate new expiry
@@ -197,11 +249,25 @@ class TokenRefreshService:
             
             success_msg = f"X token refresh successful, expires: {new_expires_at}"
             logger.info(f"X token refresh completed for connection {connection.id}: {success_msg}")
+            
+            # Complete monitoring with success
+            await complete_token_refresh_monitoring(
+                operation_id, True, new_expires_at
+            )
+            
             return True, new_expires_at, success_msg
             
         except Exception as e:
             error_msg = f"X token refresh failed: {str(e)}"
             logger.error(f"X token refresh error for connection {connection.id}: {error_msg}")
+            
+            # Complete monitoring with failure
+            try:
+                await complete_token_refresh_monitoring(
+                    operation_id, False, None, error_msg
+                )
+            except:
+                pass  # Don't let monitoring failures break the main flow
             
             # Create failure audit log
             try:

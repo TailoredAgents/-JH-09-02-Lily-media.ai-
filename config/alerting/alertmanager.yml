@@ -1,0 +1,79 @@
+global:
+  smtp_smarthost: 'localhost:587'
+  smtp_from: 'alerts@lilymedia.ai'
+
+route:
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1h
+  receiver: 'web.hook.runbook_automation'
+  routes:
+  # Critical alerts get immediate webhook + pagerduty
+  - match:
+      severity: critical
+    receiver: 'critical.alerts'
+    continue: true
+  # Warning alerts get webhook + slack
+  - match:
+      severity: warning
+    receiver: 'warning.alerts'
+    continue: true
+
+receivers:
+# Primary webhook receiver for runbook automation
+- name: 'web.hook.runbook_automation'
+  webhook_configs:
+  - url: 'https://socialmedia-api-wxip.onrender.com/api/sre/alerts/webhook'
+    title: 'Lily Media AI Alert'
+    text: 'Alert {{ .GroupLabels.alertname }} is {{ .Status }}'
+    send_resolved: true
+    max_alerts: 10
+    http_config:
+      bearer_token: 'webhook_secret_token_here'
+
+# Critical alerts - immediate escalation
+- name: 'critical.alerts'
+  webhook_configs:
+  - url: 'https://socialmedia-api-wxip.onrender.com/api/sre/alerts/webhook'
+    title: 'CRITICAL: {{ .GroupLabels.alertname }}'
+    send_resolved: true
+  slack_configs:
+  - api_url: '${SLACK_WEBHOOK_URL}'
+    channel: '#alerts-critical'
+    title: 'CRITICAL ALERT: {{ .GroupLabels.alertname }}'
+    text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+    color: 'danger'
+    send_resolved: true
+
+# Warning alerts - standard notification
+- name: 'warning.alerts'
+  webhook_configs:
+  - url: 'https://socialmedia-api-wxip.onrender.com/api/sre/alerts/webhook'
+    title: 'WARNING: {{ .GroupLabels.alertname }}'
+    send_resolved: true
+  slack_configs:
+  - api_url: '${SLACK_WEBHOOK_URL}'
+    channel: '#alerts-warning'
+    title: 'WARNING: {{ .GroupLabels.alertname }}'
+    text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+    color: 'warning'
+    send_resolved: true
+
+templates:
+- '/etc/alertmanager/templates/*.tmpl'
+
+inhibit_rules:
+# Suppress warning alerts when corresponding critical alert is firing
+- source_match:
+    severity: 'critical'
+  target_match:
+    severity: 'warning'
+  equal: ['alertname', 'instance']
+  
+# Suppress database alerts when service is completely down
+- source_match:
+    alertname: 'ServiceDown'
+  target_match_re:
+    alertname: '^Database.*'
+  equal: ['instance']

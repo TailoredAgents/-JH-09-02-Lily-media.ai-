@@ -40,14 +40,14 @@ settings = get_settings()
 router = create_versioned_router(prefix="/data-export", tags=["data-export"])
 
 class DataExportRequest(BaseModel):
-    """Request model for data export"""
-    format: str = "json"  # json, csv, xml
-    include_content: bool = True
-    include_metrics: bool = True
-    include_connections: bool = True
-    anonymize_sensitive: bool = False
-    date_range_start: Optional[datetime] = None
-    date_range_end: Optional[datetime] = None
+    """Request model for GDPR/CCPA compliant data export"""
+    format: str = "json"  # json, csv, xml - export file format
+    include_content: bool = True  # Include all user content (posts, AI content, memories)
+    include_metrics: bool = True  # Include performance metrics and analytics
+    include_connections: bool = True  # Include social media connections (encrypted tokens)
+    anonymize_sensitive: bool = False  # Anonymize PII fields for privacy
+    date_range_start: Optional[datetime] = None  # Filter data from this date
+    date_range_end: Optional[datetime] = None  # Filter data until this date
 
 class DataExportStatus(BaseModel):
     """Response model for export status"""
@@ -120,9 +120,9 @@ class DataExportService:
             "brand_keywords": user.user_settings.brand_keywords,
             "avoid_list": user.user_settings.avoid_list,
             "timezone": user.user_settings.timezone,
-            "content_preferences": user.user_settings.content_preferences,
-            "ai_suggestions_enabled": user.user_settings.ai_suggestions_enabled,
-            "auto_publish_enabled": user.user_settings.auto_publish_enabled,
+            "preferred_platforms": user.user_settings.preferred_platforms,
+            "posting_times": user.user_settings.posting_times,
+            "enable_autonomous_mode": user.user_settings.enable_autonomous_mode,
             "created_at": user.user_settings.created_at.isoformat() if user.user_settings.created_at else None,
             "updated_at": user.user_settings.updated_at.isoformat() if user.user_settings.updated_at else None,
         }
@@ -187,18 +187,18 @@ class DataExportService:
                 "content": cl.content if not anonymize else "[CONTENT_ANONYMIZED]",
                 "platform": cl.platform,
                 "status": cl.status,
-                "metadata": cl.metadata if not anonymize else {"anonymized": True},
+                "engagement_data": cl.engagement_data if not anonymize else {"anonymized": True},
                 "created_at": cl.created_at.isoformat() if cl.created_at else None,
             } for cl in content_logs],
             
             "ai_generated_content": [{
                 "id": c.id,
                 "content": c.content if not anonymize else "[AI_CONTENT_ANONYMIZED]",
-                "content_type": c.content_type,
+                "title": c.title,
                 "platform": c.platform,
                 "status": c.status,
-                "ai_model_used": c.ai_model_used,
-                "generation_metadata": c.generation_metadata if not anonymize else {"anonymized": True},
+                "ai_model": c.ai_model,
+                "generation_params": c.generation_params if not anonymize else {"anonymized": True},
                 "created_at": c.created_at.isoformat() if c.created_at else None,
             } for c in ai_content],
             
@@ -206,8 +206,8 @@ class DataExportService:
                 "id": m.id,
                 "content": m.content if not anonymize else "[MEMORY_ANONYMIZED]",
                 "memory_type": m.memory_type,
-                "importance_score": m.importance_score,
-                "metadata": m.metadata if not anonymize else {"anonymized": True},
+                "relevance_score": m.relevance_score,
+                "memory_metadata": m.memory_metadata if not anonymize else {"anonymized": True},
                 "created_at": m.created_at.isoformat() if m.created_at else None,
             } for m in memories]
         }
@@ -228,11 +228,11 @@ class DataExportService:
             conn_data = {
                 "id": str(conn.id),
                 "platform": conn.platform,
-                "account_name": conn.account_name if not anonymize else "[ACCOUNT_ANONYMIZED]",
-                "account_id": conn.account_id if not anonymize else "[ID_ANONYMIZED]",
-                "status": conn.status,
+                "connection_name": conn.connection_name if not anonymize else "[ACCOUNT_ANONYMIZED]",
+                "platform_account_id": conn.platform_account_id if not anonymize else "[ID_ANONYMIZED]",
+                "connection_status": conn.connection_status,
                 "is_active": conn.is_active,
-                "permissions": conn.permissions,
+                "scopes": conn.scopes,
                 "created_at": conn.created_at.isoformat() if conn.created_at else None,
                 "last_used_at": conn.last_used_at.isoformat() if conn.last_used_at else None,
             }
@@ -313,8 +313,8 @@ class DataExportService:
             "id": we.id,
             "workflow_type": we.workflow_type,
             "status": we.status,
-            "input_data": we.input_data,
-            "output_data": we.output_data,
+            "execution_params": we.execution_params,
+            "results_summary": we.results_summary,
             "error_message": we.error_message,
             "started_at": we.started_at.isoformat() if we.started_at else None,
             "completed_at": we.completed_at.isoformat() if we.completed_at else None,
@@ -357,10 +357,10 @@ class DataExportService:
                 "display_name": user.plan.display_name,
                 "monthly_price": str(user.plan.monthly_price),
                 "limits": {
-                    "monthly_content_generation": user.plan.monthly_content_generation,
-                    "monthly_ai_images": user.plan.monthly_ai_images,
-                    "max_social_connections": user.plan.max_social_connections,
-                    "max_team_members": user.plan.max_team_members,
+                    "max_social_profiles": user.plan.max_social_profiles,
+                    "max_posts_per_day": user.plan.max_posts_per_day,
+                    "max_posts_per_week": user.plan.max_posts_per_week,
+                    "image_generation_limit": user.plan.image_generation_limit,
                 }
             }
         
@@ -405,7 +405,7 @@ class DataExportService:
         notifications = self.db.query(Notification).filter(Notification.user_id == user.id).all()
         export_data["notifications"] = [{
             "id": n.id,
-            "type": n.type,
+            "notification_type": n.notification_type,
             "title": n.title if not request.anonymize_sensitive else "[NOTIFICATION_ANONYMIZED]",
             "message": n.message if not request.anonymize_sensitive else "[MESSAGE_ANONYMIZED]",
             "is_read": n.is_read,
@@ -427,8 +427,30 @@ async def request_data_export(
     """
     Request a comprehensive data export for GDPR/CCPA compliance
     
-    This endpoint initiates a data export process that will gather all
-    user-related data from across the platform and prepare it for download.
+    This endpoint implements GDPR Article 20 (Right to Data Portability) and CCPA
+    Section 1798.110 (Right to Know) compliance by providing users with all their
+    personal data in a structured, commonly used format.
+    
+    **Data Coverage:**
+    - User profile and account information
+    - User settings and preferences
+    - All generated content (posts, AI content, memories)
+    - Social media connections and OAuth tokens (encrypted)
+    - Organization memberships and team roles
+    - Performance metrics and analytics data
+    - Goals, notifications, and workflow executions
+    - Subscription and billing information
+    
+    **Privacy Controls:**
+    - Optional anonymization of sensitive fields
+    - Date range filtering for historical data
+    - Secure temporary storage with 24-hour expiration
+    - User authentication required for download
+    
+    **Export Formats:**
+    - JSON: Structured data with full metadata
+    - CSV: Tabular format for analysis
+    - XML: Standards-compliant markup format
     """
     try:
         # Generate export ID
@@ -500,8 +522,21 @@ async def download_data_export(
     """
     Download a completed data export
     
-    Returns the exported data in the requested format (JSON, CSV, or XML)
-    as a downloadable file.
+    **Security Features:**
+    - User identity verification required
+    - Export ownership validation
+    - Automatic expiration after 24 hours
+    - Secure file headers for safe download
+    
+    **Response Headers:**
+    - Content-Disposition: attachment with timestamped filename
+    - Content-Type: application/json, text/csv, or application/xml
+    - Proper MIME type for browser download handling
+    
+    **Error Handling:**
+    - 404: Export not found or expired
+    - 403: Access denied (not owner)
+    - 410: Export expired and cleaned up
     """
     try:
         # Get export service
@@ -693,7 +728,17 @@ async def cleanup_expired_exports(
 ):
     """
     Administrative endpoint to cleanup expired exports
-    (In production, this would be a background job)
+    
+    **Admin Only:** Requires superuser permissions
+    
+    This endpoint removes expired data exports from temporary storage to maintain
+    data protection compliance. In production deployments, this functionality
+    should be implemented as an automated background job.
+    
+    **Data Protection:**
+    - Automatic cleanup prevents indefinite data retention
+    - Ensures compliance with data minimization principles
+    - Maintains system performance by removing stale files
     """
     try:
         if not current_user.is_superuser:

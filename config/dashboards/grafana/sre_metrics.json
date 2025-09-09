@@ -1,0 +1,484 @@
+{
+  "id": null,
+  "title": "Lily Media AI - SRE Metrics & SLOs",
+  "tags": ["sre", "slo", "sli", "reliability"],
+  "style": "dark",
+  "timezone": "browser",
+  "refresh": "1m",
+  "schemaVersion": 39,
+  "fiscalYearStartMonth": 0,
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Service Level Objectives Status",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "(1 - (rate(http_requests_total{status=~\"5..\"}[30d]) / rate(http_requests_total[30d]))) * 100",
+          "legendFormat": "API Availability SLO (99.5%)",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[30d]))",
+          "legendFormat": "API Latency P95 SLO (<2s)",
+          "refId": "B"
+        },
+        {
+          "expr": "(1 - (rate(database_query_errors_total[30d]) / rate(database_queries_total[30d]))) * 100",
+          "legendFormat": "Database Availability SLO (99.9%)",
+          "refId": "C"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "unit": "percent",
+          "min": 95,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 99
+              },
+              {
+                "color": "green",
+                "value": 99.5
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "horizontal",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 2,
+      "title": "Error Budget Consumption",
+      "type": "bargauge",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "targets": [
+        {
+          "expr": "((rate(http_requests_total{status=~\"5..\"}[30d]) / rate(http_requests_total[30d])) / 0.005) * 100",
+          "legendFormat": "API Error Budget Used",
+          "refId": "A"
+        },
+        {
+          "expr": "((rate(database_query_errors_total[30d]) / rate(database_queries_total[30d])) / 0.001) * 100",
+          "legendFormat": "Database Error Budget Used",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 50
+              },
+              {
+                "color": "orange",
+                "value": 80
+              },
+              {
+                "color": "red",
+                "value": 95
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true
+      }
+    },
+    {
+      "id": 3,
+      "title": "Incident Metrics",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "targets": [
+        {
+          "expr": "increase(incidents_total[30d])",
+          "legendFormat": "Incidents (30d)",
+          "refId": "A"
+        },
+        {
+          "expr": "avg(incident_resolution_time_minutes)",
+          "legendFormat": "MTTR (minutes)",
+          "refId": "B"
+        },
+        {
+          "expr": "avg(incident_detection_time_minutes)",
+          "legendFormat": "MTTD (minutes)",
+          "refId": "C"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "short",
+          "min": 0
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area"
+      }
+    },
+    {
+      "id": 4,
+      "title": "Availability Trend (7 days)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "targets": [
+        {
+          "expr": "(1 - (rate(http_requests_total{status=~\"5..\"}[1h]) / rate(http_requests_total[1h]))) * 100",
+          "legendFormat": "API Availability %",
+          "refId": "A"
+        },
+        {
+          "expr": "(1 - (rate(database_query_errors_total[1h]) / rate(database_queries_total[1h]))) * 100",
+          "legendFormat": "Database Availability %",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "percent",
+          "min": 95,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": 99
+              },
+              {
+                "color": "yellow",
+                "value": 99.5
+              },
+              {
+                "color": "green",
+                "value": 99.9
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Response Time SLI Trend",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[1h]))",
+          "legendFormat": "P95 Response Time",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[1h]))",
+          "legendFormat": "P99 Response Time",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "s",
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 2
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Capacity Planning Metrics",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "targets": [
+        {
+          "expr": "vector_store_growth_rate_vectors_per_hour",
+          "legendFormat": "Vector Growth Rate (vectors/hr)",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(content_generation_requests_total[1h])",
+          "legendFormat": "Content Generation Rate (req/hr)",
+          "refId": "B"
+        },
+        {
+          "expr": "database_connection_pool_status{metric_type=\"pool_utilization_percent\"}",
+          "legendFormat": "DB Pool Utilization %",
+          "refId": "C"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "short",
+          "min": 0
+        }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Active Alerts",
+      "type": "table",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 32
+      },
+      "targets": [
+        {
+          "expr": "ALERTS{alertstate=\"firing\"}",
+          "legendFormat": "{{ alertname }}",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 2
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "showHeader": true
+      },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "__name__": true
+            },
+            "indexByName": {},
+            "renameByName": {
+              "alertname": "Alert Name",
+              "severity": "Severity",
+              "instance": "Instance",
+              "summary": "Summary"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "timerange",
+        "type": "interval",
+        "options": [
+          {
+            "text": "1h",
+            "value": "1h",
+            "selected": false
+          },
+          {
+            "text": "6h",
+            "value": "6h",
+            "selected": false
+          },
+          {
+            "text": "24h",
+            "value": "24h",
+            "selected": true
+          },
+          {
+            "text": "7d",
+            "value": "7d",
+            "selected": false
+          },
+          {
+            "text": "30d",
+            "value": "30d",
+            "selected": false
+          }
+        ]
+      }
+    ]
+  },
+  "annotations": {
+    "list": [
+      {
+        "name": "Incidents",
+        "datasource": "Prometheus",
+        "enable": true,
+        "expr": "increase(incidents_total[1h])",
+        "iconColor": "red",
+        "titleFormat": "Incident",
+        "textFormat": "New incident reported"
+      },
+      {
+        "name": "Deployments",
+        "datasource": "Prometheus",
+        "enable": true,
+        "expr": "changes(deployment_info[1h])",
+        "iconColor": "blue",
+        "titleFormat": "Deployment",
+        "textFormat": "New version deployed"
+      }
+    ]
+  }
+}

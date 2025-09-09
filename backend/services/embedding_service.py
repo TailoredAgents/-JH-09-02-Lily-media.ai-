@@ -22,6 +22,8 @@ except ImportError:
 
 from backend.core.config import get_settings
 from backend.core.vector_store import vector_store
+from backend.core.embedding_validation import get_embedding_validator, EmbeddingValidationResult
+from backend.core.monitoring import monitoring_service
 
 # Get logger (use application's logging configuration)
 logger = logging.getLogger(__name__)
@@ -57,7 +59,8 @@ class EmbeddingService:
         self.openai_client = OpenAI(api_key=settings.openai_api_key)
         self.async_client = AsyncOpenAI(api_key=settings.openai_api_key)
         self.model_name = "text-embedding-3-large"
-        self.dimension = 3072  # text-embedding-3-large uses 3072 dimensions
+        from backend.core.constants import EMBEDDINGS_DIMENSION
+        self.dimension = EMBEDDINGS_DIMENSION  # text-embedding-3-large uses 3072 dimensions
         self.max_tokens = 8192  # Maximum tokens for text-embedding-3-large
         self.batch_size = 100   # Maximum batch size for OpenAI API
         self.max_retries = 3
@@ -66,7 +69,10 @@ class EmbeddingService:
         # Thread pool for CPU-bound operations
         self.executor = ThreadPoolExecutor(max_workers=4)
         
-        logger.info(f"EmbeddingService initialized with model {self.model_name}")
+        # Initialize embedding validator
+        self.validator = get_embedding_validator()
+        
+        logger.info(f"EmbeddingService initialized with model {self.model_name} and dimension validation")
     
     def _preprocess_text(self, text: str) -> str:
         """
@@ -147,25 +153,44 @@ class EmbeddingService:
         content_hash = hashlib.sha256(hash_input.encode()).hexdigest()[:16]
         return f"content_{content_hash}"
     
-    def _validate_embedding(self, embedding: List[float]) -> bool:
+    def _validate_embedding(self, embedding: List[float], content_id: Optional[str] = None) -> Tuple[bool, Optional[EmbeddingValidationResult]]:
         """
-        Validate embedding vector
+        Validate embedding vector using comprehensive validation system
         
         Args:
             embedding: Embedding vector from OpenAI
+            content_id: Optional content identifier for logging
             
         Returns:
-            True if valid, False otherwise
+            Tuple of (is_valid, validation_result)
         """
-        if not embedding or len(embedding) != self.dimension:
-            return False
+        if not embedding:
+            return False, None
         
-        # Check for all zeros or NaN values
-        np_embedding = np.array(embedding)
-        if np.all(np_embedding == 0) or np.any(np.isnan(np_embedding)):
-            return False
+        # Use comprehensive validator
+        validation_result = self.validator.validate_embedding(embedding, content_id)
         
-        return True
+        # Send metrics to Prometheus
+        try:
+            monitoring_service.record_embedding_validation(
+                is_valid=validation_result.is_valid,
+                dimension=validation_result.dimension,
+                duration_seconds=validation_result.validation_time
+            )
+            
+            # Record dimension mismatches specifically
+            if validation_result.dimension != validation_result.expected_dimension:
+                monitoring_service.record_embedding_dimension_mismatch(
+                    expected_dimension=validation_result.expected_dimension,
+                    actual_dimension=validation_result.dimension
+                )
+        except Exception as e:
+            logger.debug(f"Failed to record embedding validation metrics: {e}")
+        
+        if not validation_result.is_valid:
+            logger.warning(f"Embedding validation failed for content_id={content_id}: {', '.join(validation_result.issues)}")
+        
+        return validation_result.is_valid, validation_result
     
     async def _create_embedding_with_retry(self, text: str) -> Optional[List[float]]:
         """
@@ -186,10 +211,13 @@ class EmbeddingService:
                 
                 embedding = response.data[0].embedding
                 
-                if self._validate_embedding(embedding):
+                is_valid, validation_result = self._validate_embedding(embedding, content_id=f"retry_text_{hash(text)}")
+                if is_valid:
                     return embedding
                 else:
                     logger.error(f"Invalid embedding received for text: {text[:50]}...")
+                    if validation_result:
+                        logger.error(f"Validation issues: {', '.join(validation_result.issues)}")
                     return None
                     
             except RateLimitError as e:
@@ -232,13 +260,20 @@ class EmbeddingService:
             
             embedding = response.data[0].embedding
             
-            if self._validate_embedding(embedding):
-                # Convert to numpy and normalize
+            is_valid, validation_result = self._validate_embedding(embedding, content_id=f"sync_text_{hash(text)}")
+            if is_valid:
+                # Convert to numpy and normalize using validator
                 np_embedding = np.array(embedding, dtype=np.float32)
-                normalized = np_embedding / np.linalg.norm(np_embedding)
-                return normalized
-            
-            return None
+                normalized, success = self.validator.normalize_embedding(np_embedding)
+                if success:
+                    return normalized
+                else:
+                    logger.error("Failed to normalize embedding")
+                    return None
+            else:
+                if validation_result:
+                    logger.error(f"Sync embedding validation failed: {', '.join(validation_result.issues)}")
+                return None
             
         except Exception as e:
             logger.error(f"Error creating embedding: {e}")
@@ -260,10 +295,14 @@ class EmbeddingService:
         
         embedding = await self._create_embedding_with_retry(preprocessed_text)
         if embedding:
-            # Convert to numpy and normalize
+            # Convert to numpy and normalize using validator
             np_embedding = np.array(embedding, dtype=np.float32)
-            normalized = np_embedding / np.linalg.norm(np_embedding)
-            return normalized
+            normalized, success = self.validator.normalize_embedding(np_embedding)
+            if success:
+                return normalized
+            else:
+                logger.error("Failed to normalize async embedding")
+                return None
         
         return None
     
@@ -335,10 +374,19 @@ class EmbeddingService:
                 original_index = text_indices[i]
                 embedding = embedding_data.embedding
                 
-                if self._validate_embedding(embedding):
+                is_valid, validation_result = self._validate_embedding(
+                    embedding, content_id=f"batch_{original_index}"
+                )
+                if is_valid:
                     np_embedding = np.array(embedding, dtype=np.float32)
-                    normalized = np_embedding / np.linalg.norm(np_embedding)
-                    results[original_index] = normalized
+                    normalized, success = self.validator.normalize_embedding(np_embedding)
+                    if success:
+                        results[original_index] = normalized
+                    else:
+                        logger.warning(f"Failed to normalize batch embedding at index {original_index}")
+                else:
+                    if validation_result:
+                        logger.warning(f"Batch embedding validation failed at index {original_index}: {', '.join(validation_result.issues)}")
             
             return results
             
@@ -385,11 +433,16 @@ class EmbeddingService:
                 }
                 
                 # Store in vector store
-                success = vector_store.add_single_vector(
-                    vector=embedding,
-                    content_id=content_id,
-                    metadata=enhanced_metadata
-                )
+                try:
+                    stored_content_id = vector_store.add_vector(
+                        vector=embedding,
+                        content_id=content_id,
+                        metadata=enhanced_metadata
+                    )
+                    success = bool(stored_content_id)
+                except Exception as e:
+                    logger.error(f"Error storing vector: {e}")
+                    success = False
                 
                 processing_time = time.time() - start_time
                 
@@ -516,11 +569,16 @@ class EmbeddingService:
         # Store valid embeddings in batch
         if valid_vectors:
             vectors_array = np.array(valid_vectors)
-            success = vector_store.add_vectors(
-                vectors=vectors_array,
-                content_ids=valid_ids,
-                metadata_list=valid_metadata
-            )
+            try:
+                stored_content_ids = vector_store.add_vectors_batch(
+                    vectors=vectors_array,
+                    content_ids=valid_ids,
+                    metadata_list=valid_metadata
+                )
+                success = bool(stored_content_ids) and len(stored_content_ids) == len(valid_vectors)
+            except Exception as e:
+                logger.error(f"Error storing batch vectors: {e}")
+                success = False
             
             if success:
                 logger.info(f"Successfully stored {len(valid_vectors)} content items")
@@ -594,7 +652,13 @@ class EmbeddingService:
         Returns:
             Dictionary with content statistics
         """
-        return vector_store.get_stats()
+        vector_stats = vector_store.get_statistics()
+        validation_metrics = self.validator.get_validation_metrics()
+        
+        return {
+            'vector_store': vector_stats,
+            'embedding_validation': validation_metrics
+        }
     
     def cleanup_deleted_content(self) -> bool:
         """
@@ -604,6 +668,57 @@ class EmbeddingService:
             Success status
         """
         return vector_store.rebuild_index()
+    
+    def validate_existing_embedding(
+        self, 
+        embedding: Union[np.ndarray, List[float]], 
+        content_id: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None
+    ) -> EmbeddingValidationResult:
+        """
+        Validate an existing embedding vector
+        
+        Args:
+            embedding: Embedding vector to validate
+            content_id: Optional content identifier
+            metadata: Optional metadata
+            
+        Returns:
+            EmbeddingValidationResult
+        """
+        return self.validator.validate_embedding(embedding, content_id, metadata)
+    
+    def get_validation_metrics(self) -> Dict[str, Any]:
+        """
+        Get embedding validation metrics
+        
+        Returns:
+            Dictionary with validation statistics
+        """
+        return self.validator.get_validation_metrics()
+    
+    def reset_validation_metrics(self) -> None:
+        """Reset embedding validation metrics"""
+        self.validator.reset_metrics()
+    
+    def validate_and_fix_embedding(
+        self, 
+        embedding: Union[np.ndarray, List[float]],
+        content_id: Optional[str] = None,
+        auto_normalize: bool = True
+    ) -> Tuple[Optional[np.ndarray], EmbeddingValidationResult]:
+        """
+        Validate embedding and attempt to fix common issues
+        
+        Args:
+            embedding: Input embedding
+            content_id: Optional content identifier
+            auto_normalize: Whether to automatically normalize the vector
+            
+        Returns:
+            Tuple of (fixed_embedding or None, validation_result)
+        """
+        return self.validator.validate_and_fix_embedding(embedding, content_id, auto_normalize)
 
 # Global embedding service instance - lazy loaded
 _embedding_service = None

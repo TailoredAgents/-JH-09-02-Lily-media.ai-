@@ -1,3 +1,6 @@
+/* P1-10c: Import WCAG 2.1 AA Accessibility Styles */
+@import './styles/accessibility.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

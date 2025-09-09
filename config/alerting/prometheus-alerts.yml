@@ -20,6 +20,7 @@ groups:
           description: "Service {{ $labels.instance }} has been down for more than 30 seconds"
           runbook_url: "https://runbooks.lilymedia.ai/service-down"
           escalation_policy: "immediate"
+          automation_runbook: "service_unavailable"
 
       - alert: HighErrorRate
         expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.1
@@ -32,6 +33,7 @@ groups:
           summary: "High error rate on {{ $labels.instance }}"
           description: "Error rate is {{ $value | humanizePercentage }} for {{ $labels.instance }}"
           runbook_url: "https://runbooks.lilymedia.ai/high-error-rate"
+          automation_runbook: "high_error_rate"
 
       - alert: DatabaseConnectionPoolExhausted
         expr: database_connection_pool_status{metric_type="pool_utilization_percent"} > 95
@@ -44,6 +46,7 @@ groups:
           summary: "Database connection pool nearly exhausted"
           description: "Connection pool {{ $labels.pool_name }} utilization is {{ $value }}%"
           runbook_url: "https://runbooks.lilymedia.ai/database-pool-exhaustion"
+          automation_runbook: "db_performance_degradation"
 
   # ============================================================================
   # Plan Enforcement and Business Logic Alerts (P1 - High Priority)
@@ -61,6 +64,31 @@ groups:
           summary: "High rate of plan limit violations"
           description: "Plan violations rate is {{ $value }} violations/sec for {{ $labels.plan_tier }}"
           runbook_url: "https://runbooks.lilymedia.ai/plan-violations"
+
+      # P0-11a: New Prometheus metrics alert rules
+      - alert: PlanLimitChecksHigh
+        expr: rate(plan_limit_checks_total[5m]) > 100
+        for: 2m
+        labels:
+          severity: warning
+          team: billing
+          escalation_level: p1
+        annotations:
+          summary: "High volume of plan limit checks"
+          description: "Plan limit checks rate is {{ $value }} checks/sec for {{ $labels.plan_type }}"
+          runbook_url: "https://runbooks.lilymedia.ai/plan-limit-checks"
+
+      - alert: PlanUpgradeSuggestionSpike
+        expr: rate(plan_upgrade_suggestions_total[5m]) > 5
+        for: 5m
+        labels:
+          severity: info
+          team: growth
+          escalation_level: p2
+        annotations:
+          summary: "High rate of plan upgrade suggestions"
+          description: "Upgrade suggestions rate is {{ $value }}/sec for {{ $labels.current_plan }}"
+          runbook_url: "https://runbooks.lilymedia.ai/upgrade-suggestions"
 
       - alert: PlanQuotaUtilizationCritical
         expr: plan_quota_utilization_percent_current{utilization_bucket="critical"} > 0
@@ -127,6 +155,43 @@ groups:
           description: "{{ $value }} signature validation failures/sec for {{ $labels.provider }}"
           runbook_url: "https://runbooks.lilymedia.ai/webhook-security"
 
+      # P0-11a: New webhook reliability metric alerts
+      - alert: WebhookValidationDurationHigh
+        expr: webhook_validation_duration_seconds{quantile="0.95"} > 2.0
+        for: 3m
+        labels:
+          severity: warning
+          team: platform
+          escalation_level: p1
+        annotations:
+          summary: "High webhook validation latency"
+          description: "95th percentile validation duration is {{ $value }}s for {{ $labels.platform }}"
+          runbook_url: "https://runbooks.lilymedia.ai/webhook-latency"
+
+      - alert: WebhookThreatsDetected
+        expr: rate(webhook_threats_detected_total[5m]) > 0.1
+        for: 1m
+        labels:
+          severity: critical
+          team: security
+          escalation_level: p0
+        annotations:
+          summary: "Webhook security threats detected"
+          description: "{{ $value }} threats/sec detected for {{ $labels.platform }}"
+          runbook_url: "https://runbooks.lilymedia.ai/webhook-threats"
+
+      - alert: WebhookDeliverySuccessRateLow
+        expr: webhook_delivery_success_rate < 95
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+          escalation_level: p1
+        annotations:
+          summary: "Low webhook delivery success rate"
+          description: "Success rate dropped to {{ $value }}% for {{ $labels.platform }}"
+          runbook_url: "https://runbooks.lilymedia.ai/webhook-delivery"
+
       - alert: WebhookDLQBacklog
         expr: webhook_dlq_operations_total{operation="enqueue"} - webhook_dlq_operations_total{operation="process"} > 1000
         for: 10m
@@ -155,6 +220,55 @@ groups:
           summary: "Content generation quality degraded"
           description: "Median quality score dropped to {{ $value }} for {{ $labels.content_type }}"
           runbook_url: "https://runbooks.lilymedia.ai/quality-degradation"
+
+      # P0-11a: New image quality monitoring alerts
+      - alert: ImageQualityScoreLow
+        expr: histogram_quantile(0.50, rate(image_quality_scores_distribution_bucket[10m])) < 60
+        for: 5m
+        labels:
+          severity: warning
+          team: content
+          escalation_level: p1
+        annotations:
+          summary: "Image quality scores degraded"
+          description: "Median image quality score dropped to {{ $value }} for {{ $labels.model }}"
+          runbook_url: "https://runbooks.lilymedia.ai/image-quality-low"
+
+      - alert: ImageQualityThresholdBreaches
+        expr: rate(image_quality_threshold_breaches_total[5m]) > 5
+        for: 3m
+        labels:
+          severity: warning
+          team: content
+          escalation_level: p1
+        annotations:
+          summary: "High rate of image quality threshold breaches"
+          description: "{{ $value }} quality breaches/sec for {{ $labels.model }}"
+          runbook_url: "https://runbooks.lilymedia.ai/quality-breaches"
+
+      - alert: ImageFallbackGenerationsHigh
+        expr: rate(image_fallback_generations_total[5m]) > 2
+        for: 5m
+        labels:
+          severity: warning
+          team: content
+          escalation_level: p1
+        annotations:
+          summary: "High rate of image fallbacks to text-only"
+          description: "{{ $value }} fallbacks/sec for {{ $labels.model }}"
+          runbook_url: "https://runbooks.lilymedia.ai/image-fallbacks"
+
+      - alert: ImageRegenerationRequestsHigh
+        expr: rate(image_regeneration_requests_total[5m]) > 3
+        for: 3m
+        labels:
+          severity: info
+          team: content
+          escalation_level: p2
+        annotations:
+          summary: "High rate of image regeneration requests"
+          description: "{{ $value }} regeneration requests/sec for {{ $labels.model }}"
+          runbook_url: "https://runbooks.lilymedia.ai/image-regeneration"
 
       - alert: HighContentSafetyViolations
         expr: rate(content_safety_actions_total{enforcement_level="block"}[5m]) > 5
@@ -220,6 +334,39 @@ groups:
           summary: "Frequent research quota violations"
           description: "{{ $value }} quota violations/sec for {{ $labels.feature }}"
           runbook_url: "https://runbooks.lilymedia.ai/research-quotas"
+      - alert: VectorStoreGrowthRateHigh
+        expr: vector_store_growth_rate_vectors_per_hour > 10000
+        for: 10m
+        labels:
+          severity: warning
+          team: research
+          escalation_level: p1
+        annotations:
+          summary: "Vector store growing rapidly"
+          description: "Vector store adding {{ $value }} vectors/hour, may need capacity planning"
+          runbook_url: "https://runbooks.lilymedia.ai/vector-storage-growth"
+      - alert: VectorStoreFragmentationHigh
+        expr: vector_store_fragmentation_ratio > 0.7
+        for: 15m
+        labels:
+          severity: warning
+          team: research
+          escalation_level: p1
+        annotations:
+          summary: "Vector store index highly fragmented"
+          description: "Index fragmentation ratio is {{ $value }}, consider rebuilding"
+          runbook_url: "https://runbooks.lilymedia.ai/vector-fragmentation"
+      - alert: VectorStoreMemoryUsageHigh
+        expr: vector_store_memory_usage_bytes{component="faiss_index"} > 2147483648
+        for: 5m
+        labels:
+          severity: warning
+          team: research
+          escalation_level: p1
+        annotations:
+          summary: "Vector store memory usage high"
+          description: "FAISS index using {{ $value | humanizeBytes }} memory"
+          runbook_url: "https://runbooks.lilymedia.ai/vector-memory-usage"
 
   # ============================================================================
   # Security and Authentication Alerts (P0/P1 - Critical/High)

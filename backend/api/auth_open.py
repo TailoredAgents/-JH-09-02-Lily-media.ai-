@@ -152,6 +152,14 @@ async def open_register(
     user_count = db.query(User).count()
     is_first_user = user_count == 0
     
+    # P1-5a: Get free plan for new plan-based system
+    from backend.db.models import Plan
+    free_plan = db.query(Plan).filter(Plan.name.ilike('%free%')).first()
+    if not free_plan:
+        free_plan = db.query(Plan).filter(Plan.name.ilike('%starter%')).first()
+    if not free_plan:
+        free_plan = db.query(Plan).filter(Plan.name.ilike('%basic%')).first()
+    
     new_user = User(
         email=request.email,
         username=request.username,
@@ -162,7 +170,8 @@ async def open_register(
         email_verified=not settings.require_email_verification,  # Auto-verify if verification disabled
         email_verification_token=verification_token if settings.require_email_verification else None,
         email_verification_sent_at=get_current_time() if settings.require_email_verification else None,
-        tier="free",  # Start with free tier
+        tier="free",  # P1-5a: Keep for backward compatibility during migration
+        plan_id=free_plan.id if free_plan else None,  # P1-5a: New plan-based system
         subscription_status="free",
         auth_provider="local"
     )

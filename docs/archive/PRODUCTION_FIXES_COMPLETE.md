@@ -17,8 +17,8 @@
 **Issue**: Image service checked for unimplemented Responses API and returned errors instead of generating images
 
 **Fix Applied**:
-- Replaced non-existent `client.responses.create` with working DALL-E 3 API
-- Implemented proper image generation using `client.images.generate`
+- Replaced non-existent `client.responses.create` with working GPT Image 1 API
+- Implemented proper image generation using approved AI models
 - Maintained all quality presets and platform optimizations
 - Added base64 image response format
 
@@ -162,7 +162,7 @@ python -m py_compile backend/api/content_real.py
 
 ### **📈 EXPECTED IMPROVEMENTS**
 - **Content Generation**: Real AI-powered content instead of templates
-- **Image Generation**: Working DALL-E 3 integration
+- **Image Generation**: Working GPT Image 1 integration
 - **Analytics**: Real user data instead of zeros
 - **User Experience**: Proper error messages instead of silent failures
 - **Content Ideas**: GPT-5 powered suggestions with current trends

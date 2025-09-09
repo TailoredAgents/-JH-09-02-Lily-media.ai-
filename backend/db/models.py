@@ -172,6 +172,7 @@ class ContentLog(Base):
     id = Column(Integer, primary_key=True, index=True)
     public_id = Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True, index=True, nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)  # P1-1b: Multi-tenancy support
     platform = Column(String, nullable=False)  # twitter, instagram, facebook
     content = Column(Text, nullable=False)
     content_type = Column(String, nullable=False)  # text, image, video
@@ -188,6 +189,14 @@ class ContentLog(Base):
     
     # Relationships
     user = relationship("User", back_populates="content_logs")
+    organization = relationship("Organization", backref="content_logs")
+    
+    # Indexes for multi-tenant query optimization
+    __table_args__ = (
+        Index('ix_content_logs_org_user', 'organization_id', 'user_id'),
+        Index('ix_content_logs_org_status', 'organization_id', 'status'),
+        Index('ix_content_logs_org_platform', 'organization_id', 'platform'),
+    )
 
 
 class ContentDraft(Base):
@@ -300,7 +309,7 @@ class UserSetting(Base):
     
     # Image Generation Preferences
     enable_auto_image_generation = Column(Boolean, default=True)
-    default_image_model = Column(String, default="grok2")  # grok2, dalle3, etc.
+    default_image_model = Column(String, default="grok2")  # grok2, gpt_image_1, etc. (OpenAI image models removed per policy)
     preferred_image_style = Column(JSON, default={
         "lighting": "natural",
         "composition": "rule_of_thirds",
@@ -1379,4 +1388,233 @@ class UsageRecord(Base):
         Index('idx_usage_org_period', organization_id, billing_period),
         Index('idx_usage_type_period', usage_type, billing_period),
         Index('idx_usage_created', created_at.desc()),
+    )
+
+
+# Pressure Washing Pricing Models
+
+class PricingRule(Base):
+    """
+    PW-PRICING-ADD-001: Organization-scoped pricing rules for pressure washing services
+    
+    Stores pricing configuration including base rates, bundles, seasonal modifiers,
+    and minimum job totals for computing ballpark quotes.
+    """
+    __tablename__ = "pricing_rules"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    organization_id = Column(String, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    # Pricing metadata
+    name = Column(String(255), nullable=False, default="Default Pricing")
+    description = Column(Text)
+    currency = Column(String(3), nullable=False, default="USD")  # ISO 4217 currency code
+    is_active = Column(Boolean, default=True, nullable=False)
+    
+    # Core pricing configuration
+    min_job_total = Column(Numeric(10, 2), nullable=False, default=150.00)  # Minimum job charge
+    
+    # Base rates per surface type (per square foot)
+    base_rates = Column(JSON, nullable=False, default={
+        "concrete": 0.15,
+        "brick": 0.18,
+        "vinyl_siding": 0.20,
+        "wood_deck": 0.25,
+        "roof": 0.30,
+        "driveway": 0.12,
+        "patio": 0.15,
+        "fence": 0.22
+    })
+    
+    # Service bundles with discount percentages
+    bundles = Column(JSON, nullable=False, default=[
+        {
+            "name": "House + Driveway Package",
+            "services": ["vinyl_siding", "driveway"],
+            "discount_pct": 0.15,
+            "description": "Save 15% when bundling house and driveway cleaning"
+        },
+        {
+            "name": "Complete Property Package", 
+            "services": ["vinyl_siding", "driveway", "patio", "fence"],
+            "discount_pct": 0.20,
+            "description": "Save 20% on full property cleaning"
+        }
+    ])
+    
+    # Seasonal pricing modifiers by month
+    seasonal_modifiers = Column(JSON, nullable=False, default={
+        "1": 0.8,   # January - Winter discount
+        "2": 0.8,   # February - Winter discount
+        "3": 1.2,   # March - Spring premium
+        "4": 1.2,   # April - Spring premium
+        "5": 1.1,   # May - Spring moderate
+        "6": 1.0,   # June - Standard
+        "7": 1.0,   # July - Standard
+        "8": 1.0,   # August - Standard
+        "9": 1.1,   # September - Fall moderate
+        "10": 1.1,  # October - Fall moderate
+        "11": 0.9,  # November - Fall discount
+        "12": 0.8   # December - Winter discount
+    })
+    
+    # Additional service rates (optional)
+    additional_services = Column(JSON, default={
+        "gutter_cleaning_per_linear_foot": 1.50,
+        "soft_wash_multiplier": 1.3,
+        "pressure_wash_multiplier": 1.0,
+        "stain_removal_multiplier": 1.5,
+        "sealant_application_multiplier": 2.0
+    })
+    
+    # Travel and logistics
+    travel_settings = Column(JSON, default={
+        "free_radius_miles": 15.0,
+        "rate_per_mile": 2.00,
+        "minimum_travel_charge": 25.00,
+        "maximum_travel_distance": 50.0
+    })
+    
+    # Pricing rule metadata
+    version = Column(Integer, nullable=False, default=1)  # For versioning pricing rules
+    effective_date = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    expiry_date = Column(DateTime(timezone=True))  # Optional expiration
+    
+    # Audit fields
+    created_by_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    
+    # Relationships
+    organization = relationship("Organization", backref="pricing_rules")
+    created_by = relationship("User")
+    
+    # Indexes for performance and multi-tenancy
+    __table_args__ = (
+        Index('ix_pricing_rules_org_active', organization_id, is_active),
+        Index('ix_pricing_rules_org_effective', organization_id, effective_date),
+        UniqueConstraint('organization_id', 'name', name='uq_pricing_rule_org_name'),
+    )
+    
+    def __repr__(self):
+        return f"<PricingRule(org={self.organization_id}, name='{self.name}', active={self.is_active})>"
+    
+    def to_dict(self):
+        """Convert pricing rule to dictionary for API responses"""
+        return {
+            "id": self.id,
+            "organization_id": self.organization_id,
+            "name": self.name,
+            "description": self.description,
+            "currency": self.currency,
+            "is_active": self.is_active,
+            "min_job_total": float(self.min_job_total) if self.min_job_total else None,
+            "base_rates": self.base_rates,
+            "bundles": self.bundles,
+            "seasonal_modifiers": self.seasonal_modifiers,
+            "additional_services": self.additional_services,
+            "travel_settings": self.travel_settings,
+            "version": self.version,
+            "effective_date": self.effective_date.isoformat() if self.effective_date else None,
+            "expiry_date": self.expiry_date.isoformat() if self.expiry_date else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None
+        }
+
+
+# P1-5b: Webhook Event Idempotency Store Models
+
+class WebhookIdempotencyRecord(Base):
+    """
+    P1-5b: Idempotency tracking for webhook events to prevent duplicate processing
+    """
+    __tablename__ = "webhook_idempotency_records"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Idempotency key (hash of event signature + payload content)
+    idempotency_key = Column(String(64), unique=True, nullable=False, index=True)
+    
+    # Webhook identification
+    platform = Column(String(50), nullable=False, index=True)
+    event_type = Column(String(100), nullable=False, index=True)
+    webhook_id = Column(String(255), nullable=True, index=True)  # Platform-provided ID
+    
+    # Tenant isolation
+    organization_id = Column(Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
+    
+    # Processing tracking
+    processing_result = Column(String(50), nullable=False)  # WebhookProcessingResult
+    processed_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    processing_time_ms = Column(Integer, nullable=True)
+    
+    # Event data summary (no sensitive info)
+    event_summary = Column(JSON, nullable=True)
+    
+    # Expiration for cleanup
+    expires_at = Column(DateTime(timezone=True), nullable=False, index=True)
+    
+    # Relationships
+    user = relationship("User", foreign_keys=[user_id])
+    organization = relationship("Organization", foreign_keys=[organization_id])
+    
+    # Indexes for performance
+    __table_args__ = (
+        Index('idx_webhook_idempotency_platform_event', 'platform', 'event_type'),
+        Index('idx_webhook_idempotency_expires', 'expires_at'),
+        Index('idx_webhook_idempotency_org', 'organization_id'),
+    )
+
+
+class WebhookDeliveryTracker(Base):
+    """
+    P1-5b: Enhanced webhook delivery tracking with retry logic and reliability monitoring
+    """
+    __tablename__ = "webhook_delivery_tracking"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Webhook identification
+    webhook_id = Column(String(255), nullable=False, index=True)
+    platform = Column(String(50), nullable=False, index=True)
+    event_type = Column(String(100), nullable=False, index=True)
+    
+    # Tenant isolation
+    organization_id = Column(Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
+    
+    # Delivery status
+    delivery_status = Column(String(50), nullable=False, index=True)  # WebhookDeliveryStatus
+    attempt_count = Column(Integer, default=0, nullable=False)
+    max_retries = Column(Integer, default=5, nullable=False)
+    
+    # Timing
+    first_attempted_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    last_attempted_at = Column(DateTime(timezone=True), nullable=True)
+    next_retry_at = Column(DateTime(timezone=True), nullable=True, index=True)
+    delivered_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # Failure tracking
+    failure_reason = Column(String(100), nullable=True)
+    last_error_message = Column(Text, nullable=True)
+    consecutive_failures = Column(Integer, default=0, nullable=False)
+    
+    # Performance metrics
+    total_processing_time_ms = Column(Integer, default=0, nullable=False)
+    avg_response_time_ms = Column(Integer, nullable=True)
+    
+    # Event payload metadata (no sensitive data)
+    event_metadata = Column(JSON, nullable=True)
+    
+    # Relationships
+    user = relationship("User", foreign_keys=[user_id])
+    organization = relationship("Organization", foreign_keys=[organization_id])
+    
+    # Indexes for performance
+    __table_args__ = (
+        Index('idx_webhook_delivery_status', 'delivery_status'),
+        Index('idx_webhook_delivery_next_retry', 'next_retry_at'),
+        Index('idx_webhook_delivery_platform_event', 'platform', 'event_type'),
+        Index('idx_webhook_delivery_org', 'organization_id'),
     )

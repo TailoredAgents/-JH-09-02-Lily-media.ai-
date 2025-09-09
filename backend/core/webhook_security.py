@@ -473,10 +473,11 @@ def verify_webhook_signature(
     payload: Union[str, bytes],
     signature: str,
     headers: Optional[Dict[str, str]] = None,
-    timestamp: Optional[int] = None
+    timestamp: Optional[int] = None,
+    request_info: Optional[Dict[str, Any]] = None
 ) -> Tuple[bool, Optional[str]]:
     """
-    Convenient function to verify webhook signatures
+    Convenient function to verify webhook signatures with monitoring
     
     Args:
         platform: Platform name (string)
@@ -484,10 +485,13 @@ def verify_webhook_signature(
         signature: Signature from headers
         headers: Request headers
         timestamp: Optional timestamp
+        request_info: Optional dict with ip_address, user_agent, etc. for monitoring
         
     Returns:
         Tuple of (is_valid, error_message)
     """
+    start_time = time.time()
+    
     try:
         # Convert platform string to enum
         webhook_platform = WebhookPlatform(platform.lower())
@@ -497,14 +501,87 @@ def verify_webhook_signature(
             webhook_platform, payload, signature, headers, timestamp
         )
         
+        validation_time_ms = (time.time() - start_time) * 1000
+        
+        # Log validation attempt for monitoring
+        try:
+            from backend.services.webhook_signature_monitoring import log_webhook_validation
+            
+            payload_size = len(payload) if payload else 0
+            if isinstance(payload, str):
+                payload_size = len(payload.encode('utf-8'))
+            
+            log_webhook_validation(
+                platform=platform,
+                success=is_valid,
+                validation_time_ms=validation_time_ms,
+                error_message=None,
+                ip_address=request_info.get('ip_address') if request_info else None,
+                user_agent=request_info.get('user_agent') if request_info else None,
+                payload_size=payload_size,
+                signature_header=signature
+            )
+        except Exception as monitor_error:
+            logger.debug(f"Failed to log webhook validation monitoring: {monitor_error}")
+        
         return is_valid, None
         
     except WebhookSecurityError as e:
+        validation_time_ms = (time.time() - start_time) * 1000
+        error_msg = str(e)
+        
         logger.warning(f"Webhook security error for {platform}: {e}")
-        return False, str(e)
+        
+        # Log validation failure for monitoring
+        try:
+            from backend.services.webhook_signature_monitoring import log_webhook_validation
+            
+            payload_size = len(payload) if payload else 0
+            if isinstance(payload, str):
+                payload_size = len(payload.encode('utf-8'))
+            
+            log_webhook_validation(
+                platform=platform,
+                success=False,
+                validation_time_ms=validation_time_ms,
+                error_message=error_msg,
+                ip_address=request_info.get('ip_address') if request_info else None,
+                user_agent=request_info.get('user_agent') if request_info else None,
+                payload_size=payload_size,
+                signature_header=signature
+            )
+        except Exception as monitor_error:
+            logger.debug(f"Failed to log webhook validation monitoring: {monitor_error}")
+        
+        return False, error_msg
     except Exception as e:
+        validation_time_ms = (time.time() - start_time) * 1000
+        error_msg = f"Verification failed: {e}"
+        
         logger.error(f"Unexpected error verifying webhook signature for {platform}: {e}")
-        return False, f"Verification failed: {e}"
+        
+        # Log validation error for monitoring
+        try:
+            from backend.services.webhook_signature_monitoring import log_webhook_validation
+            
+            payload_size = len(payload) if payload else 0
+            if isinstance(payload, str):
+                payload_size = len(payload.encode('utf-8'))
+            
+            log_webhook_validation(
+                platform=platform,
+                success=False,
+                validation_time_ms=validation_time_ms,
+                error_message=error_msg,
+                ip_address=request_info.get('ip_address') if request_info else None,
+                user_agent=request_info.get('user_agent') if request_info else None,
+                payload_size=payload_size,
+                signature_header=signature
+            )
+        except Exception as monitor_error:
+            logger.debug(f"Failed to log webhook validation monitoring: {monitor_error}")
+        
+        return False, error_msg
 
 
 def extract_webhook_signature(platform: str, headers: Dict[str, str]) -> Optional[str]:

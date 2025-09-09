@@ -12,6 +12,7 @@ import redis
 from redis import Redis
 
 from backend.core.config import get_settings
+from backend.core.structured_logging import structured_logger_service
 
 logger = logging.getLogger(__name__)
 
@@ -117,6 +118,29 @@ class TokenBucket:
                 logger.warning(
                     f"Rate limit exceeded for org {org_id} platform {platform}: "
                     f"{remaining_tokens}/{self.capacity} tokens remaining"
+                )
+                
+                # Log structured rate limit exceeded event
+                structured_logger_service.log_rate_limit_exceeded(
+                    identifier=f"{org_id}:{platform}",
+                    limit_type="token_bucket",
+                    limit_value=self.capacity,
+                    current_usage=self.capacity - remaining_tokens,
+                    reset_time=self.get_reset_time(org_id, platform),
+                    retry_after=int(60 / self.refill_rate),  # Approximate retry time
+                    organization_id=org_id,
+                    platform=platform
+                )
+            else:
+                # Log successful rate limit check (at debug level)
+                structured_logger_service.log_rate_limit_allowed(
+                    identifier=f"{org_id}:{platform}",
+                    limit_type="token_bucket", 
+                    limit_value=self.capacity,
+                    remaining=remaining_tokens,
+                    reset_time=self.get_reset_time(org_id, platform),
+                    organization_id=org_id,
+                    platform=platform
                 )
             
             return success
@@ -294,8 +318,29 @@ class CircuitBreaker:
             
             allowed = bool(result)
             
+            # Get current state for logging
+            state_info = self.get_state(org_id, platform)
+            current_state = state_info.get("state", "closed")
+            
             if not allowed:
                 logger.warning(f"Circuit breaker OPEN for org {org_id} platform {platform}")
+                
+                # Log structured circuit breaker event
+                structured_logger_service.log_circuit_breaker_request_blocked(
+                    circuit_name=f"{platform}_integration",
+                    current_state=current_state,
+                    cooldown_remaining=self.cooldown_s - (time.time() - state_info.get("last_failure", time.time())),
+                    organization_id=org_id,
+                    platform=platform
+                )
+            else:
+                # Log allowed request
+                structured_logger_service.log_circuit_breaker_request_allowed(
+                    circuit_name=f"{platform}_integration", 
+                    current_state=current_state,
+                    organization_id=org_id,
+                    platform=platform
+                )
             
             return allowed
             
@@ -333,6 +378,17 @@ class CircuitBreaker:
             """
             
             self.redis.eval(lua_script, 1, key)
+            
+            # Log structured circuit breaker success
+            state_info = self.get_state(org_id, platform)
+            structured_logger_service.log_circuit_breaker_success(
+                circuit_name=f"{platform}_integration",
+                current_state=state_info.get("state", "closed"),
+                success_count=1,  # We don't track success counts currently
+                duration_ms=0,  # Duration would need to be passed in
+                organization_id=org_id,
+                platform=platform
+            )
             
         except Exception as e:
             logger.error(f"Error recording success for {org_id}:{platform}: {e}")
@@ -388,6 +444,35 @@ class CircuitBreaker:
             )
             
             logger.warning(f"Failure recorded for org {org_id} platform {platform}: {failures} total")
+            
+            # Get updated state for structured logging
+            state_info = self.get_state(org_id, platform)
+            current_state = state_info.get("state", "closed")
+            previous_state = "closed" if int(failures) == 1 else current_state
+            
+            # Log structured circuit breaker failure
+            structured_logger_service.log_circuit_breaker_failure(
+                circuit_name=f"{platform}_integration",
+                error=Exception(f"Platform integration failure"),  # Generic error for now
+                failure_count=int(failures),
+                failure_threshold=self.fail_threshold,
+                duration_ms=0,  # Duration would need to be passed in
+                organization_id=org_id,
+                platform=platform
+            )
+            
+            # Log state change if threshold reached
+            if int(failures) >= self.fail_threshold and previous_state != "open":
+                structured_logger_service.log_circuit_breaker_state_change(
+                    circuit_name=f"{platform}_integration",
+                    previous_state=previous_state,
+                    current_state="open",
+                    failure_count=int(failures),
+                    failure_threshold=self.fail_threshold,
+                    reason=f"Failure threshold reached ({failures}/{self.fail_threshold})",
+                    organization_id=org_id,
+                    platform=platform
+                )
             
         except Exception as e:
             logger.error(f"Error recording failure for {org_id}:{platform}: {e}")

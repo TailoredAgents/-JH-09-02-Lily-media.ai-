@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { usePlan } from '../../contexts/PlanContext'
 import { useNotifications } from '../../hooks/useNotifications'
+import CancellationModal from './CancellationModal'
 import api from '../../services/api'
 import {
   CreditCardIcon,
@@ -28,6 +29,7 @@ const StripePortalManager = ({ billingInfo = null }) => {
   const [portalLoading, setPortalLoading] = useState(false)
   const [cancelLoading, setCancelLoading] = useState(false)
   const [updatePaymentLoading, setUpdatePaymentLoading] = useState(false)
+  const [showCancellationModal, setShowCancellationModal] = useState(false)
   
   const handleManageSubscription = async () => {
     if (portalLoading) return
@@ -92,6 +94,35 @@ const StripePortalManager = ({ billingInfo = null }) => {
     }
   }
   
+  // P1-10a: Enhanced cancellation with consumer protection modal
+  const handleCancelSubscription = () => {
+    setShowCancellationModal(true)
+  }
+
+  const handleProceedToPortal = async (cancellationData) => {
+    setShowCancellationModal(false)
+    
+    // Submit cancellation feedback to API before redirecting
+    try {
+      if (cancellationData.reason) {
+        await api.request('/api/billing/cancellation-feedback', {
+          method: 'POST',
+          body: {
+            reason: cancellationData.reason,
+            feedback: cancellationData.feedback,
+            timestamp: cancellationData.timestamp
+          },
+        })
+      }
+    } catch (error) {
+      console.warn('Failed to submit cancellation feedback:', error)
+      // Don't block the user from cancelling if feedback submission fails
+    }
+
+    // Proceed to Stripe Customer Portal for final cancellation
+    handleManageSubscription()
+  }
+  
   const handleUpdatePaymentMethod = async () => {
     if (updatePaymentLoading) return
     
@@ -117,7 +148,8 @@ const StripePortalManager = ({ billingInfo = null }) => {
     }
   }
   
-  const handleCancelSubscription = async () => {
+  // P1-10a: Direct cancellation function (legacy - replaced by modal flow)
+  const handleDirectCancelSubscription = async () => {
     if (cancelLoading) return
     
     // Show confirmation dialog
@@ -373,6 +405,20 @@ const StripePortalManager = ({ billingInfo = null }) => {
           </div>
         </div>
       </div>
+
+      {/* P1-10a: Consumer Protection Cancellation Modal */}
+      <CancellationModal
+        isOpen={showCancellationModal}
+        onClose={() => setShowCancellationModal(false)}
+        onProceedToPortal={handleProceedToPortal}
+        planName={plan?.plan_name || 'Pro'}
+        nextBillingDate={billingInfo?.current_period_end ? 
+          formatDate(billingInfo.current_period_end) : 'N/A'}
+        monthlyAmount={billingInfo?.amount ? 
+          (billingInfo.amount / 100).toFixed(2) : '0.00'}
+        remainingDays={billingInfo?.current_period_end ? 
+          Math.max(0, Math.ceil((new Date(billingInfo.current_period_end) - new Date()) / (1000 * 60 * 60 * 24))) : 0}
+      />
     </div>
   )
 }

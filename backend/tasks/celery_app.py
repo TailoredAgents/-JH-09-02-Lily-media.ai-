@@ -22,6 +22,8 @@ celery_app = Celery(
         "backend.tasks.webhook_watchdog_tasks",  # GA Checklist: DLQ watchdog
         "backend.tasks.subscription_cleanup_tasks",  # P1-5c: Subscription cleanup jobs
         "backend.tasks.ftc_compliance_tasks",  # P1-10b: FTC compliance disclosures
+        "backend.tasks.data_retention_tasks",  # P0-4b: Data retention policy enforcement
+        "backend.tasks.key_rotation_tasks",  # P0-4c: Encryption key rotation and automation
         # Disabled heavy tasks to prevent memory issues
         # "backend.tasks.content_tasks",  # CrewAI - uses 500MB+
         # "backend.tasks.research_tasks",  # CrewAI - uses 500MB+ 
@@ -75,6 +77,8 @@ celery_app.conf.update(
         'backend.tasks.autonomous_scheduler.*': {'queue': 'autonomous', 'priority': 4},
         'backend.tasks.subscription_cleanup_tasks.*': {'queue': 'subscription_cleanup', 'priority': 6},
         'backend.tasks.ftc_compliance_tasks.*': {'queue': 'ftc_compliance', 'priority': 8},
+        'backend.tasks.data_retention_tasks.*': {'queue': 'data_retention', 'priority': 5},
+        'backend.tasks.key_rotation_tasks.*': {'queue': 'key_rotation', 'priority': 9},
     },
     
     # Dead Letter Queue configuration
@@ -147,6 +151,18 @@ celery_app.conf.task_queues = {
     'ftc_compliance': {
         'exchange': 'ftc_compliance',
         'routing_key': 'ftc_compliance',
+        'durable': True,
+        'auto_delete': False,
+    },
+    'data_retention': {
+        'exchange': 'data_retention',
+        'routing_key': 'data_retention',
+        'durable': True,
+        'auto_delete': False,
+    },
+    'key_rotation': {
+        'exchange': 'key_rotation',
+        'routing_key': 'key_rotation',
         'durable': True,
         'auto_delete': False,
     },
@@ -266,5 +282,77 @@ celery_app.conf.beat_schedule = {
         'task': 'backend.tasks.ftc_compliance_tasks.send_ftc_renewal_notices',
         'schedule': 60.0 * 60.0 * 6,  # Every 6 hours
         'options': {'queue': 'ftc_compliance', 'expires': 3600},  # 1 hour expiry
+    },
+    
+    # P0-4b: Data retention policy enforcement
+    # Daily data retention cleanup - cache, notifications, system logs at 3 AM UTC
+    'daily-data-retention-cleanup': {
+        'task': 'backend.tasks.data_retention_tasks.daily_data_retention_cleanup',
+        'schedule': 60.0 * 60.0 * 24,  # Daily
+        'options': {'queue': 'data_retention', 'expires': 7200},  # 2 hour expiry
+    },
+    
+    # Weekly data retention cleanup - user content, metrics, workflows on Sundays at 4 AM UTC
+    'weekly-data-retention-cleanup': {
+        'task': 'backend.tasks.data_retention_tasks.weekly_data_retention_cleanup',
+        'schedule': 60.0 * 60.0 * 24 * 7,  # Weekly
+        'options': {'queue': 'data_retention', 'expires': 10800},  # 3 hour expiry
+    },
+    
+    # Monthly data retention cleanup - research data, security data on 1st of month at 5 AM UTC
+    'monthly-data-retention-cleanup': {
+        'task': 'backend.tasks.data_retention_tasks.monthly_data_retention_cleanup',
+        'schedule': 60.0 * 60.0 * 24 * 30,  # Monthly (approximate)
+        'options': {'queue': 'data_retention', 'expires': 14400},  # 4 hour expiry
+    },
+    
+    # Data retention health report - weekly on Mondays at 9 AM UTC for compliance monitoring
+    'data-retention-health-report': {
+        'task': 'backend.tasks.data_retention_tasks.generate_data_retention_health_report',
+        'schedule': 60.0 * 60.0 * 24 * 7,  # Weekly
+        'options': {'queue': 'data_retention', 'expires': 3600},  # 1 hour expiry
+    },
+    
+    # P0-4c: Encryption key rotation schedule and automation
+    # Key rotation health check - every 6 hours for continuous security monitoring
+    'key-rotation-health-check': {
+        'task': 'backend.tasks.key_rotation_tasks.key_rotation_health_check',
+        'schedule': 60.0 * 60.0 * 6,  # Every 6 hours
+        'options': {'queue': 'key_rotation', 'expires': 1800},  # 30 min expiry
+    },
+    
+    # Automated key rotation check - daily at 1 AM UTC for policy compliance
+    'automated-key-rotation-check': {
+        'task': 'backend.tasks.key_rotation_tasks.automated_key_rotation_check',
+        'schedule': 60.0 * 60.0 * 24,  # Daily
+        'options': {'queue': 'key_rotation', 'expires': 7200},  # 2 hour expiry
+    },
+    
+    # Execute scheduled key rotations - every 4 hours during maintenance windows
+    'execute-scheduled-key-rotations': {
+        'task': 'backend.tasks.key_rotation_tasks.execute_scheduled_key_rotations',
+        'schedule': 60.0 * 60.0 * 4,  # Every 4 hours
+        'options': {'queue': 'key_rotation', 'expires': 3600},  # 1 hour expiry
+    },
+    
+    # Key rotation cleanup - weekly on Sundays at 6 AM UTC for security hygiene
+    'key-rotation-cleanup': {
+        'task': 'backend.tasks.key_rotation_tasks.key_rotation_cleanup',
+        'schedule': 60.0 * 60.0 * 24 * 7,  # Weekly
+        'options': {'queue': 'key_rotation', 'expires': 3600},  # 1 hour expiry
+    },
+    
+    # Key rotation compliance report - monthly on 1st at 10 AM UTC
+    'key-rotation-compliance-report': {
+        'task': 'backend.tasks.key_rotation_tasks.generate_key_rotation_compliance_report',
+        'schedule': 60.0 * 60.0 * 24 * 30,  # Monthly (approximate)
+        'options': {'queue': 'key_rotation', 'expires': 7200},  # 2 hour expiry
+    },
+    
+    # Key usage monitoring - every 8 hours for anomaly detection
+    'key-usage-monitoring': {
+        'task': 'backend.tasks.key_rotation_tasks.key_usage_monitoring_task',
+        'schedule': 60.0 * 60.0 * 8,  # Every 8 hours
+        'options': {'queue': 'key_rotation', 'expires': 3600},  # 1 hour expiry
     },
 }

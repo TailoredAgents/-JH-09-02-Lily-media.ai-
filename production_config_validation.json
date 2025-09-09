@@ -1,0 +1,111 @@
+{
+  "timestamp": "2025-09-08T19:43:45.704270",
+  "environment": "unknown",
+  "total_issues": 12,
+  "critical_issues": 6,
+  "high_issues": 5,
+  "medium_issues": 1,
+  "issues": {
+    "critical": [
+      {
+        "config_name": "DATABASE_URL",
+        "current_value": "<missing>",
+        "issue_type": "missing_required_config",
+        "severity": "CRITICAL",
+        "recommendation": "Set DATABASE_URL environment variable"
+      },
+      {
+        "config_name": "REDIS_URL",
+        "current_value": "<missing>",
+        "issue_type": "missing_required_config",
+        "severity": "CRITICAL",
+        "recommendation": "Set REDIS_URL environment variable"
+      },
+      {
+        "config_name": "SECRET_KEY",
+        "current_value": "<missing>",
+        "issue_type": "missing_required_config",
+        "severity": "CRITICAL",
+        "recommendation": "Set SECRET_KEY environment variable"
+      },
+      {
+        "config_name": "CORS_ORIGINS",
+        "current_value": "<missing>",
+        "issue_type": "missing_required_config",
+        "severity": "CRITICAL",
+        "recommendation": "Set CORS_ORIGINS environment variable"
+      },
+      {
+        "config_name": "ALLOWED_HOSTS",
+        "current_value": "<missing>",
+        "issue_type": "missing_required_config",
+        "severity": "CRITICAL",
+        "recommendation": "Set ALLOWED_HOSTS environment variable"
+      },
+      {
+        "config_name": "ENVIRONMENT",
+        "current_value": "<missing>",
+        "issue_type": "missing_required_config",
+        "severity": "CRITICAL",
+        "recommendation": "Set ENVIRONMENT environment variable"
+      }
+    ],
+    "high": [
+      {
+        "config_name": "ENVIRONMENT",
+        "current_value": "<not set>",
+        "issue_type": "insecure_config",
+        "severity": "HIGH",
+        "recommendation": "Set ENVIRONMENT=production. Must be 'production' in prod environment"
+      },
+      {
+        "config_name": "DEBUG",
+        "current_value": "<not set>",
+        "issue_type": "insecure_config",
+        "severity": "HIGH",
+        "recommendation": "Set DEBUG=false. Debug mode must be disabled"
+      },
+      {
+        "config_name": "SSL_REQUIRED",
+        "current_value": "<not set>",
+        "issue_type": "insecure_config",
+        "severity": "HIGH",
+        "recommendation": "Set SSL_REQUIRED=true. SSL should be required"
+      },
+      {
+        "config_name": "SECURE_COOKIES",
+        "current_value": "<not set>",
+        "issue_type": "insecure_config",
+        "severity": "HIGH",
+        "recommendation": "Set SECURE_COOKIES=true. Cookies should be secure"
+      },
+      {
+        "config_name": "CSRF_PROTECTION",
+        "current_value": "<not set>",
+        "issue_type": "insecure_config",
+        "severity": "HIGH",
+        "recommendation": "Set CSRF_PROTECTION=true. CSRF protection should be enabled"
+      }
+    ],
+    "medium": [
+      {
+        "config_name": "app_config",
+        "current_value": "<error>",
+        "issue_type": "config_load_error",
+        "severity": "MEDIUM",
+        "recommendation": "Fix application config loading: No module named 'backend'"
+      }
+    ]
+  },
+  "production_ready": false,
+  "recommendations": [
+    "\ud83d\udea8 CRITICAL: Fix all critical configuration issues before deploying to production",
+    "\u26a0\ufe0f HIGH: Review and fix high-priority security configurations",
+    "1. Set ENVIRONMENT=production in deployment environment",
+    "2. Configure CORS_ORIGINS with specific domains only",
+    "3. Set DEBUG=false and disable all debug features",
+    "4. Configure SSL_REQUIRED=true for HTTPS enforcement",
+    "5. Set SECURE_COOKIES=true for cookie security",
+    "6. Review all environment variables for production values"
+  ]
+}

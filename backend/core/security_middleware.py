@@ -334,6 +334,70 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             logger.error(f"Rate limit middleware error: {e}")
             return await self._handle_fallback_request(request, call_next)
 
+class CORSOriginValidationMiddleware(BaseHTTPMiddleware):
+    """P1-2b: Runtime CORS origin validation middleware for production security"""
+    
+    def __init__(self, app, environment: str = "production"):
+        super().__init__(app)
+        self.environment = environment.lower()
+        
+        # Only enforce strict validation in production
+        if self.environment == "production":
+            self.approved_domains = {
+                "lilymedia.ai",
+                "www.lilymedia.ai", 
+                "app.lilymedia.ai",
+                "socialmedia-frontend-pycc.onrender.com",
+                "socialmedia-api-wxip.onrender.com"
+            }
+        else:
+            self.approved_domains = None
+    
+    async def dispatch(self, request: Request, call_next):
+        if self.environment != "production" or not self.approved_domains:
+            return await call_next(request)
+        
+        # Check Origin header for CORS requests
+        origin = request.headers.get("Origin")
+        if origin:
+            try:
+                from urllib.parse import urlparse
+                parsed = urlparse(origin)
+                domain = parsed.netloc
+                
+                # Validate against approved domains
+                if domain not in self.approved_domains:
+                    logger.warning(f"P1-2b CORS Runtime Security: Blocking request from unapproved origin: {origin}")
+                    return JSONResponse(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        content={
+                            "error": "Forbidden", 
+                            "message": "Origin not allowed",
+                            "code": "CORS_ORIGIN_NOT_ALLOWED"
+                        }
+                    )
+                
+                # Ensure HTTPS in production
+                if not origin.startswith("https://"):
+                    logger.warning(f"P1-2b CORS Runtime Security: Blocking non-HTTPS origin: {origin}")
+                    return JSONResponse(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        content={
+                            "error": "Forbidden", 
+                            "message": "HTTPS required",
+                            "code": "HTTPS_REQUIRED"
+                        }
+                    )
+                    
+            except Exception as e:
+                logger.error(f"P1-2b CORS Runtime Security: Error validating origin {origin}: {e}")
+                return JSONResponse(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    content={"error": "Invalid origin format"}
+                )
+        
+        return await call_next(request)
+
 class RequestValidationMiddleware(BaseHTTPMiddleware):
     """Validate incoming requests for security threats"""
     
@@ -484,8 +548,41 @@ class RequestValidationMiddleware(BaseHTTPMiddleware):
                     content={"error": "Internal server error", "message": "Request validation middleware encountered an error"}
                 )
 
+def validate_production_cors_origins(origins: list) -> list:
+    """P1-2b: Validate and filter CORS origins for production security"""
+    approved_domains = [
+        "lilymedia.ai",
+        "www.lilymedia.ai", 
+        "app.lilymedia.ai",
+        "socialmedia-frontend-pycc.onrender.com",
+        "socialmedia-api-wxip.onrender.com"
+    ]
+    
+    validated_origins = []
+    for origin in origins:
+        # Must be HTTPS in production
+        if not origin.startswith("https://"):
+            logger.warning(f"P1-2b CORS Security: Rejecting non-HTTPS origin in production: {origin}")
+            continue
+            
+        # Extract domain from origin
+        try:
+            from urllib.parse import urlparse
+            parsed = urlparse(origin)
+            domain = parsed.netloc
+            
+            if domain in approved_domains:
+                validated_origins.append(origin)
+                logger.info(f"P1-2b CORS Security: Approved origin: {origin}")
+            else:
+                logger.warning(f"P1-2b CORS Security: Rejecting unapproved domain in production: {domain}")
+        except Exception as e:
+            logger.warning(f"P1-2b CORS Security: Error parsing origin {origin}: {e}")
+    
+    return validated_origins
+
 def get_cors_middleware_config(environment: str = "production"):
-    """Get CORS middleware configuration based on environment"""
+    """Get CORS middleware configuration based on environment with P1-2b security enhancements"""
     
     if environment.lower() == "development":
         # Development: Allow all origins
@@ -506,27 +603,32 @@ def get_cors_middleware_config(environment: str = "production"):
             allowed_origins = allowed_origins_env.split(",")
             allowed_origins = [origin.strip() for origin in allowed_origins if origin.strip()]
             
-            # Production security: filter out localhost origins
+            # P1-2b: Enhanced production security with domain validation
             if environment.lower() == "production":
+                # First filter out obviously insecure origins
                 filtered_origins = []
                 for origin in allowed_origins:
                     if "localhost" in origin.lower() or origin.startswith("http://"):
-                        logger.warning(f"CORS Security: Filtering out insecure origin in production: {origin}")
+                        logger.warning(f"P1-2b CORS Security: Filtering out insecure origin in production: {origin}")
                     else:
                         filtered_origins.append(origin)
-                allowed_origins = filtered_origins
+                
+                # Then validate against approved domains
+                allowed_origins = validate_production_cors_origins(filtered_origins)
         else:
             allowed_origins = []
         
         if not allowed_origins:
-            # Production domains only - localhost removed for security
+            # P1-2b: Lock production CORS configuration with verified domains only
+            # These domains are verified and aligned with production configuration
             allowed_origins = [
+                "https://lilymedia.ai",
+                "https://www.lilymedia.ai", 
+                "https://app.lilymedia.ai",
                 "https://socialmedia-frontend-pycc.onrender.com",
-                "https://socialmedia-api-wxip.onrender.com",
-                "https://www.lily-ai-socialmedia.com",
-                "https://lily-ai-socialmedia.com"
+                "https://socialmedia-api-wxip.onrender.com"
             ]
-            logger.warning("No CORS environment variables found, using production domains only (localhost excluded for security)")
+            logger.warning("P1-2b: No CORS environment variables found, using locked production domains (localhost/http excluded for security)")
         
         logger.info(f"Security middleware CORS allowed origins: {allowed_origins}")
         
@@ -603,14 +705,21 @@ def setup_security_middleware(app, environment: str = "production"):
         except Exception as e:
             logger.error(f"❌ Failed to add CSRF protection middleware: {e}")
         
-        # 2. Request validation (second layer)
+        # 2. P1-2b: CORS Origin Validation (second layer - runtime protection)
+        try:
+            app.add_middleware(CORSOriginValidationMiddleware, environment=environment)
+            logger.info("✅ P1-2b: CORS origin validation middleware added")
+        except Exception as e:
+            logger.error(f"❌ Failed to add CORS origin validation middleware: {e}")
+        
+        # 3. Request validation (third layer)
         try:
             app.add_middleware(RequestValidationMiddleware)
             logger.info("✅ Request validation middleware added")
         except Exception as e:
             logger.error(f"❌ Failed to add request validation middleware: {e}")
         
-        # 3. Rate limiting with production-ready defaults
+        # 4. Rate limiting with production-ready defaults
         try:
             # More generous defaults for SaaS applications
             default_per_minute = str(PRODUCTION_RATE_LIMIT_PER_MINUTE) if environment == "production" else str(DEFAULT_RATE_LIMIT_PER_MINUTE)
@@ -631,14 +740,14 @@ def setup_security_middleware(app, environment: str = "production"):
         except Exception as e:
             logger.error(f"❌ Failed to add rate limiting middleware: {e}")
         
-        # 4. Security headers
+        # 5. Security headers
         try:
             app.add_middleware(SecurityHeadersMiddleware, environment=environment)
             logger.info("✅ Security headers middleware added")
         except Exception as e:
             logger.error(f"❌ Failed to add security headers middleware: {e}")
         
-        # 5. CORS (if needed)
+        # 6. CORS (if needed)
         try:
             cors_config = get_cors_middleware_config(environment)
             if cors_config:
@@ -649,7 +758,7 @@ def setup_security_middleware(app, environment: str = "production"):
         except Exception as e:
             logger.error(f"❌ Failed to add CORS middleware: {e}")
         
-        # 6. Trusted hosts (production only)
+        # 7. Trusted hosts (production only)
         try:
             trusted_host_config = get_trusted_host_middleware(environment)
             if trusted_host_config:

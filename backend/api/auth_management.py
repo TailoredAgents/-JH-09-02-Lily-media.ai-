@@ -153,13 +153,27 @@ async def get_session_info(
     Get current user session information
     """
     try:
-        # Get user permissions based on tier
+        # P1-5a: Migrate from tier to plan-based permissions
         permissions = []
-        if current_user.tier == "pro":
-            permissions = ["read", "write", "analytics", "export"]
-        elif current_user.tier == "enterprise":
-            permissions = ["read", "write", "analytics", "export", "admin", "bulk_operations"]
-        else:  # base tier
+        if current_user.plan_id and current_user.plan:
+            # Use plan-based permissions
+            plan_name = current_user.plan.name.lower()
+            if plan_name in ["pro", "professional"]:
+                permissions = ["read", "write", "analytics", "export"]
+            elif plan_name in ["enterprise", "business"]:
+                permissions = ["read", "write", "analytics", "export", "admin", "bulk_operations"]
+            else:  # starter, basic, free
+                permissions = ["read", "write"]
+        elif current_user.tier:
+            # Legacy tier fallback (deprecated)
+            if current_user.tier == "pro":
+                permissions = ["read", "write", "analytics", "export"]
+            elif current_user.tier == "enterprise":
+                permissions = ["read", "write", "analytics", "export", "admin", "bulk_operations"]
+            else:  # base tier
+                permissions = ["read", "write"]
+        else:
+            # Default permissions for free users
             permissions = ["read", "write"]
         
         return UserSessionInfo(

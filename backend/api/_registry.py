@@ -56,6 +56,7 @@ from . import (
     template_validation,  # Template coverage validation system for AI models
     error_taxonomy,  # Comprehensive error taxonomy mapping and classification
     pw_settings,  # PW-SETTINGS-ADD-001: Pressure washing settings namespaces API
+    pw_pricing,  # PW-PRICING-ADD-001: Pressure washing pricing engine with org-scoping
 )
 
 # Import CSRF router
@@ -123,6 +124,7 @@ ROUTERS = [
     template_validation.router,  # Template coverage validation system for AI models
     error_taxonomy.router,  # Comprehensive error taxonomy mapping and classification
     pw_settings.router,  # PW-SETTINGS-ADD-001: Pressure washing settings namespaces API
+    pw_pricing.router,  # PW-PRICING-ADD-001: Pressure washing pricing engine with org-scoping
 ]
 
 # Add CSRF router if available

@@ -22,6 +22,14 @@ settings = get_settings()
 logger = logging.getLogger(__name__)
 observability = get_observability_manager()
 
+# Import runbooks for automatic remediation
+try:
+    from backend.core.runbooks import automated_runbooks
+    RUNBOOKS_AVAILABLE = True
+except ImportError:
+    logger.warning("Runbooks module not available - automatic remediation disabled")
+    RUNBOOKS_AVAILABLE = False
+
 class AlertSeverity(Enum):
     """Alert severity levels with escalation policies"""
     CRITICAL = "critical"  # P0 - Immediate response
@@ -323,6 +331,111 @@ class AlertingService:
             "configuration_status": validation,
             "timestamp": datetime.utcnow().isoformat()
         }
+    
+    # Runbook Integration Methods (P1-8c)
+    async def handle_alert_with_runbook(self, alert_name: str, alert_labels: Dict[str, str], 
+                                       alert_annotations: Dict[str, str]) -> Optional[str]:
+        """Handle alert by triggering appropriate runbook if available"""
+        if not RUNBOOKS_AVAILABLE:
+            logger.warning("Runbooks not available - skipping automatic remediation")
+            return None
+        
+        try:
+            # Map alert names to runbook IDs
+            runbook_mapping = {
+                "DatabaseConnectionPoolExhausted": "db_performance_degradation",
+                "HighErrorRate": "high_error_rate", 
+                "ServiceDown": "service_unavailable",
+                "VectorStorePerformanceDegraded": "vector_store_optimization",
+                "HighAuthenticationFailureRate": "security_incident",
+                "ResearchSystemDown": "research_system_recovery"
+            }
+            
+            runbook_id = runbook_mapping.get(alert_name)
+            if not runbook_id:
+                logger.debug(f"No runbook defined for alert: {alert_name}")
+                return None
+            
+            # Create context from alert information
+            context = {
+                "alert_name": alert_name,
+                "alert_labels": alert_labels,
+                "alert_annotations": alert_annotations,
+                "triggered_at": datetime.utcnow().isoformat(),
+                "severity": alert_labels.get("severity", "unknown"),
+                "instance": alert_labels.get("instance", "unknown")
+            }
+            
+            # Execute runbook
+            execution_id = await automated_runbooks.execute_runbook(
+                runbook_id=runbook_id,
+                triggered_by=f"alert:{alert_name}",
+                context=context
+            )
+            
+            logger.info(f"Started runbook {runbook_id} for alert {alert_name}: {execution_id}")
+            return execution_id
+            
+        except Exception as e:
+            logger.error(f"Failed to execute runbook for alert {alert_name}: {e}")
+            return None
+    
+    def get_runbook_integration_status(self) -> Dict[str, Any]:
+        """Get status of runbook integration for monitoring"""
+        if not RUNBOOKS_AVAILABLE:
+            return {
+                "status": "disabled",
+                "reason": "Runbooks module not available"
+            }
+        
+        try:
+            return {
+                "status": "enabled",
+                "available_runbooks": len(automated_runbooks.runbooks),
+                "active_executions": len(automated_runbooks.active_executions),
+                "runbook_alert_mappings": {
+                    "DatabaseConnectionPoolExhausted": "db_performance_degradation",
+                    "HighErrorRate": "high_error_rate",
+                    "ServiceDown": "service_unavailable", 
+                    "VectorStorePerformanceDegraded": "vector_store_optimization",
+                    "HighAuthenticationFailureRate": "security_incident",
+                    "ResearchSystemDown": "research_system_recovery"
+                },
+                "last_updated": datetime.utcnow().isoformat()
+            }
+        except Exception as e:
+            return {
+                "status": "error",
+                "reason": str(e)
+            }
+    
+    async def process_prometheus_webhook(self, webhook_data: Dict[str, Any]) -> List[str]:
+        """Process Prometheus alertmanager webhook and trigger runbooks"""
+        execution_ids = []
+        
+        try:
+            alerts = webhook_data.get("alerts", [])
+            
+            for alert in alerts:
+                if alert.get("status") == "firing":
+                    alert_name = alert.get("labels", {}).get("alertname")
+                    if alert_name:
+                        execution_id = await self.handle_alert_with_runbook(
+                            alert_name=alert_name,
+                            alert_labels=alert.get("labels", {}),
+                            alert_annotations=alert.get("annotations", {})
+                        )
+                        if execution_id:
+                            execution_ids.append(execution_id)
+            
+            if execution_ids:
+                logger.info(f"Triggered {len(execution_ids)} runbooks from webhook")
+            
+            return execution_ids
+            
+        except Exception as e:
+            logger.error(f"Failed to process Prometheus webhook: {e}")
+            return []
 
 # Global alerting service instance
 _alerting_service = None

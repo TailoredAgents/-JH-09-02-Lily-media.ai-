@@ -7,6 +7,7 @@ Part of P1-5a: Migrate from legacy tier system to plan_id
 
 import logging
 from typing import Dict, Optional, Any
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 
@@ -250,3 +251,72 @@ def run_migration_if_needed(db: Session) -> Dict[str, Any]:
     else:
         logger.info("No migration needed - all users already have plan_id")
         return {'migration_run': False, 'message': 'Migration not needed'}
+
+
+def create_migration_command(db: Session) -> str:
+    """P1-5a: Generate migration command for immediate execution"""
+    migrator = TierToPlanMigrator(db)
+    
+    # Check current status
+    users_needing_migration = db.query(User).filter(
+        User.tier.isnot(None),
+        User.plan_id.is_(None)
+    ).count()
+    
+    if users_needing_migration == 0:
+        return "# No migration needed - all users already have plan_id set"
+    
+    # Get available plans
+    plans = db.query(Plan).all()
+    plan_info = "\n".join([f"# Plan: {plan.name} (ID: {plan.id})" for plan in plans])
+    
+    command = f"""
+# P1-5a: Tier to Plan Migration Command
+# Generated at: {datetime.now(timezone.utc).isoformat()}
+# Users needing migration: {users_needing_migration}
+
+{plan_info}
+
+# Run this in a Python shell connected to your database:
+from backend.db.database import get_db
+from backend.utils.tier_to_plan_migration import run_migration_if_needed
+
+with get_db() as db:
+    result = run_migration_if_needed(db)
+    print("Migration result:", result)
+
+# Or use the API endpoint (admin required):
+# POST /api/admin/migrate-tiers-to-plans
+"""
+    return command
+
+
+def get_migration_status_report(db: Session) -> Dict[str, Any]:
+    """P1-5a: Get comprehensive migration status report"""
+    migrator = TierToPlanMigrator(db)
+    verification = migrator.verify_migration()
+    
+    # Get tier distribution
+    from sqlalchemy import text
+    tier_distribution = db.execute(
+        text("SELECT tier, COUNT(*) as count FROM users WHERE tier IS NOT NULL GROUP BY tier")
+    ).fetchall()
+    
+    plan_distribution = db.execute(
+        text("""
+            SELECT p.name, COUNT(u.id) as count 
+            FROM plans p 
+            LEFT JOIN users u ON p.id = u.plan_id 
+            GROUP BY p.id, p.name
+        """)
+    ).fetchall()
+    
+    return {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "migration_status": "complete" if verification["users_with_tier_only"] == 0 else "pending",
+        "summary": verification,
+        "tier_distribution": dict(tier_distribution) if tier_distribution else {},
+        "plan_distribution": dict(plan_distribution) if plan_distribution else {},
+        "migration_needed": is_migration_needed(db),
+        "command": create_migration_command(db) if is_migration_needed(db) else None
+    }

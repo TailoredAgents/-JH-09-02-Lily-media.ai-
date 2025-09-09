@@ -35,6 +35,7 @@ from backend.core.pagination import (
     CursorPaginatedResponse
 )
 from backend.core.performance import performance_monitor, cached
+from backend.services.plan_aware_social_service import get_plan_aware_social_service
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +87,7 @@ async def initiate_oauth_connection(
 ):
     """
     Initiate OAuth connection for a social platform
+    SECURITY: Now includes plan-aware validation to prevent subscription bypass
     
     Args:
         platform: Social platform name (twitter, linkedin, instagram)
@@ -99,6 +101,35 @@ async def initiate_oauth_connection(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Unsupported platform: {platform}"
+        )
+
+    # SECURITY FIX: Add plan-aware validation to prevent legacy bypass
+    plan_service = get_plan_aware_social_service(db)
+    enforcement_result = await plan_service.enforce_connection_limit(
+        user_id=current_user.id,
+        platform=platform
+    )
+    
+    if not enforcement_result["allowed"]:
+        # Log the bypass attempt for security monitoring
+        logger.warning(
+            f"Legacy connection attempt blocked for user {current_user.id} on {platform}: "
+            f"{enforcement_result['reason']} - {enforcement_result['message']}"
+        )
+        
+        # Return plan enforcement error with upgrade suggestions
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "error": "connection_not_allowed",
+                "reason": enforcement_result["reason"],
+                "message": enforcement_result["message"],
+                "current_usage": enforcement_result.get("current_usage"),
+                "limits": enforcement_result.get("limits"),
+                "suggested_plans": enforcement_result.get("suggested_plans", []),
+                "upgrade_url": "/billing/upgrade",
+                "contact_support": "Need help? Contact support@lily-ai.com"
+            }
         )
     
     try:
@@ -115,13 +146,17 @@ async def initiate_oauth_connection(
         elif platform == "instagram":
             auth_url, oauth_state = instagram_client.get_oauth_authorization_url(redirect_uri, state)
         
-        # Log OAuth initiation
+        # Log OAuth initiation with legacy endpoint tracking
         log_content_event(
             AuditEventType.AUTHENTICATION_SUCCESS,
             user_id=current_user.id,
             resource=f"{platform}_oauth_init",
             action="initiate_connection",
-            additional_data={"platform": platform}
+            additional_data={
+                "platform": platform,
+                "endpoint_type": "legacy_social_platforms",
+                "plan_enforcement": "enabled"
+            }
         )
         
         return {
@@ -173,6 +208,27 @@ async def oauth_callback(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found"
+            )
+
+        # SECURITY FIX: Add plan-aware validation to prevent callback bypass
+        plan_service = get_plan_aware_social_service(db)
+        enforcement_result = await plan_service.enforce_connection_limit(
+            user_id=user_id,
+            platform=platform
+        )
+        
+        if not enforcement_result["allowed"]:
+            # Log the bypass attempt for security monitoring
+            logger.warning(
+                f"Legacy OAuth callback blocked for user {user_id} on {platform}: "
+                f"{enforcement_result['reason']} - {enforcement_result['message']}"
+            )
+            
+            # Redirect to frontend with plan enforcement error
+            error_params = f"error=plan_limit&reason={enforcement_result['reason']}&platform={platform}"
+            return RedirectResponse(
+                url=f"http://localhost:3000/dashboard/connections?{error_params}",
+                status_code=status.HTTP_302_FOUND
             )
         
         # Exchange code for tokens based on platform
@@ -232,7 +288,7 @@ async def oauth_callback(
         
         db.commit()
         
-        # Log successful connection
+        # Log successful connection with legacy endpoint tracking
         log_content_event(
             AuditEventType.AUTHENTICATION_SUCCESS,
             user_id=user_id,
@@ -241,7 +297,9 @@ async def oauth_callback(
             additional_data={
                 "platform": platform,
                 "platform_user_id": user_info.get("id", ""),
-                "platform_username": user_info.get("username", "")
+                "platform_username": user_info.get("username", ""),
+                "endpoint_type": "legacy_social_platforms",
+                "plan_enforcement": "enabled"
             }
         )
         

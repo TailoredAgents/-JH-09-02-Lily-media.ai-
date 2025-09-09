@@ -221,6 +221,10 @@ class DataRetentionService:
         if not created_date:
             return False
             
+        # Ensure created_date is timezone aware
+        if created_date.tzinfo is None:
+            created_date = created_date.replace(tzinfo=timezone.utc)
+            
         retention_date = self.calculate_retention_date(category, created_date)
         return datetime.now(timezone.utc) > retention_date
     
@@ -239,8 +243,8 @@ class DataRetentionService:
             ],
             DataCategory.METRICS_DATA: [
                 (Metric, "date_recorded"),
-                (ContentPerformanceSnapshot, "snapshot_date"),
-                (PlatformMetricsSnapshot, "snapshot_date"),
+                (ContentPerformanceSnapshot, "snapshot_time"),
+                (PlatformMetricsSnapshot, "snapshot_time"),
             ],
             DataCategory.AI_GENERATED: [
                 (Memory, "created_at"),
@@ -265,7 +269,7 @@ class DataRetentionService:
                 (ResearchData, "created_at"),
             ],
             DataCategory.SECURITY_DATA: [
-                (RefreshTokenBlacklist, "blacklisted_at"),
+                (RefreshTokenBlacklist, "revoked_at"),
             ],
         }
         
@@ -401,7 +405,7 @@ class DataRetentionService:
         
         # Performance snapshots
         perf_snapshots = db.query(ContentPerformanceSnapshot).filter(
-            ContentPerformanceSnapshot.snapshot_date < cutoff_date
+            ContentPerformanceSnapshot.snapshot_time < cutoff_date
         )
         deleted_counts["ContentPerformanceSnapshot"] = perf_snapshots.count()
         if deleted_counts["ContentPerformanceSnapshot"] > 0:
@@ -409,7 +413,7 @@ class DataRetentionService:
         
         # Platform metrics snapshots
         platform_snapshots = db.query(PlatformMetricsSnapshot).filter(
-            PlatformMetricsSnapshot.snapshot_date < cutoff_date
+            PlatformMetricsSnapshot.snapshot_time < cutoff_date
         )
         deleted_counts["PlatformMetricsSnapshot"] = platform_snapshots.count()
         if deleted_counts["PlatformMetricsSnapshot"] > 0:
@@ -427,11 +431,11 @@ class DataRetentionService:
         if deleted_counts["Memory"] > 0:
             memories.delete(synchronize_session=False)
         
-        # AI-generated content (where ai_model_used is not null)
+        # AI-generated content (where ai_model is not null)
         ai_content = db.query(Content).filter(
             and_(
                 Content.created_at < cutoff_date,
-                Content.ai_model_used.isnot(None)
+                Content.ai_model.isnot(None)
             )
         )
         deleted_counts["AIContent"] = ai_content.count()
@@ -516,7 +520,7 @@ class DataRetentionService:
         
         # Blacklisted refresh tokens
         blacklisted_tokens = db.query(RefreshTokenBlacklist).filter(
-            RefreshTokenBlacklist.blacklisted_at < cutoff_date
+            RefreshTokenBlacklist.revoked_at < cutoff_date
         )
         deleted_counts["RefreshTokenBlacklist"] = blacklisted_tokens.count()
         if deleted_counts["RefreshTokenBlacklist"] > 0:

@@ -3,6 +3,7 @@ import { usePlan } from '../contexts/PlanContext'
 import { useAuth } from '../contexts/AuthContext'
 import { useNotifications } from '../hooks/useNotifications'
 import api from '../services/api'
+import TrialTermsDisclosure from './billing/TrialTermsDisclosure'
 import {
   XMarkIcon,
   CheckIcon,
@@ -27,6 +28,9 @@ const UpgradeFlow = ({
   const { showSuccess, showError } = useNotifications()
   const [loading, setLoading] = useState(null)
   const [selectedBilling, setSelectedBilling] = useState('monthly')
+  const [showTermsModal, setShowTermsModal] = useState(false)
+  const [selectedPlan, setSelectedPlan] = useState(null)
+  const [termsAccepted, setTermsAccepted] = useState(false)
 
   const plans = [
     {
@@ -87,18 +91,32 @@ const UpgradeFlow = ({
     },
   ]
 
+  // P1-10b: Show terms disclosure before upgrade
   const handleUpgrade = async (planName) => {
     if (loading) return
+    
+    // Set selected plan and show terms modal
+    setSelectedPlan(planName)
+    setShowTermsModal(true)
+  }
+  
+  // P1-10b: Process upgrade after terms acceptance
+  const handleProceedWithUpgrade = async () => {
+    if (!selectedPlan || loading) return
 
-    setLoading(planName)
+    setLoading(selectedPlan)
+    setShowTermsModal(false)
+    
     try {
       const response = await api.request('/api/billing/checkout', {
         method: 'POST',
         body: {
-          plan_name: planName,
+          plan_name: selectedPlan,
           annual_billing: selectedBilling === 'annual',
           success_url: `${window.location.origin}/billing?success=true`,
           cancel_url: window.location.href,
+          // P1-10b: Include terms acceptance timestamp for compliance
+          terms_accepted_at: new Date().toISOString(),
         },
       })
 
@@ -112,7 +130,24 @@ const UpgradeFlow = ({
       )
     } finally {
       setLoading(null)
+      setSelectedPlan(null)
+      setTermsAccepted(false)
     }
+  }
+  
+  // P1-10b: Handle terms acceptance
+  const handleTermsAccept = (termsData) => {
+    setTermsAccepted(true)
+    // Store terms data for compliance
+    console.log('Terms accepted:', termsData)
+    handleProceedWithUpgrade()
+  }
+  
+  // P1-10b: Handle terms decline
+  const handleTermsDecline = () => {
+    setShowTermsModal(false)
+    setSelectedPlan(null)
+    setTermsAccepted(false)
   }
 
   const getPlanIcon = (planData) => {
@@ -322,25 +357,71 @@ const UpgradeFlow = ({
               })}
             </div>
 
-            {/* Footer note */}
-            <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
-              <p>
-                All plans include a 14-day free trial. Cancel anytime. No setup
-                fees.
-              </p>
-              <p className="mt-1">
-                Questions?{' '}
-                <a
-                  href="mailto:support@lily-ai.com"
-                  className="text-blue-600 hover:text-blue-500"
-                >
-                  Contact support
-                </a>
-              </p>
+            {/* P1-10b: Enhanced Footer with FTC Compliance Notice */}
+            <div className="mt-8 space-y-4">
+              {/* Key Terms Summary */}
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                  Important: Trial & Billing Terms
+                </h4>
+                <div className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                  <p>• <strong>14-day free trial</strong> with automatic conversion to paid subscription</p>
+                  <p>• <strong>You will be charged</strong> on the day after your trial ends unless you cancel</p>
+                  <p>• <strong>Cancel anytime</strong> through your account settings or billing portal</p>
+                  <p>• <strong>No cancellation fees</strong> - cancel up until 11:59 PM on your trial end date</p>
+                </div>
+              </div>
+              
+              {/* Standard Footer */}
+              <div className="text-center text-sm text-gray-500 dark:text-gray-400">
+                <p>
+                  Questions?{' '}
+                  <a
+                    href="mailto:support@lily-ai.com"
+                    className="text-blue-600 hover:text-blue-500"
+                  >
+                    Contact support
+                  </a>
+                  {' '}|{' '}
+                  <a
+                    href="/terms"
+                    className="text-blue-600 hover:text-blue-500"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Terms of Service
+                  </a>
+                  {' '}|{' '}
+                  <a
+                    href="/privacy"
+                    className="text-blue-600 hover:text-blue-500"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Privacy Policy
+                  </a>
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </div>
+      
+      {/* P1-10b: FTC-Compliant Trial Terms Disclosure Modal */}
+      {showTermsModal && selectedPlan && (
+        <TrialTermsDisclosure
+          planName={plans.find(p => p.name === selectedPlan)?.display_name || selectedPlan}
+          trialDays={14}
+          monthlyPrice={plans.find(p => p.name === selectedPlan)?.monthly_price || 99}
+          annualPrice={plans.find(p => p.name === selectedPlan)?.annual_price || 79}
+          isAnnualBilling={selectedBilling === 'annual'}
+          showModal={true}
+          onCloseModal={handleTermsDecline}
+          onAccept={handleTermsAccept}
+          onDecline={handleTermsDecline}
+          requireExplicitConsent={true}
+        />
+      )}
     </div>
   )
 }

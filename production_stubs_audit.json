@@ -1,0 +1,1503 @@
+{
+  "timestamp": "2025-09-08T19:44:25.697105",
+  "files_scanned": 7299,
+  "total_issues": 164,
+  "critical_issues": 3,
+  "high_issues": 45,
+  "medium_issues": 116,
+  "issues_by_severity": {
+    "critical": [
+      {
+        "file_path": "scripts/disable_production_stubs.py",
+        "line_number": 189,
+        "issue_type": "CORS wildcard origins",
+        "description": "Line 189: CORS wildcard origins",
+        "current_code": "\"old\": '    allow_origins=[\"*\"],',",
+        "recommended_fix": "Replace with specific allowed origins",
+        "severity": "CRITICAL"
+      },
+      {
+        "file_path": "scripts/disable_production_stubs.py",
+        "line_number": 195,
+        "issue_type": "CORS wildcard origins",
+        "description": "Line 195: CORS wildcard origins",
+        "current_code": "\"old\": '            allow_origins=[\"*\"],',",
+        "recommended_fix": "Replace with specific allowed origins",
+        "severity": "CRITICAL"
+      },
+      {
+        "file_path": "scripts/disable_production_stubs.py",
+        "line_number": 201,
+        "issue_type": "CORS wildcard origins",
+        "description": "Line 201: CORS wildcard origins",
+        "current_code": "\"old\": '    allow_origins=[\"*\"],',",
+        "recommended_fix": "Replace with specific allowed origins",
+        "severity": "CRITICAL"
+      }
+    ],
+    "high": [
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/aiohttp/connector.py",
+        "line_number": 783,
+        "issue_type": "Hostname verification disabled",
+        "description": "Line 783: Hostname verification disabled",
+        "current_code": "sslcontext.check_hostname = False",
+        "recommended_fix": "Enable hostname verification",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/pyparsing/core.py",
+        "line_number": 1854,
+        "issue_type": "Debug mode enabled",
+        "description": "Line 1854: Debug mode enabled",
+        "current_code": "self.debug = True",
+        "recommended_fix": "Disable debug mode",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/asyncpg/connection.py",
+        "line_number": 2278,
+        "issue_type": "Hostname verification disabled",
+        "description": "Line 2278: Hostname verification disabled",
+        "current_code": "...     sslctx.check_hostname = False",
+        "recommended_fix": "Enable hostname verification",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/redis/client.py",
+        "line_number": 195,
+        "issue_type": "Hostname verification disabled",
+        "description": "Line 195: Hostname verification disabled",
+        "current_code": "ssl_check_hostname=False,",
+        "recommended_fix": "Enable hostname verification",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/redis/connection.py",
+        "line_number": 950,
+        "issue_type": "Hostname verification disabled",
+        "description": "Line 950: Hostname verification disabled",
+        "current_code": "ssl_check_hostname=False,",
+        "recommended_fix": "Enable hostname verification",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/nltk/data.py",
+        "line_number": 1071,
+        "issue_type": "Debug mode enabled",
+        "description": "Line 1071: Debug mode enabled",
+        "current_code": "DEBUG = True  # : If true, then perform extra sanity checks.",
+        "recommended_fix": "Disable debug mode",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/sentry_sdk/client.py",
+        "line_number": 833,
+        "issue_type": "Debug mode enabled",
+        "description": "Line 833: Debug mode enabled",
+        "current_code": ":returns: An event ID. May be `None` if there is no DSN set or of if the SDK decided to discard the event for other reasons. In such situations setting `debug=True` on `init()` may help.",
+        "recommended_fix": "Disable debug mode",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/sentry_sdk/serializer.py",
+        "line_number": 230,
+        "issue_type": "Debug mode enabled",
+        "description": "Line 230: Debug mode enabled",
+        "current_code": "return \"<failed to serialize, use init(debug=True) to see error logs>\"",
+        "recommended_fix": "Disable debug mode",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/tornado/netutil.py",
+        "line_number": 628,
+        "issue_type": "Hostname verification disabled",
+        "description": "Line 628: Hostname verification disabled",
+        "current_code": "context.check_hostname = False",
+        "recommended_fix": "Enable hostname verification",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/tornado/tcpserver.py",
+        "line_number": 282,
+        "issue_type": "Debug mode enabled",
+        "description": "Line 282: Debug mode enabled",
+        "current_code": "which defaults to True when ``debug=True``).",
+        "recommended_fix": "Disable debug mode",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/tornado/process.py",
+        "line_number": 98,
+        "issue_type": "Debug mode enabled",
+        "description": "Line 98: Debug mode enabled",
+        "current_code": "which defaults to True when ``debug=True``).",
+        "recommended_fix": "Disable debug mode",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/tornado/autoreload.py",
+        "line_number": 20,
+        "issue_type": "Debug mode enabled",
+        "description": "Line 20: Debug mode enabled",
+        "current_code": "`tornado.web.Application` constructor (or ``debug=True``, which",
+        "recommended_fix": "Disable debug mode",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/tornado/autoreload.py",
+        "line_number": 26,
+        "issue_type": "Debug mode enabled",
+        "description": "Line 26: Debug mode enabled",
+        "current_code": "pass both ``debug=True`` and ``autoreload=False``).",
+        "recommended_fix": "Disable debug mode",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/tornado/simple_httpclient.py",
+        "line_number": 468,
+        "issue_type": "Hostname verification disabled",
+        "description": "Line 468: Hostname verification disabled",
+        "current_code": "ssl_ctx.check_hostname = False",
+        "recommended_fix": "Enable hostname verification",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/httpx/_config.py",
+        "line_number": 99,
+        "issue_type": "Hostname verification disabled",
+        "description": "Line 99: Hostname verification disabled",
+        "current_code": "context.check_hostname = False",
+        "recommended_fix": "Enable hostname verification",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/uvloop/_testbase.py",
+        "line_number": 95,
+        "issue_type": "Debug mode enabled",
+        "description": "Line 95: Debug mode enabled",
+        "current_code": "self._check_unclosed_resources_in_debug = True",
+        "recommended_fix": "Disable debug mode",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/uvloop/_testbase.py",
+        "line_number": 284,
+        "issue_type": "Hostname verification disabled",
+        "description": "Line 284: Hostname verification disabled",
+        "current_code": "sslcontext.check_hostname = False",
+        "recommended_fix": "Enable hostname verification",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/prometheus_client/exposition.py",
+        "line_number": 475,
+        "issue_type": "Hostname verification disabled",
+        "description": "Line 475: Hostname verification disabled",
+        "current_code": "context.check_hostname = False",
+        "recommended_fix": "Enable hostname verification",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/urllib3/connection.py",
+        "line_number": 945,
+        "issue_type": "Hostname verification disabled",
+        "description": "Line 945: Hostname verification disabled",
+        "current_code": "context.check_hostname = False",
+        "recommended_fix": "Enable hostname verification",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/dns/query.py",
+        "line_number": 1205,
+        "issue_type": "Hostname verification disabled",
+        "description": "Line 1205: Hostname verification disabled",
+        "current_code": "ssl_context.check_hostname = False",
+        "recommended_fix": "Enable hostname verification",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/stripe/_http_client.py",
+        "line_number": 1428,
+        "issue_type": "SSL verification disabled",
+        "description": "Line 1428: SSL verification disabled",
+        "current_code": "verify_ssl=False",
+        "recommended_fix": "Enable SSL verification",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/pip_api/_vendor/pyparsing.py",
+        "line_number": 2499,
+        "issue_type": "Debug mode enabled",
+        "description": "Line 2499: Debug mode enabled",
+        "current_code": "self.debug = True",
+        "recommended_fix": "Disable debug mode",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/celery/concurrency/base.py",
+        "line_number": 65,
+        "issue_type": "Debug mode enabled",
+        "description": "Line 65: Debug mode enabled",
+        "current_code": "_does_debug = True",
+        "recommended_fix": "Disable debug mode",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/urllib3/util/ssl_.py",
+        "line_number": 353,
+        "issue_type": "Hostname verification disabled",
+        "description": "Line 353: Hostname verification disabled",
+        "current_code": "# We always set 'check_hostname=False' for pyOpenSSL so we rely on our own",
+        "recommended_fix": "Enable hostname verification",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/urllib3/util/ssl_.py",
+        "line_number": 359,
+        "issue_type": "Hostname verification disabled",
+        "description": "Line 359: Hostname verification disabled",
+        "current_code": "context.check_hostname = False",
+        "recommended_fix": "Enable hostname verification",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/urllib3/contrib/pyopenssl.py",
+        "line_number": 424,
+        "issue_type": "Hostname verification disabled",
+        "description": "Line 424: Hostname verification disabled",
+        "current_code": "self.check_hostname = False",
+        "recommended_fix": "Enable hostname verification",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/pip/_vendor/truststore/_macos.py",
+        "line_number": 371,
+        "issue_type": "Hostname verification disabled",
+        "description": "Line 371: Hostname verification disabled",
+        "current_code": "ctx.check_hostname = False",
+        "recommended_fix": "Enable hostname verification",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/pip/_vendor/truststore/_macos.py",
+        "line_number": 490,
+        "issue_type": "Hostname verification disabled",
+        "description": "Line 490: Hostname verification disabled",
+        "current_code": "# for macOS 10.13 and earlier, so check_hostname=False will",
+        "recommended_fix": "Enable hostname verification",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/pip/_vendor/truststore/_windows.py",
+        "line_number": 561,
+        "issue_type": "Hostname verification disabled",
+        "description": "Line 561: Hostname verification disabled",
+        "current_code": "ctx.check_hostname = False",
+        "recommended_fix": "Enable hostname verification",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/pip/_vendor/urllib3/util/ssl_.py",
+        "line_number": 140,
+        "issue_type": "Hostname verification disabled",
+        "description": "Line 140: Hostname verification disabled",
+        "current_code": "self.check_hostname = False",
+        "recommended_fix": "Enable hostname verification",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/pip/_vendor/urllib3/util/ssl_.py",
+        "line_number": 340,
+        "issue_type": "Hostname verification disabled",
+        "description": "Line 340: Hostname verification disabled",
+        "current_code": "context.check_hostname = False",
+        "recommended_fix": "Enable hostname verification",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/pip/_vendor/urllib3/contrib/pyopenssl.py",
+        "line_number": 434,
+        "issue_type": "Hostname verification disabled",
+        "description": "Line 434: Hostname verification disabled",
+        "current_code": "self.check_hostname = False",
+        "recommended_fix": "Enable hostname verification",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/sqlalchemy/dialects/postgresql/pg8000.py",
+        "line_number": 65,
+        "issue_type": "Hostname verification disabled",
+        "description": "Line 65: Hostname verification disabled",
+        "current_code": "ssl_context.check_hostname = False",
+        "recommended_fix": "Enable hostname verification",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/sqlalchemy/dialects/mysql/pymysql.py",
+        "line_number": 34,
+        "issue_type": "Hostname verification disabled",
+        "description": "Line 34: Hostname verification disabled",
+        "current_code": "necessary to indicate ``ssl_check_hostname=false`` in PyMySQL::",
+        "recommended_fix": "Enable hostname verification",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/sqlalchemy/dialects/mysql/pymysql.py",
+        "line_number": 41,
+        "issue_type": "Hostname verification disabled",
+        "description": "Line 41: Hostname verification disabled",
+        "current_code": "\"&ssl_check_hostname=false\"",
+        "recommended_fix": "Enable hostname verification",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/nltk/classify/rte_classify.py",
+        "line_number": 98,
+        "issue_type": "Debug mode enabled",
+        "description": "Line 98: Debug mode enabled",
+        "current_code": "def hyp_extra(self, toktype, debug=True):",
+        "recommended_fix": "Disable debug mode",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/pycparser/ply/yacc.py",
+        "line_number": 79,
+        "issue_type": "Debug mode enabled",
+        "description": "Line 79: Debug mode enabled",
+        "current_code": "yaccdebug   = True             # Debugging mode.  If set, yacc generates a",
+        "recommended_fix": "Disable debug mode",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": "backend/core/app_factory.py",
+        "line_number": 517,
+        "issue_type": "Debug mode enabled",
+        "description": "Line 517: Debug mode enabled",
+        "current_code": "config = AppConfig(environment=\"development\", debug=True, enable_docs=True)",
+        "recommended_fix": "Disable debug mode",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": "backend/core/app_factory.py",
+        "line_number": 531,
+        "issue_type": "Debug mode enabled",
+        "description": "Line 531: Debug mode enabled",
+        "current_code": "debug=True,",
+        "recommended_fix": "Disable debug mode",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": "frontend/venv/lib/python3.13/site-packages/pip/_vendor/truststore/_macos.py",
+        "line_number": 371,
+        "issue_type": "Hostname verification disabled",
+        "description": "Line 371: Hostname verification disabled",
+        "current_code": "ctx.check_hostname = False",
+        "recommended_fix": "Enable hostname verification",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": "frontend/venv/lib/python3.13/site-packages/pip/_vendor/truststore/_macos.py",
+        "line_number": 490,
+        "issue_type": "Hostname verification disabled",
+        "description": "Line 490: Hostname verification disabled",
+        "current_code": "# for macOS 10.13 and earlier, so check_hostname=False will",
+        "recommended_fix": "Enable hostname verification",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": "frontend/venv/lib/python3.13/site-packages/pip/_vendor/truststore/_windows.py",
+        "line_number": 561,
+        "issue_type": "Hostname verification disabled",
+        "description": "Line 561: Hostname verification disabled",
+        "current_code": "ctx.check_hostname = False",
+        "recommended_fix": "Enable hostname verification",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": "frontend/venv/lib/python3.13/site-packages/pip/_vendor/urllib3/util/ssl_.py",
+        "line_number": 140,
+        "issue_type": "Hostname verification disabled",
+        "description": "Line 140: Hostname verification disabled",
+        "current_code": "self.check_hostname = False",
+        "recommended_fix": "Enable hostname verification",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": "frontend/venv/lib/python3.13/site-packages/pip/_vendor/urllib3/util/ssl_.py",
+        "line_number": 340,
+        "issue_type": "Hostname verification disabled",
+        "description": "Line 340: Hostname verification disabled",
+        "current_code": "context.check_hostname = False",
+        "recommended_fix": "Enable hostname verification",
+        "severity": "HIGH"
+      },
+      {
+        "file_path": "frontend/venv/lib/python3.13/site-packages/pip/_vendor/urllib3/contrib/pyopenssl.py",
+        "line_number": 434,
+        "issue_type": "Hostname verification disabled",
+        "description": "Line 434: Hostname verification disabled",
+        "current_code": "self.check_hostname = False",
+        "recommended_fix": "Enable hostname verification",
+        "severity": "HIGH"
+      }
+    ],
+    "medium": [
+      {
+        "file_path": "app_old.py",
+        "line_number": 151,
+        "issue_type": "Hardcoded development environment",
+        "description": "Line 151: Hardcoded development environment",
+        "current_code": "debug=environment == \"development\",",
+        "recommended_fix": "Use environment variables",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "app.py",
+        "line_number": 107,
+        "issue_type": "Hardcoded development environment",
+        "description": "Line 107: Hardcoded development environment",
+        "current_code": "debug=environment == \"development\",",
+        "recommended_fix": "Use environment variables",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "migrate_database.py",
+        "line_number": 81,
+        "issue_type": "Hardcoded development environment",
+        "description": "Line 81: Hardcoded development environment",
+        "current_code": "environment = os.getenv(\"ENVIRONMENT\", \"development\")",
+        "recommended_fix": "Use environment variables",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "scripts/create_super_admin.py",
+        "line_number": 176,
+        "issue_type": "Hardcoded development environment",
+        "description": "Line 176: Hardcoded development environment",
+        "current_code": "environment = os.getenv(\"ENVIRONMENT\", \"development\")",
+        "recommended_fix": "Use environment variables",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "scripts/comprehensive_security_audit.py",
+        "line_number": 530,
+        "issue_type": "Hardcoded development environment",
+        "description": "Line 530: Hardcoded development environment",
+        "current_code": "environment = os.getenv(\"ENVIRONMENT\", \"development\")",
+        "recommended_fix": "Use environment variables",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "scripts/comprehensive_security_audit.py",
+        "line_number": 533,
+        "issue_type": "Development environment check",
+        "description": "Line 533: Development environment check",
+        "current_code": "if environment == \"development\" and debug:",
+        "recommended_fix": "Ensure production security",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "scripts/comprehensive_security_audit.py",
+        "line_number": 533,
+        "issue_type": "Hardcoded development environment",
+        "description": "Line 533: Hardcoded development environment",
+        "current_code": "if environment == \"development\" and debug:",
+        "recommended_fix": "Use environment variables",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "scripts/disable_production_stubs.py",
+        "line_number": 55,
+        "issue_type": "Debug mode check",
+        "description": "Line 55: Debug mode check",
+        "current_code": "(r'if.*debug.*==.*True', 'MEDIUM',",
+        "recommended_fix": "Ensure disabled in production",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "scripts/disable_production_stubs.py",
+        "line_number": 68,
+        "issue_type": "No SSL context",
+        "description": "Line 68: No SSL context",
+        "current_code": "(r'ssl_context.*=.*None', 'MEDIUM', 'No SSL context', 'Configure SSL context'),",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "scripts/setup_wizard.py",
+        "line_number": 210,
+        "issue_type": "Hardcoded development environment",
+        "description": "Line 210: Hardcoded development environment",
+        "current_code": "environment = \"development\" if \"Development\" in env_type else \"production\" if \"Production\" in env_type else \"testing\"",
+        "recommended_fix": "Use environment variables",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "scripts/setup_wizard.py",
+        "line_number": 216,
+        "issue_type": "Development environment check",
+        "description": "Line 216: Development environment check",
+        "current_code": "self.config['DEBUG'] = 'true' if environment == 'development' else 'false'",
+        "recommended_fix": "Ensure production security",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "scripts/setup_wizard.py",
+        "line_number": 216,
+        "issue_type": "Hardcoded development environment",
+        "description": "Line 216: Hardcoded development environment",
+        "current_code": "self.config['DEBUG'] = 'true' if environment == 'development' else 'false'",
+        "recommended_fix": "Use environment variables",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "scripts/setup_wizard.py",
+        "line_number": 441,
+        "issue_type": "Hardcoded development environment",
+        "description": "Line 441: Hardcoded development environment",
+        "current_code": "ENVIRONMENT={self.config.get('ENVIRONMENT', 'development')}",
+        "recommended_fix": "Use environment variables",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "scripts/setup_wizard.py",
+        "line_number": 540,
+        "issue_type": "Hardcoded development environment",
+        "description": "Line 540: Hardcoded development environment",
+        "current_code": "VITE_ENVIRONMENT={self.config.get('ENVIRONMENT', 'development')}",
+        "recommended_fix": "Use environment variables",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/jwt/jwks_client.py",
+        "line_number": 24,
+        "issue_type": "No SSL context",
+        "description": "Line 24: No SSL context",
+        "current_code": "ssl_context: Optional[SSLContext] = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/aiohttp/web.py",
+        "line_number": 310,
+        "issue_type": "No SSL context",
+        "description": "Line 310: No SSL context",
+        "current_code": "ssl_context: Optional[SSLContext] = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/aiohttp/web.py",
+        "line_number": 472,
+        "issue_type": "No SSL context",
+        "description": "Line 472: No SSL context",
+        "current_code": "ssl_context: Optional[SSLContext] = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/aiohttp/client.py",
+        "line_number": 477,
+        "issue_type": "No SSL context",
+        "description": "Line 477: No SSL context",
+        "current_code": "ssl_context: Optional[SSLContext] = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/aiohttp/client.py",
+        "line_number": 844,
+        "issue_type": "No SSL context",
+        "description": "Line 844: No SSL context",
+        "current_code": "ssl_context: Optional[SSLContext] = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/aiohttp/client.py",
+        "line_number": 896,
+        "issue_type": "No SSL context",
+        "description": "Line 896: No SSL context",
+        "current_code": "ssl_context: Optional[SSLContext] = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/aiohttp/web_runner.py",
+        "line_number": 49,
+        "issue_type": "No SSL context",
+        "description": "Line 49: No SSL context",
+        "current_code": "ssl_context: Optional[SSLContext] = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/aiohttp/web_runner.py",
+        "line_number": 90,
+        "issue_type": "No SSL context",
+        "description": "Line 90: No SSL context",
+        "current_code": "ssl_context: Optional[SSLContext] = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/aiohttp/web_runner.py",
+        "line_number": 139,
+        "issue_type": "No SSL context",
+        "description": "Line 139: No SSL context",
+        "current_code": "ssl_context: Optional[SSLContext] = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/aiohttp/web_runner.py",
+        "line_number": 208,
+        "issue_type": "No SSL context",
+        "description": "Line 208: No SSL context",
+        "current_code": "ssl_context: Optional[SSLContext] = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/aiohttp/connector.py",
+        "line_number": 837,
+        "issue_type": "No SSL context",
+        "description": "Line 837: No SSL context",
+        "current_code": "ssl_context: Optional[SSLContext] = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/httpcore/_models.py",
+        "line_number": 502,
+        "issue_type": "No SSL context",
+        "description": "Line 502: No SSL context",
+        "current_code": "ssl_context: ssl.SSLContext | None = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/asyncpg/connect_utils.py",
+        "line_number": 778,
+        "issue_type": "No SSL context",
+        "description": "Line 778: No SSL context",
+        "current_code": "self.ssl_context.verify_mode == ssl_module.CERT_NONE and",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/requests/adapters.py",
+        "line_number": 87,
+        "issue_type": "No SSL context",
+        "description": "Line 87: No SSL context",
+        "current_code": "_preloaded_ssl_context = None",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/httpx/_config.py",
+        "line_number": 330,
+        "issue_type": "No SSL context",
+        "description": "Line 330: No SSL context",
+        "current_code": "ssl_context: ssl.SSLContext | None = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/uvloop/_testbase.py",
+        "line_number": 271,
+        "issue_type": "No SSL context",
+        "description": "Line 271: No SSL context",
+        "current_code": "def _create_server_ssl_context(self, certfile, keyfile=None):",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/urllib3/_base_connection.py",
+        "line_number": 155,
+        "issue_type": "No SSL context",
+        "description": "Line 155: No SSL context",
+        "current_code": "ssl_context: ssl.SSLContext | None = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/urllib3/poolmanager.py",
+        "line_number": 569,
+        "issue_type": "No SSL context",
+        "description": "Line 569: No SSL context",
+        "current_code": "proxy_ssl_context: ssl.SSLContext | None = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/urllib3/connection.py",
+        "line_number": 632,
+        "issue_type": "No SSL context",
+        "description": "Line 632: No SSL context",
+        "current_code": "ssl_context: ssl.SSLContext | None = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/dns/query.py",
+        "line_number": 320,
+        "issue_type": "No SSL context",
+        "description": "Line 320: No SSL context",
+        "current_code": "def _make_socket(af, type, source, ssl_context=None, server_hostname=None):",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/dns/query.py",
+        "line_number": 1208,
+        "issue_type": "No SSL context",
+        "description": "Line 1208: No SSL context",
+        "current_code": "ssl_context.verify_mode = ssl.CERT_NONE",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/dns/query.py",
+        "line_number": 1222,
+        "issue_type": "No SSL context",
+        "description": "Line 1222: No SSL context",
+        "current_code": "ssl_context: Optional[ssl.SSLContext] = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/dns/_trio_backend.py",
+        "line_number": 203,
+        "issue_type": "No SSL context",
+        "description": "Line 203: No SSL context",
+        "current_code": "ssl_context=None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/dns/asyncquery.py",
+        "line_number": 448,
+        "issue_type": "No SSL context",
+        "description": "Line 448: No SSL context",
+        "current_code": "ssl_context: Optional[ssl.SSLContext] = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/dns/_asyncbackend.py",
+        "line_number": 85,
+        "issue_type": "No SSL context",
+        "description": "Line 85: No SSL context",
+        "current_code": "ssl_context=None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/dns/_asyncio_backend.py",
+        "line_number": 226,
+        "issue_type": "No SSL context",
+        "description": "Line 226: No SSL context",
+        "current_code": "ssl_context=None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/urllib3/util/ssl_.py",
+        "line_number": 419,
+        "issue_type": "No SSL context",
+        "description": "Line 419: No SSL context",
+        "current_code": "ssl_context: ssl.SSLContext | None = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/urllib3/contrib/emscripten/connection.py",
+        "line_number": 194,
+        "issue_type": "No SSL context",
+        "description": "Line 194: No SSL context",
+        "current_code": "ssl_context: typing.Any | None = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/pip/_vendor/truststore/_windows.py",
+        "line_number": 458,
+        "issue_type": "No SSL context",
+        "description": "Line 458: No SSL context",
+        "current_code": "if ssl_context.verify_mode == ssl.CERT_NONE:",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/pip/_vendor/requests/adapters.py",
+        "line_number": 87,
+        "issue_type": "No SSL context",
+        "description": "Line 87: No SSL context",
+        "current_code": "_preloaded_ssl_context = None",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/pip/_vendor/urllib3/poolmanager.py",
+        "line_number": 470,
+        "issue_type": "No SSL context",
+        "description": "Line 470: No SSL context",
+        "current_code": "proxy_ssl_context=None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/pip/_vendor/urllib3/connection.py",
+        "line_number": 311,
+        "issue_type": "No SSL context",
+        "description": "Line 311: No SSL context",
+        "current_code": "ssl_context=None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/pip/_vendor/urllib3/connection.py",
+        "line_number": 513,
+        "issue_type": "No SSL context",
+        "description": "Line 513: No SSL context",
+        "current_code": "if ssl_context.verify_mode != ssl.CERT_NONE and not getattr(",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/pip/_vendor/urllib3/util/ssltransport.py",
+        "line_number": 45,
+        "issue_type": "No SSL context",
+        "description": "Line 45: No SSL context",
+        "current_code": "self, socket, ssl_context, server_hostname=None, suppress_ragged_eofs=True",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/pip/_vendor/urllib3/util/ssl_.py",
+        "line_number": 373,
+        "issue_type": "No SSL context",
+        "description": "Line 373: No SSL context",
+        "current_code": "ssl_context=None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/pip/_vendor/urllib3/util/ssl_.py",
+        "line_number": 490,
+        "issue_type": "No SSL context",
+        "description": "Line 490: No SSL context",
+        "current_code": "def _ssl_wrap_socket_impl(sock, ssl_context, tls_in_tls, server_hostname=None):",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/pip/_internal/network/session.py",
+        "line_number": 265,
+        "issue_type": "No SSL context",
+        "description": "Line 265: No SSL context",
+        "current_code": "ssl_context: SSLContext | None = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/pip/_internal/network/session.py",
+        "line_number": 335,
+        "issue_type": "No SSL context",
+        "description": "Line 335: No SSL context",
+        "current_code": "ssl_context: SSLContext | None = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/pip/_internal/cli/index_command.py",
+        "line_number": 101,
+        "issue_type": "No SSL context",
+        "description": "Line 101: No SSL context",
+        "current_code": "ssl_context = None",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/anyio/_core/_sockets.py",
+        "line_number": 137,
+        "issue_type": "No SSL context",
+        "description": "Line 137: No SSL context",
+        "current_code": "ssl_context: ssl.SSLContext | None = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/anyio/_core/_sockets.py",
+        "line_number": 886,
+        "issue_type": "No SSL context",
+        "description": "Line 886: No SSL context",
+        "current_code": "ssl_context: ssl.SSLContext | None = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/anyio/streams/tls.py",
+        "line_number": 104,
+        "issue_type": "No SSL context",
+        "description": "Line 104: No SSL context",
+        "current_code": "ssl_context: ssl.SSLContext | None = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/anyio/streams/tls.py",
+        "line_number": 390,
+        "issue_type": "No SSL context",
+        "description": "Line 390: No SSL context",
+        "current_code": "ssl_context: ssl.SSLContext | None = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/sqlalchemy/dialects/postgresql/pg8000.py",
+        "line_number": 66,
+        "issue_type": "No SSL context",
+        "description": "Line 66: No SSL context",
+        "current_code": "ssl_context.verify_mode = ssl.CERT_NONE",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/websockets/sync/server.py",
+        "line_number": 272,
+        "issue_type": "No SSL context",
+        "description": "Line 272: No SSL context",
+        "current_code": "ssl_context: Optional[ssl.SSLContext] = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/websockets/sync/client.py",
+        "line_number": 131,
+        "issue_type": "No SSL context",
+        "description": "Line 131: No SSL context",
+        "current_code": "ssl_context: Optional[ssl.SSLContext] = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/httpcore/_async/http_proxy.py",
+        "line_number": 64,
+        "issue_type": "No SSL context",
+        "description": "Line 64: No SSL context",
+        "current_code": "ssl_context: ssl.SSLContext | None = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/httpcore/_async/http_proxy.py",
+        "line_number": 65,
+        "issue_type": "No SSL context",
+        "description": "Line 65: No SSL context",
+        "current_code": "proxy_ssl_context: ssl.SSLContext | None = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/httpcore/_async/http_proxy.py",
+        "line_number": 178,
+        "issue_type": "No SSL context",
+        "description": "Line 178: No SSL context",
+        "current_code": "proxy_ssl_context: ssl.SSLContext | None = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/httpcore/_async/http_proxy.py",
+        "line_number": 238,
+        "issue_type": "No SSL context",
+        "description": "Line 238: No SSL context",
+        "current_code": "ssl_context: ssl.SSLContext | None = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/httpcore/_async/http_proxy.py",
+        "line_number": 239,
+        "issue_type": "No SSL context",
+        "description": "Line 239: No SSL context",
+        "current_code": "proxy_ssl_context: ssl.SSLContext | None = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/httpcore/_async/socks_proxy.py",
+        "line_number": 114,
+        "issue_type": "No SSL context",
+        "description": "Line 114: No SSL context",
+        "current_code": "ssl_context: ssl.SSLContext | None = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/httpcore/_async/socks_proxy.py",
+        "line_number": 195,
+        "issue_type": "No SSL context",
+        "description": "Line 195: No SSL context",
+        "current_code": "ssl_context: ssl.SSLContext | None = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/httpcore/_async/connection.py",
+        "line_number": 42,
+        "issue_type": "No SSL context",
+        "description": "Line 42: No SSL context",
+        "current_code": "ssl_context: ssl.SSLContext | None = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/httpcore/_async/connection_pool.py",
+        "line_number": 50,
+        "issue_type": "No SSL context",
+        "description": "Line 50: No SSL context",
+        "current_code": "ssl_context: ssl.SSLContext | None = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/httpcore/_sync/http_proxy.py",
+        "line_number": 64,
+        "issue_type": "No SSL context",
+        "description": "Line 64: No SSL context",
+        "current_code": "ssl_context: ssl.SSLContext | None = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/httpcore/_sync/http_proxy.py",
+        "line_number": 65,
+        "issue_type": "No SSL context",
+        "description": "Line 65: No SSL context",
+        "current_code": "proxy_ssl_context: ssl.SSLContext | None = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/httpcore/_sync/http_proxy.py",
+        "line_number": 178,
+        "issue_type": "No SSL context",
+        "description": "Line 178: No SSL context",
+        "current_code": "proxy_ssl_context: ssl.SSLContext | None = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/httpcore/_sync/http_proxy.py",
+        "line_number": 238,
+        "issue_type": "No SSL context",
+        "description": "Line 238: No SSL context",
+        "current_code": "ssl_context: ssl.SSLContext | None = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/httpcore/_sync/http_proxy.py",
+        "line_number": 239,
+        "issue_type": "No SSL context",
+        "description": "Line 239: No SSL context",
+        "current_code": "proxy_ssl_context: ssl.SSLContext | None = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/httpcore/_sync/socks_proxy.py",
+        "line_number": 114,
+        "issue_type": "No SSL context",
+        "description": "Line 114: No SSL context",
+        "current_code": "ssl_context: ssl.SSLContext | None = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/httpcore/_sync/socks_proxy.py",
+        "line_number": 195,
+        "issue_type": "No SSL context",
+        "description": "Line 195: No SSL context",
+        "current_code": "ssl_context: ssl.SSLContext | None = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/httpcore/_sync/connection.py",
+        "line_number": 42,
+        "issue_type": "No SSL context",
+        "description": "Line 42: No SSL context",
+        "current_code": "ssl_context: ssl.SSLContext | None = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": ".venv/lib/python3.13/site-packages/httpcore/_sync/connection_pool.py",
+        "line_number": 50,
+        "issue_type": "No SSL context",
+        "description": "Line 50: No SSL context",
+        "current_code": "ssl_context: ssl.SSLContext | None = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "backend/core/app_factory.py",
+        "line_number": 45,
+        "issue_type": "Development environment check",
+        "description": "Line 45: Development environment check",
+        "current_code": "self.debug = debug if debug is not None else (self.environment == \"development\")",
+        "recommended_fix": "Ensure production security",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "backend/core/app_factory.py",
+        "line_number": 45,
+        "issue_type": "Hardcoded development environment",
+        "description": "Line 45: Hardcoded development environment",
+        "current_code": "self.debug = debug if debug is not None else (self.environment == \"development\")",
+        "recommended_fix": "Use environment variables",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "backend/core/app_factory.py",
+        "line_number": 69,
+        "issue_type": "Development environment check",
+        "description": "Line 69: Development environment check",
+        "current_code": "if self.environment == \"development\":",
+        "recommended_fix": "Ensure production security",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "backend/core/app_factory.py",
+        "line_number": 69,
+        "issue_type": "Hardcoded development environment",
+        "description": "Line 69: Hardcoded development environment",
+        "current_code": "if self.environment == \"development\":",
+        "recommended_fix": "Use environment variables",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "backend/core/app_factory.py",
+        "line_number": 190,
+        "issue_type": "Development environment check",
+        "description": "Line 190: Development environment check",
+        "current_code": "if config.environment == \"development\":",
+        "recommended_fix": "Ensure production security",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "backend/core/app_factory.py",
+        "line_number": 190,
+        "issue_type": "Hardcoded development environment",
+        "description": "Line 190: Hardcoded development environment",
+        "current_code": "if config.environment == \"development\":",
+        "recommended_fix": "Use environment variables",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "backend/core/app_factory.py",
+        "line_number": 367,
+        "issue_type": "Development environment check",
+        "description": "Line 367: Development environment check",
+        "current_code": "if config.environment == \"development\":",
+        "recommended_fix": "Ensure production security",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "backend/core/app_factory.py",
+        "line_number": 367,
+        "issue_type": "Hardcoded development environment",
+        "description": "Line 367: Hardcoded development environment",
+        "current_code": "if config.environment == \"development\":",
+        "recommended_fix": "Use environment variables",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "backend/core/app_factory.py",
+        "line_number": 466,
+        "issue_type": "Development environment check",
+        "description": "Line 466: Development environment check",
+        "current_code": "if config.environment == \"development\":",
+        "recommended_fix": "Ensure production security",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "backend/core/app_factory.py",
+        "line_number": 466,
+        "issue_type": "Hardcoded development environment",
+        "description": "Line 466: Hardcoded development environment",
+        "current_code": "if config.environment == \"development\":",
+        "recommended_fix": "Use environment variables",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "backend/core/app_factory.py",
+        "line_number": 517,
+        "issue_type": "Hardcoded development environment",
+        "description": "Line 517: Hardcoded development environment",
+        "current_code": "config = AppConfig(environment=\"development\", debug=True, enable_docs=True)",
+        "recommended_fix": "Use environment variables",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "backend/core/env_validator_simple.py",
+        "line_number": 182,
+        "issue_type": "Hardcoded development environment",
+        "description": "Line 182: Hardcoded development environment",
+        "current_code": "environment = os.getenv('ENVIRONMENT', 'development').lower()",
+        "recommended_fix": "Use environment variables",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "backend/core/logging.py",
+        "line_number": 66,
+        "issue_type": "Hardcoded development environment",
+        "description": "Line 66: Hardcoded development environment",
+        "current_code": "environment = os.getenv('ENVIRONMENT', 'development').lower()",
+        "recommended_fix": "Use environment variables",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "backend/core/secrets_validator.py",
+        "line_number": 405,
+        "issue_type": "Hardcoded development environment",
+        "description": "Line 405: Hardcoded development environment",
+        "current_code": "return len(errors) == 0 or environment == \"development\", errors",
+        "recommended_fix": "Use environment variables",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "backend/core/monitoring.py",
+        "line_number": 441,
+        "issue_type": "Hardcoded development environment",
+        "description": "Line 441: Hardcoded development environment",
+        "current_code": "environment=getattr(settings, 'ENVIRONMENT', 'development'),",
+        "recommended_fix": "Use environment variables",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "backend/core/telemetry.py",
+        "line_number": 98,
+        "issue_type": "Hardcoded development environment",
+        "description": "Line 98: Hardcoded development environment",
+        "current_code": "self.environment = os.getenv('ENVIRONMENT', 'development')",
+        "recommended_fix": "Use environment variables",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "backend/core/observability.py",
+        "line_number": 112,
+        "issue_type": "Development environment check",
+        "description": "Line 112: Development environment check",
+        "current_code": "if environment == \"development\":",
+        "recommended_fix": "Ensure production security",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "backend/core/observability.py",
+        "line_number": 112,
+        "issue_type": "Hardcoded development environment",
+        "description": "Line 112: Hardcoded development environment",
+        "current_code": "if environment == \"development\":",
+        "recommended_fix": "Use environment variables",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "backend/core/security_middleware.py",
+        "line_number": 587,
+        "issue_type": "Development environment check",
+        "description": "Line 587: Development environment check",
+        "current_code": "if environment.lower() == \"development\":",
+        "recommended_fix": "Ensure production security",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "backend/core/security_middleware.py",
+        "line_number": 587,
+        "issue_type": "Hardcoded development environment",
+        "description": "Line 587: Hardcoded development environment",
+        "current_code": "if environment.lower() == \"development\":",
+        "recommended_fix": "Use environment variables",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "backend/core/security_middleware.py",
+        "line_number": 663,
+        "issue_type": "Development environment check",
+        "description": "Line 663: Development environment check",
+        "current_code": "if environment.lower() == \"development\":",
+        "recommended_fix": "Ensure production security",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "backend/core/security_middleware.py",
+        "line_number": 663,
+        "issue_type": "Hardcoded development environment",
+        "description": "Line 663: Hardcoded development environment",
+        "current_code": "if environment.lower() == \"development\":",
+        "recommended_fix": "Use environment variables",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "backend/db/database_optimized.py",
+        "line_number": 111,
+        "issue_type": "Hardcoded development environment",
+        "description": "Line 111: Hardcoded development environment",
+        "current_code": "\"echo\": settings.debug and settings.environment == \"development\",",
+        "recommended_fix": "Use environment variables",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "backend/db/database_optimized.py",
+        "line_number": 112,
+        "issue_type": "Hardcoded development environment",
+        "description": "Line 112: Hardcoded development environment",
+        "current_code": "\"echo_pool\": settings.debug and settings.environment == \"development\"",
+        "recommended_fix": "Use environment variables",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "backend/monitoring/logging_config.py",
+        "line_number": 55,
+        "issue_type": "Hardcoded development environment",
+        "description": "Line 55: Hardcoded development environment",
+        "current_code": "record.environment = os.getenv(\"ENVIRONMENT\", \"development\")",
+        "recommended_fix": "Use environment variables",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "backend/services/connection_pool_manager.py",
+        "line_number": 96,
+        "issue_type": "Hardcoded development environment",
+        "description": "Line 96: Hardcoded development environment",
+        "current_code": "\"echo\": settings.debug and settings.environment == \"development\",",
+        "recommended_fix": "Use environment variables",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "backend/services/connection_pool_manager.py",
+        "line_number": 97,
+        "issue_type": "Hardcoded development environment",
+        "description": "Line 97: Hardcoded development environment",
+        "current_code": "\"echo_pool\": settings.debug and settings.environment == \"development\",",
+        "recommended_fix": "Use environment variables",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "frontend/venv/lib/python3.13/site-packages/pip/_vendor/truststore/_windows.py",
+        "line_number": 458,
+        "issue_type": "No SSL context",
+        "description": "Line 458: No SSL context",
+        "current_code": "if ssl_context.verify_mode == ssl.CERT_NONE:",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "frontend/venv/lib/python3.13/site-packages/pip/_vendor/requests/adapters.py",
+        "line_number": 87,
+        "issue_type": "No SSL context",
+        "description": "Line 87: No SSL context",
+        "current_code": "_preloaded_ssl_context = None",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "frontend/venv/lib/python3.13/site-packages/pip/_vendor/urllib3/poolmanager.py",
+        "line_number": 470,
+        "issue_type": "No SSL context",
+        "description": "Line 470: No SSL context",
+        "current_code": "proxy_ssl_context=None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "frontend/venv/lib/python3.13/site-packages/pip/_vendor/urllib3/connection.py",
+        "line_number": 311,
+        "issue_type": "No SSL context",
+        "description": "Line 311: No SSL context",
+        "current_code": "ssl_context=None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "frontend/venv/lib/python3.13/site-packages/pip/_vendor/urllib3/connection.py",
+        "line_number": 513,
+        "issue_type": "No SSL context",
+        "description": "Line 513: No SSL context",
+        "current_code": "if ssl_context.verify_mode != ssl.CERT_NONE and not getattr(",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "frontend/venv/lib/python3.13/site-packages/pip/_vendor/urllib3/util/ssltransport.py",
+        "line_number": 45,
+        "issue_type": "No SSL context",
+        "description": "Line 45: No SSL context",
+        "current_code": "self, socket, ssl_context, server_hostname=None, suppress_ragged_eofs=True",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "frontend/venv/lib/python3.13/site-packages/pip/_vendor/urllib3/util/ssl_.py",
+        "line_number": 373,
+        "issue_type": "No SSL context",
+        "description": "Line 373: No SSL context",
+        "current_code": "ssl_context=None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "frontend/venv/lib/python3.13/site-packages/pip/_vendor/urllib3/util/ssl_.py",
+        "line_number": 490,
+        "issue_type": "No SSL context",
+        "description": "Line 490: No SSL context",
+        "current_code": "def _ssl_wrap_socket_impl(sock, ssl_context, tls_in_tls, server_hostname=None):",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "frontend/venv/lib/python3.13/site-packages/pip/_internal/network/session.py",
+        "line_number": 267,
+        "issue_type": "No SSL context",
+        "description": "Line 267: No SSL context",
+        "current_code": "ssl_context: Optional[\"SSLContext\"] = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "frontend/venv/lib/python3.13/site-packages/pip/_internal/network/session.py",
+        "line_number": 330,
+        "issue_type": "No SSL context",
+        "description": "Line 330: No SSL context",
+        "current_code": "ssl_context: Optional[\"SSLContext\"] = None,",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      },
+      {
+        "file_path": "frontend/venv/lib/python3.13/site-packages/pip/_internal/cli/index_command.py",
+        "line_number": 99,
+        "issue_type": "No SSL context",
+        "description": "Line 99: No SSL context",
+        "current_code": "ssl_context = None",
+        "recommended_fix": "Configure SSL context",
+        "severity": "MEDIUM"
+      }
+    ]
+  },
+  "remediation_plan": [
+    "\ud83d\udea8 CRITICAL: Fix CORS wildcard configurations immediately",
+    "  - Fix CORS configuration in scripts/disable_production_stubs.py",
+    "\u26a0\ufe0f HIGH: Disable debug modes and insecure SSL settings",
+    "\ud83d\udccb MEDIUM: Review development environment checks",
+    "1. Replace allow_origins=['*'] with specific domains",
+    "2. Set ENVIRONMENT=production in all deployment configs",
+    "3. Ensure debug=False in production configurations",
+    "4. Enable SSL verification for all external connections",
+    "5. Review and harden all middleware configurations"
+  ]
+}

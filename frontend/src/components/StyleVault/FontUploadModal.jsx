@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
+import FocusTrappedModal from '../FocusTrappedModal'
 import {
   CloudArrowUpIcon,
   XMarkIcon,
@@ -100,25 +101,19 @@ const FontUploadModal = ({ onClose, onUpload }) => {
   ]
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-      <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">Upload Font</h3>
-            <p className="text-sm text-gray-500 mt-1">
-              Add a custom font to your brand typography collection
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-            disabled={isUploading}
-          >
-            <XMarkIcon className="h-6 w-6" />
-          </button>
-        </div>
+    <FocusTrappedModal
+      isOpen={true}
+      onClose={onClose}
+      title="Upload Font"
+      size="lg"
+      closeOnOverlayClick={!isUploading}
+    >
+      <div className="p-6">
+        <p className="text-sm text-gray-500 mb-6">
+          Add a custom font to your brand typography collection
+        </p>
 
-        <div className="p-6 space-y-6">
+        <div className="space-y-6">
           {/* Font File Upload */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -358,7 +353,7 @@ const FontUploadModal = ({ onClose, onUpload }) => {
           </button>
         </div>
       </div>
-    </div>
+    </FocusTrappedModal>
   )
 }
 

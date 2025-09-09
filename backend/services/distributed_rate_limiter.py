@@ -22,6 +22,7 @@ except ImportError:
     
 from backend.core.config import get_settings
 from backend.services.redis_cache import redis_cache
+from backend.core.structured_logging import structured_logger_service
 
 logger = logging.getLogger(__name__)
 
@@ -315,12 +316,37 @@ class DistributedRateLimiter:
             limit_type, remaining, reset_time, retry_after = result
             
             if limit_type == 'allowed':
+                # Log successful rate limit check
+                structured_logger_service.log_rate_limit_allowed(
+                    identifier=identifier,
+                    limit_type="multi_window",
+                    limit_value=getattr(rate_config, f"requests_per_{limit_type.split('_')[0] if '_' in limit_type else 'minute'}", rate_config.requests_per_minute),
+                    remaining=int(remaining),
+                    reset_time=float(reset_time),
+                    organization_id=org_id
+                )
+                
                 return RateLimitInfo(
                     result=RateLimitResult.ALLOWED,
                     remaining=int(remaining),
                     reset_time=float(reset_time)
                 )
             else:
+                # Log rate limit exceeded
+                limit_value = getattr(rate_config, f"requests_per_{limit_type}", rate_config.requests_per_minute)
+                if limit_type == "burst":
+                    limit_value = rate_config.burst_limit
+                
+                structured_logger_service.log_rate_limit_exceeded(
+                    identifier=identifier,
+                    limit_type=limit_type,
+                    limit_value=limit_value,
+                    current_usage=limit_value - int(remaining),
+                    reset_time=float(reset_time),
+                    retry_after=int(retry_after),
+                    organization_id=org_id
+                )
+                
                 return RateLimitInfo(
                     result=RateLimitResult.RATE_LIMITED,
                     remaining=int(remaining),

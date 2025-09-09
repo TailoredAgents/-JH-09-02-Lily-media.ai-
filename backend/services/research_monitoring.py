@@ -18,6 +18,7 @@ from prometheus_client import Counter, Histogram, Gauge, Summary
 from dataclasses import dataclass
 
 from backend.core.config import get_settings
+from backend.core.constants import EMBEDDINGS_DIMENSION
 from backend.core.observability import get_observability_manager
 
 settings = get_settings()
@@ -364,9 +365,12 @@ class ResearchMonitoringService:
     
     def track_vector_operation(self, operation: str, duration: float, 
                              vector_count: int, success: bool, 
-                             dimension: int = 3072):
+                             dimension: int = None):
         """Track vector store operations"""
         
+        if dimension is None:
+            dimension = EMBEDDINGS_DIMENSION
+            
         status = 'success' if success else 'failure'
         
         VECTOR_STORE_OPERATIONS_TOTAL.labels(
@@ -382,8 +386,11 @@ class ResearchMonitoringService:
             ).observe(duration)
     
     def update_vector_store_metrics(self, collection: str, vector_count: int, 
-                                  memory_usage: int, dimension: int = 3072):
+                                  memory_usage: int, dimension: int = None):
         """Update vector store size and memory metrics"""
+        
+        if dimension is None:
+            dimension = EMBEDDINGS_DIMENSION
         
         VECTOR_STORE_SIZE.labels(
             collection=collection,

@@ -299,6 +299,7 @@ async def get_research_task_result(
 @router.post("/knowledge-base/query")
 async def query_knowledge_base(
     query_request: ResearchQuery,
+    current_user: AuthUser = Depends(get_current_user),
     _: None = Depends(require_basic_research())
 ):
     """
@@ -307,6 +308,15 @@ async def query_knowledge_base(
     Search through all research findings and intelligence reports
     to find relevant information for content creation or analysis.
     """
+    # P0-10c: Initialize monitoring service
+    monitoring_service = get_research_monitoring_service()
+    
+    # Get user plan for monitoring (basic fallback if not available)
+    user_plan = getattr(current_user, 'plan', 'unknown')
+    
+    import time
+    start_time = time.time()
+    
     try:
         logger.info(f"Querying knowledge base: {query_request.query}")
         
@@ -322,6 +332,26 @@ async def query_knowledge_base(
                 if r.get("metadata", {}).get("industry") == query_request.industry_filter
             ]
         
+        # P0-10c: Track knowledge base query metrics
+        duration = time.time() - start_time
+        result_quality = "good" if len(results) > 0 else "empty"
+        
+        monitoring_service.track_knowledge_base_query(
+            query_type="semantic_search",
+            user_plan=user_plan,
+            duration=duration,
+            result_count=len(results),
+            result_quality=result_quality
+        )
+        
+        # Track quota usage
+        monitoring_service.track_quota_usage(
+            feature="knowledge_base_query",
+            user_id=str(current_user.id),
+            user_plan=user_plan,
+            amount=1
+        )
+        
         return {
             "status": "success",
             "query": query_request.query,
@@ -330,6 +360,22 @@ async def query_knowledge_base(
         }
         
     except Exception as e:
+        # P0-10c: Track knowledge base query errors
+        duration = time.time() - start_time
+        monitoring_service.track_knowledge_base_query(
+            query_type="semantic_search",
+            user_plan=user_plan,
+            duration=duration,
+            result_count=0,
+            result_quality="error"
+        )
+        
+        monitoring_service.track_research_error(
+            error_type=type(e).__name__,
+            component="knowledge_base_query",
+            severity="error"
+        )
+        
         logger.error(f"Knowledge base query failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 

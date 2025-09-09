@@ -4,13 +4,18 @@ import {
   ExclamationTriangleIcon,
   XCircleIcon,
   InformationCircleIcon,
-  XMarkIcon
+  XMarkIcon,
+  ArrowPathIcon,
+  ClockIcon,
 } from '@heroicons/react/24/outline'
 
-const NotificationToast = ({ notification, onDismiss }) => {
+const NotificationToast = ({ notification, onDismiss, onRetry }) => {
   const [isVisible, setIsVisible] = useState(false)
   const [isExiting, setIsExiting] = useState(false)
+  const [isRetrying, setIsRetrying] = useState(false)
+  const [retryCount, setRetryCount] = useState(notification.retryCount || 0)
   const timeoutRef = useRef(null)
+  const progressRef = useRef(null)
 
   useEffect(() => {
     // Animate in
@@ -31,10 +36,52 @@ const NotificationToast = ({ notification, onDismiss }) => {
   }, [notification.duration, notification.persistent])
 
   const handleDismiss = () => {
+    // Clear any running timers
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+    }
+    
     setIsExiting(true)
     setTimeout(() => {
       onDismiss(notification.id)
     }, 300) // Match animation duration
+  }
+
+  const handleRetry = async () => {
+    if (!notification.retryAction || isRetrying || retryCount >= (notification.maxRetries || 3)) {
+      return
+    }
+
+    setIsRetrying(true)
+    
+    try {
+      await notification.retryAction()
+      // If retry succeeds, dismiss the toast
+      handleDismiss()
+    } catch (error) {
+      // If retry fails, increment count and keep showing
+      setRetryCount(prev => prev + 1)
+      setIsRetrying(false)
+      
+      // Show retry failed feedback
+      if (onRetry) {
+        onRetry(notification.id, error)
+      }
+    }
+  }
+
+  const pauseTimer = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+    }
+  }
+
+  const resumeTimer = () => {
+    if (notification.duration && !notification.persistent && !isRetrying) {
+      timeoutRef.current = setTimeout(() => {
+        handleDismiss()
+      }, notification.duration)
+    }
   }
 
   const getIcon = () => {
@@ -67,6 +114,9 @@ const NotificationToast = ({ notification, onDismiss }) => {
     }
   }
 
+  const canRetry = notification.retryAction && retryCount < (notification.maxRetries || 3)
+  const hasRetryFailed = retryCount > 0
+
   return (
     <div
       className={`
@@ -75,37 +125,81 @@ const NotificationToast = ({ notification, onDismiss }) => {
         ${isVisible && !isExiting ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}
         ${getBackgroundColor()}
       `}
+      onMouseEnter={pauseTimer}
+      onMouseLeave={resumeTimer}
+      onFocus={pauseTimer}
+      onBlur={resumeTimer}
+      role="alert"
+      aria-live={notification.type === 'error' ? 'assertive' : 'polite'}
+      aria-labelledby={`toast-title-${notification.id}`}
+      aria-describedby={`toast-message-${notification.id}`}
     >
       <div className="p-4">
         <div className="flex items-start">
           <div className="flex-shrink-0">
-            {getIcon()}
+            {isRetrying ? (
+              <ArrowPathIcon className="h-6 w-6 text-blue-400 animate-spin" />
+            ) : (
+              getIcon()
+            )}
           </div>
           <div className="ml-3 w-0 flex-1 pt-0.5">
-            <p className="text-sm font-medium text-gray-900">
-              {notification.title}
+            <p 
+              id={`toast-title-${notification.id}`}
+              className="text-sm font-medium text-gray-900"
+            >
+              {isRetrying ? 'Retrying...' : notification.title}
             </p>
-            <p className="mt-1 text-sm text-gray-500">
-              {notification.message}
+            <p 
+              id={`toast-message-${notification.id}`}
+              className="mt-1 text-sm text-gray-500"
+            >
+              {isRetrying ? 'Please wait while we retry the operation...' : notification.message}
             </p>
-            {notification.action && (
-              <div className="mt-3">
+            
+            {/* Retry attempt indicator */}
+            {hasRetryFailed && !isRetrying && (
+              <p className="mt-1 text-xs text-orange-600">
+                Retry attempt {retryCount} of {notification.maxRetries || 3}
+              </p>
+            )}
+
+            {/* Action buttons */}
+            <div className="mt-3 flex flex-wrap gap-2">
+              {notification.action && !isRetrying && (
                 <button
                   onClick={notification.action.onClick}
-                  className="text-sm font-medium text-blue-600 hover:text-blue-500"
+                  className="text-sm font-medium text-blue-600 hover:text-blue-500 focus:outline-none focus:underline"
+                  type="button"
                 >
                   {notification.action.label}
                 </button>
-              </div>
-            )}
+              )}
+              
+              {canRetry && !isRetrying && (
+                <button
+                  onClick={handleRetry}
+                  className="inline-flex items-center text-sm font-medium text-orange-600 hover:text-orange-500 focus:outline-none focus:underline"
+                  type="button"
+                  disabled={isRetrying}
+                  aria-label={`Retry operation (${retryCount} of ${notification.maxRetries || 3} attempts used)`}
+                >
+                  <ArrowPathIcon className="w-4 h-4 mr-1" aria-hidden="true" />
+                  Retry
+                </button>
+              )}
+            </div>
           </div>
           <div className="ml-4 flex-shrink-0 flex">
             <button
-              className="bg-white rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="bg-white rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 p-1"
               onClick={handleDismiss}
+              disabled={isRetrying}
+              aria-label="Close notification"
+              type="button"
             >
-              <span className="sr-only">Close</span>
-              <XMarkIcon className="h-5 w-5" />
+              <span className="sr-only">Close notification</span>
+              <XMarkIcon className="h-5 w-5" aria-hidden="true" />
             </button>
           </div>
         </div>

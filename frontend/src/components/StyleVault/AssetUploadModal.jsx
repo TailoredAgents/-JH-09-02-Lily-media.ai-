@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
+import FocusTrappedModal from '../FocusTrappedModal'
 import {
   CloudArrowUpIcon,
   XMarkIcon,
@@ -98,25 +99,19 @@ const AssetUploadModal = ({ onClose, onUpload, uploadProgress }) => {
   const isUploading = uploadProgress[assetType] !== undefined
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-      <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">Upload Brand Assets</h3>
-            <p className="text-sm text-gray-500 mt-1">
-              Add images, logos, and fonts to your brand vault
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-            disabled={isUploading}
-          >
-            <XMarkIcon className="h-6 w-6" />
-          </button>
-        </div>
+    <FocusTrappedModal
+      isOpen={true}
+      onClose={onClose}
+      title="Upload Brand Assets"
+      size="lg"
+      closeOnOverlayClick={!isUploading}
+    >
+      <div className="p-6">
+        <p className="text-sm text-gray-500 mb-6">
+          Add images, logos, and fonts to your brand vault
+        </p>
 
-        <div className="p-6 space-y-6">
+        <div className="space-y-6">
           {/* Asset Type Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -125,37 +120,48 @@ const AssetUploadModal = ({ onClose, onUpload, uploadProgress }) => {
             <div className="flex space-x-4">
               <button
                 onClick={() => setAssetType('logos')}
+                aria-pressed={assetType === 'logos'}
+                aria-describedby="asset-type-logos-desc"
                 className={`flex items-center px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
                   assetType === 'logos'
                     ? 'border-purple-500 bg-purple-50 text-purple-700'
                     : 'border-gray-300 text-gray-700 hover:bg-gray-50'
                 }`}
               >
-                <PhotoIcon className="w-4 h-4 mr-2" />
+                <PhotoIcon className="w-4 h-4 mr-2" aria-hidden="true" />
                 Logos
               </button>
+              <span id="asset-type-logos-desc" className="sr-only">Upload logo files in PNG, JPG, SVG, or WebP format</span>
+              
               <button
                 onClick={() => setAssetType('images')}
+                aria-pressed={assetType === 'images'}
+                aria-describedby="asset-type-images-desc"
                 className={`flex items-center px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
                   assetType === 'images'
                     ? 'border-purple-500 bg-purple-50 text-purple-700'
                     : 'border-gray-300 text-gray-700 hover:bg-gray-50'
                 }`}
               >
-                <PhotoIcon className="w-4 h-4 mr-2" />
+                <PhotoIcon className="w-4 h-4 mr-2" aria-hidden="true" />
                 Images
               </button>
+              <span id="asset-type-images-desc" className="sr-only">Upload image files in PNG, JPG, WebP, or GIF format</span>
+              
               <button
                 onClick={() => setAssetType('fonts')}
+                aria-pressed={assetType === 'fonts'}
+                aria-describedby="asset-type-fonts-desc"
                 className={`flex items-center px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
                   assetType === 'fonts'
                     ? 'border-purple-500 bg-purple-50 text-purple-700'
                     : 'border-gray-300 text-gray-700 hover:bg-gray-50'
                 }`}
               >
-                <DocumentTextIcon className="w-4 h-4 mr-2" />
+                <DocumentTextIcon className="w-4 h-4 mr-2" aria-hidden="true" />
                 Fonts
               </button>
+              <span id="asset-type-fonts-desc" className="sr-only">Upload font files in WOFF, WOFF2, TTF, or OTF format</span>
             </div>
           </div>
 
@@ -163,14 +169,17 @@ const AssetUploadModal = ({ onClose, onUpload, uploadProgress }) => {
           <div>
             <div 
               {...getRootProps()} 
-              className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
+              role="button"
+              tabIndex={0}
+              aria-describedby="file-upload-description"
+              className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
                 isDragActive || dragActive
                   ? 'border-purple-500 bg-purple-50'
                   : 'border-gray-300 hover:border-gray-400'
               }`}
             >
-              <input {...getInputProps()} />
-              <CloudArrowUpIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <input {...getInputProps()} aria-label={`Upload ${assetType} files`} />
+              <CloudArrowUpIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" aria-hidden="true" />
               {isDragActive ? (
                 <div>
                   <p className="text-lg text-purple-600 font-medium">Drop files here</p>
@@ -181,7 +190,7 @@ const AssetUploadModal = ({ onClose, onUpload, uploadProgress }) => {
                   <p className="text-lg text-gray-600 font-medium">
                     Click to upload or drag and drop
                   </p>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p id="file-upload-description" className="text-sm text-gray-500 mt-1">
                     {getFileTypeDescription()}
                   </p>
                 </div>
@@ -221,10 +230,11 @@ const AssetUploadModal = ({ onClose, onUpload, uploadProgress }) => {
                     </div>
                     <button
                       onClick={() => removeFile(fileData.id)}
-                      className="text-gray-400 hover:text-red-600"
+                      className="text-gray-400 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 rounded"
                       disabled={isUploading}
+                      aria-label={`Remove ${fileData.name} from upload queue`}
                     >
-                      <XMarkIcon className="w-4 h-4" />
+                      <XMarkIcon className="w-4 h-4" aria-hidden="true" />
                     </button>
                   </div>
                 ))}
@@ -291,7 +301,7 @@ const AssetUploadModal = ({ onClose, onUpload, uploadProgress }) => {
           </button>
         </div>
       </div>
-    </div>
+    </FocusTrappedModal>
   )
 
   function getFileTypeDescription() {

@@ -182,7 +182,16 @@ class TemplateValidationService:
                     name.endswith('Template') and 
                     name != 'Template'):  # Exclude base template class if exists
                     
-                    templates[name.lower().replace('template', '')] = obj
+                    # Map template class names to expected model names
+                    model_name = name.lower().replace('template', '')
+                    
+                    # Handle special cases for naming conventions
+                    if model_name == 'gptimage1':
+                        model_name = 'gpt_image_1'
+                    elif model_name == 'grok2':
+                        model_name = 'grok2'
+                    
+                    templates[model_name] = obj
                     
         except ImportError as e:
             logger.error(f"Failed to import models package: {e}")
@@ -430,7 +439,7 @@ class TemplateValidationService:
         issues.extend(interface_issues)
         
         # Validate functionality
-        functionality_issues = self.validate_template_functionality(template_class, template_name)
+        functionality_issues = self.validate_template_functionality_for_class(template_class, template_name)
         issues.extend(functionality_issues)
         
         # Calculate coverage

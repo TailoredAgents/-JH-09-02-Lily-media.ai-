@@ -415,7 +415,8 @@ class FAISSMemoryTool:
                 import faiss
                 import numpy as np
                 # Initialize with text-embedding-3-large dimensions (3072)
-                self.dimension = 3072
+                from backend.core.constants import EMBEDDINGS_DIMENSION
+                self.dimension = EMBEDDINGS_DIMENSION
                 self.index = faiss.IndexFlatIP(self.dimension)  # Inner product for cosine similarity
                 self.np = np
                 self.faiss = faiss
