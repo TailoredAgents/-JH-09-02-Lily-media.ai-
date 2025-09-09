@@ -172,16 +172,81 @@ class PricingSettings(BaseModel):
         return v
 
 
+class BadWeatherThreshold(BaseModel):
+    """PW-WEATHER-ADD-001: Weather thresholds for job rescheduling"""
+    model_config = ConfigDict(extra="forbid")
+    
+    rain_probability: float = Field(
+        default=70.0,
+        ge=0.0,
+        le=100.0,
+        description="Rain probability percentage threshold to trigger rescheduling"
+    )
+    
+    wind_speed_mph: float = Field(
+        default=25.0,
+        ge=5.0,
+        le=60.0,
+        description="Wind speed threshold in mph to trigger rescheduling"
+    )
+    
+    temp_low_f: float = Field(
+        default=35.0,
+        ge=-10.0,
+        le=80.0,
+        description="Low temperature threshold in Fahrenheit to trigger rescheduling"
+    )
+
+
 class WeatherSettings(BaseModel):
     """Weather-aware scheduling configuration"""
     model_config = ConfigDict(extra="forbid")
     
-    # Rain delay thresholds
+    # PW-WEATHER-ADD-001: Bad weather threshold configuration
+    bad_weather_threshold: BadWeatherThreshold = Field(
+        default_factory=BadWeatherThreshold,
+        description="Weather conditions that trigger automatic rescheduling"
+    )
+    
+    lookahead_days: int = Field(
+        default=3,
+        ge=1,
+        le=14,
+        description="Number of days to look ahead for weather forecasting"
+    )
+    
+    auto_reschedule: bool = Field(
+        default=True,
+        description="Enable automatic job rescheduling due to weather"
+    )
+    
+    # Business scheduling constraints
+    buffer_minutes: int = Field(
+        default=60,
+        ge=0,
+        le=480,
+        description="Buffer time in minutes between rescheduled jobs"
+    )
+    
+    business_hours: Dict[str, Dict[str, str]] = Field(
+        default={
+            "monday": {"start": "08:00", "end": "17:00"},
+            "tuesday": {"start": "08:00", "end": "17:00"},
+            "wednesday": {"start": "08:00", "end": "17:00"},
+            "thursday": {"start": "08:00", "end": "17:00"},
+            "friday": {"start": "08:00", "end": "17:00"},
+            "saturday": {"start": "08:00", "end": "16:00"},
+            "sunday": {"start": "closed", "end": "closed"}
+        },
+        description="Business hours by day of week for scheduling"
+    )
+    
+    # Legacy fields for backward compatibility
     rain_delay_threshold_inches: float = Field(
         default=0.1,
         ge=0.0,
         le=2.0,
-        description="Rain threshold in inches to trigger delay"
+        description="Rain threshold in inches to trigger delay (legacy)"
     )
     
     # Wind speed limits by service type
@@ -214,10 +279,10 @@ class WeatherSettings(BaseModel):
         description="Maximum temperature for safe work"
     )
     
-    # Automatic rescheduling
+    # Automatic rescheduling (legacy - kept for compatibility)
     auto_reschedule_enabled: bool = Field(
         default=True,
-        description="Automatically reschedule jobs due to weather"
+        description="Automatically reschedule jobs due to weather (legacy)"
     )
     
     advance_notice_hours: int = Field(

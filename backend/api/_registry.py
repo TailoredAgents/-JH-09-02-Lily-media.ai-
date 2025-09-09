@@ -61,6 +61,7 @@ from . import (
     secure_media,  # PW-SEC-ADD-001: Secure media storage with signed URLs
     leads,  # PW-DM-ADD-002: Lead management and media attachment API
     jobs,  # PW-DM-ADD-001: Job management and scheduling API
+    weather,  # PW-WEATHER-ADD-001: Weather thresholds and job rescheduling API
 )
 
 # Import CSRF router
@@ -133,6 +134,7 @@ ROUTERS = [
     secure_media.router,  # PW-SEC-ADD-001: Secure media storage with signed URLs
     leads.router,  # PW-DM-ADD-002: Lead management and media attachment API
     jobs.router,  # PW-DM-ADD-001: Job management and scheduling API
+    weather.router,  # PW-WEATHER-ADD-001: Weather thresholds and job rescheduling API
 ]
 
 # Add CSRF router if available
