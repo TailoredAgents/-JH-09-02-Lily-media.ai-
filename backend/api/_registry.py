@@ -58,6 +58,7 @@ from . import (
     pw_settings,  # PW-SETTINGS-ADD-001: Pressure washing settings namespaces API
     pw_pricing,  # PW-PRICING-ADD-001: Pressure washing pricing engine with org-scoping
     pw_quotes,  # PW-PRICING-ADD-002: Pressure washing quote endpoints with status lifecycle
+    secure_media,  # PW-SEC-ADD-001: Secure media storage with signed URLs
 )
 
 # Import CSRF router
@@ -127,6 +128,7 @@ ROUTERS = [
     pw_settings.router,  # PW-SETTINGS-ADD-001: Pressure washing settings namespaces API
     pw_pricing.router,  # PW-PRICING-ADD-001: Pressure washing pricing engine with org-scoping
     pw_quotes.router,  # PW-PRICING-ADD-002: Pressure washing quote endpoints with status lifecycle
+    secure_media.router,  # PW-SEC-ADD-001: Secure media storage with signed URLs
 ]
 
 # Add CSRF router if available

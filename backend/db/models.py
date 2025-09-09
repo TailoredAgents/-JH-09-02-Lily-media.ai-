@@ -1599,6 +1599,101 @@ class Quote(Base):
     
     def __repr__(self):
         return f"<Quote(id={self.id}, org={self.organization_id}, status={self.status}, total={self.total})>"
+
+
+class MediaAsset(Base):
+    """
+    PW-SEC-ADD-001: Secure media storage for quote photos and PII assets
+    
+    Stores encrypted media assets with organization isolation and audit trail.
+    Supports signed URLs for secure upload/download with TTL enforcement.
+    """
+    __tablename__ = "media_assets"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    organization_id = Column(String, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    # Optional relationship to lead (for quote photos)
+    lead_id = Column(String, ForeignKey("leads.id", ondelete="CASCADE"), nullable=True, index=True)
+    
+    # Storage metadata
+    storage_key = Column(String, nullable=False, unique=True, index=True)  # S3 key or file path
+    filename = Column(String, nullable=False)  # Original filename
+    mime_type = Column(String, nullable=False, index=True)
+    file_size = Column(Integer, nullable=False)
+    
+    # Security and integrity
+    sha256_hash = Column(String(64), nullable=False, index=True)  # File integrity hash
+    encryption_key = Column(Text, nullable=True)  # Encrypted storage key (for additional encryption)
+    
+    # Asset status and lifecycle
+    status = Column(String(20), nullable=False, default="active", index=True)  # active, deleted, expired
+    upload_completed = Column(Boolean, default=False, index=True)
+    
+    # TTL and access control
+    expires_at = Column(DateTime(timezone=True), nullable=True, index=True)  # Asset expiration
+    access_count = Column(Integer, default=0)  # Track download count for audit
+    last_accessed_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # Asset metadata (renamed from 'metadata' to avoid SQLAlchemy conflict)
+    asset_metadata = Column(JSON, default={})  # Width, height, EXIF data, etc.
+    tags = Column(JSON, default=[])  # Categorization tags
+    
+    # Audit fields
+    created_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=False)
+    updated_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Relationships
+    organization = relationship("Organization")
+    lead = relationship("Lead", back_populates="media_assets")
+    created_by = relationship("User", foreign_keys=[created_by_id])
+    updated_by = relationship("User", foreign_keys=[updated_by_id])
+    
+    # Indexes for performance and multi-tenancy
+    __table_args__ = (
+        Index('ix_media_assets_org_status', organization_id, status),
+        Index('ix_media_assets_org_lead', organization_id, lead_id),
+        Index('ix_media_assets_org_created', organization_id, created_at),
+        Index('ix_media_assets_upload_status', upload_completed, status),
+        Index('ix_media_assets_expires', expires_at),
+    )
+    
+    def __repr__(self):
+        return f"<MediaAsset(id={self.id}, org={self.organization_id}, filename={self.filename}, size={self.file_size})>"
+    
+    def to_dict(self):
+        """Convert media asset to dictionary for API responses (redacts sensitive data)"""
+        return {
+            "id": self.id,
+            "organization_id": self.organization_id,
+            "lead_id": self.lead_id,
+            "filename": self.filename,
+            "mime_type": self.mime_type,
+            "file_size": self.file_size,
+            "sha256_hash": self.sha256_hash,
+            "status": self.status,
+            "upload_completed": self.upload_completed,
+            "expires_at": self.expires_at.isoformat() if self.expires_at else None,
+            "access_count": self.access_count,
+            "last_accessed_at": self.last_accessed_at.isoformat() if self.last_accessed_at else None,
+            "asset_metadata": self.asset_metadata,
+            "tags": self.tags,
+            "created_by_id": self.created_by_id,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+    
+    def is_expired(self) -> bool:
+        """Check if asset has expired"""
+        if not self.expires_at:
+            return False
+        return datetime.now(timezone.utc) > self.expires_at
+    
+    def can_access(self, user_org_id: str) -> bool:
+        """Check if user's organization can access this asset"""
+        return self.organization_id == user_org_id and self.status == "active" and not self.is_expired()
     
     def to_dict(self):
         """Convert quote to dictionary for API responses"""
@@ -1795,6 +1890,7 @@ class Lead(Base):
     created_by = relationship("User", foreign_keys=[created_by_id])
     updated_by = relationship("User", foreign_keys=[updated_by_id])
     quotes = relationship("Quote", back_populates="lead")
+    media_assets = relationship("MediaAsset", back_populates="lead", cascade="all, delete-orphan")
     
     # Multi-tenant indexes for performance
     __table_args__ = (

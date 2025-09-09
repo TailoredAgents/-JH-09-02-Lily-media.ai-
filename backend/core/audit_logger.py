@@ -100,6 +100,15 @@ class AuditEventType(Enum):
     LEAD_UPDATED = "lead_updated"
     LEAD_STATUS_CHANGED = "lead_status_changed"
     LEAD_CONVERTED_TO_QUOTE = "lead_converted_to_quote"
+    
+    # Media Storage (PW-SEC-ADD-001)
+    MEDIA_UPLOAD_URL_GENERATED = "media_upload_url_generated"
+    MEDIA_DOWNLOAD_URL_GENERATED = "media_download_url_generated"
+    MEDIA_ASSET_UPLOADED = "media_asset_uploaded"
+    MEDIA_ASSET_DOWNLOADED = "media_asset_downloaded"
+    MEDIA_ASSET_DELETED = "media_asset_deleted"
+    MEDIA_ASSET_REVOKED = "media_asset_revoked"
+    MEDIA_INTEGRITY_CHECK = "media_integrity_check"
 
 
 class AuditLog(Base):
