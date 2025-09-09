@@ -327,13 +327,13 @@ class SchedulingSettings(BaseModel):
     # Working hours
     business_hours_start: str = Field(
         default="08:00",
-        regex=r"^([01]\d|2[0-3]):[0-5]\d$",
+        pattern=r"^([01]\d|2[0-3]):[0-5]\d$",
         description="Business hours start time (HH:MM format)"
     )
     
     business_hours_end: str = Field(
         default="17:00",
-        regex=r"^([01]\d|2[0-3]):[0-5]\d$",
+        pattern=r"^([01]\d|2[0-3]):[0-5]\d$",
         description="Business hours end time (HH:MM format)"
     )
     
