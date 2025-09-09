@@ -94,6 +94,12 @@ class AuditEventType(Enum):
     QUOTE_ACCEPTED = "quote_accepted"
     QUOTE_DECLINED = "quote_declined"
     QUOTE_EXPIRED = "quote_expired"
+    
+    # Lead Management (PW-DM-REPLACE-001)
+    LEAD_CREATED = "lead_created"
+    LEAD_UPDATED = "lead_updated"
+    LEAD_STATUS_CHANGED = "lead_status_changed"
+    LEAD_CONVERTED_TO_QUOTE = "lead_converted_to_quote"
 
 
 class AuditLog(Base):

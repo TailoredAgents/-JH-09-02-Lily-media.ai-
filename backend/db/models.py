@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import UUID
 from backend.db.database import Base
+from typing import Dict, Any
 import uuid
 
 # Import multi-tenant models to ensure all relationships are properly established
@@ -1534,7 +1535,10 @@ class Quote(Base):
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     organization_id = Column(String, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
     
-    # Customer information (until Lead model exists)
+    # Lead relationship (optional - for quotes created from leads)
+    lead_id = Column(String, ForeignKey("leads.id", ondelete="SET NULL"), nullable=True, index=True)
+    
+    # Customer information (can be populated from lead or directly)
     customer_email = Column(String, nullable=False, index=True)
     customer_name = Column(String)
     customer_phone = Column(String)
@@ -1581,6 +1585,7 @@ class Quote(Base):
     # Relationships
     organization = relationship("Organization", backref="quotes")
     pricing_rule = relationship("PricingRule", backref="quotes")
+    lead = relationship("Lead", back_populates="quotes")
     created_by = relationship("User", foreign_keys=[created_by_id])
     updated_by = relationship("User", foreign_keys=[updated_by_id])
     
@@ -1744,3 +1749,92 @@ class WebhookDeliveryTracker(Base):
         Index('idx_webhook_delivery_platform_event', 'platform', 'event_type'),
         Index('idx_webhook_delivery_org', 'organization_id'),
     )
+
+
+# PW-DM-REPLACE-001: Lead management for pressure washing DM pipeline
+class Lead(Base):
+    """
+    Lead model for tracking potential customers from social media DMs
+    Converts social interactions with pricing intent into actionable sales objects
+    """
+    __tablename__ = "leads"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    organization_id = Column(String, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    # Source tracking - linked to SocialInteraction
+    interaction_id = Column(String, ForeignKey("social_interactions.id", ondelete="SET NULL"), nullable=True, index=True)
+    source_platform = Column(String, nullable=False, index=True)  # facebook, instagram, twitter
+    
+    # Contact information (optional - extracted from DM content or profile)
+    contact_name = Column(String, nullable=True)
+    contact_email = Column(String, nullable=True, index=True)
+    contact_phone = Column(String, nullable=True)
+    contact_address = Column(Text, nullable=True)  # Physical address for service location
+    
+    # Lead details
+    requested_services = Column(JSON, nullable=False, default=[])  # List of service types requested
+    pricing_intent = Column(String, nullable=True)  # Detected intent: "quote_request", "price_inquiry", "service_interest"
+    extracted_surfaces = Column(JSON, nullable=True)  # Surface data if detected: {"driveway": {"area": 1000}, ...}
+    extracted_details = Column(JSON, nullable=True)  # Other extracted details from DM
+    
+    # Lead management
+    status = Column(String(20), nullable=False, default="new", index=True)  # new, contacted, qualified, closed
+    priority_score = Column(Float, default=0.0)  # 0-100 priority based on intent strength and details
+    notes = Column(Text, nullable=True)  # Internal notes for lead management
+    
+    # Audit and tracking
+    created_by_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    updated_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Relationships
+    organization = relationship("Organization", back_populates="leads")
+    interaction = relationship("SocialInteraction")
+    created_by = relationship("User", foreign_keys=[created_by_id])
+    updated_by = relationship("User", foreign_keys=[updated_by_id])
+    quotes = relationship("Quote", back_populates="lead")
+    
+    # Multi-tenant indexes for performance
+    __table_args__ = (
+        Index('idx_lead_org_status', 'organization_id', 'status'),
+        Index('idx_lead_org_created', 'organization_id', 'created_at'),
+        Index('idx_lead_platform_org', 'source_platform', 'organization_id'),
+        Index('idx_lead_contact_email', 'contact_email'),
+        Index('idx_lead_priority', 'priority_score'),
+    )
+    
+    def can_transition_to(self, new_status: str) -> bool:
+        """Validate status transitions for lead lifecycle"""
+        valid_transitions = {
+            "new": ["contacted", "qualified", "closed"],
+            "contacted": ["qualified", "closed"],
+            "qualified": ["closed"],
+            "closed": []  # Terminal state
+        }
+        return new_status in valid_transitions.get(self.status, [])
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert Lead to dictionary for API responses"""
+        return {
+            "id": self.id,
+            "organization_id": self.organization_id,
+            "interaction_id": self.interaction_id,
+            "source_platform": self.source_platform,
+            "contact_name": self.contact_name,
+            "contact_email": self.contact_email,
+            "contact_phone": self.contact_phone,
+            "contact_address": self.contact_address,
+            "requested_services": self.requested_services,
+            "pricing_intent": self.pricing_intent,
+            "extracted_surfaces": self.extracted_surfaces,
+            "extracted_details": self.extracted_details,
+            "status": self.status,
+            "priority_score": self.priority_score,
+            "notes": self.notes,
+            "created_by_id": self.created_by_id,
+            "updated_by_id": self.updated_by_id,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }

@@ -13,9 +13,10 @@ from typing import Dict, Any, Optional, List
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
-from backend.db.models import SocialInteraction, SocialPlatformConnection, User
+from backend.db.models import SocialInteraction, SocialPlatformConnection, User, Lead
 from backend.db.database import get_db
 from backend.services.personality_response_engine import get_personality_engine
+from backend.services.dm_lead_service import get_dm_lead_service
 
 logger = logging.getLogger(__name__)
 
@@ -338,6 +339,22 @@ class SocialWebhookService:
             self.db.commit()
             
             logger.info(f"Created Facebook message interaction: {interaction.id}")
+            
+            # PW-DM-REPLACE-001: Try to create lead from DM if pricing intent detected
+            try:
+                lead_service = get_dm_lead_service()
+                lead = lead_service.create_lead_from_dm(
+                    interaction, 
+                    connection.organization_id if hasattr(connection, 'organization_id') else None, 
+                    self.db, 
+                    connection.user_id
+                )
+                if lead:
+                    logger.info(f"Created lead {lead.id} from Facebook DM {interaction.id}")
+            except Exception as e:
+                logger.error(f"Failed to create lead from Facebook DM {interaction.id}: {e}")
+                # Don't fail the webhook processing if lead creation fails
+            
             return interaction.id
             
         except Exception as e:
@@ -519,6 +536,22 @@ class SocialWebhookService:
             self.db.commit()
             
             logger.info(f"Created Twitter DM interaction: {interaction.id}")
+            
+            # PW-DM-REPLACE-001: Try to create lead from DM if pricing intent detected
+            try:
+                lead_service = get_dm_lead_service()
+                lead = lead_service.create_lead_from_dm(
+                    interaction, 
+                    connection.organization_id if hasattr(connection, 'organization_id') else None, 
+                    self.db, 
+                    connection.user_id
+                )
+                if lead:
+                    logger.info(f"Created lead {lead.id} from Twitter DM {interaction.id}")
+            except Exception as e:
+                logger.error(f"Failed to create lead from Twitter DM {interaction.id}: {e}")
+                # Don't fail the webhook processing if lead creation fails
+            
             return interaction.id
             
         except Exception as e:

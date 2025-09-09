@@ -66,6 +66,7 @@ class Organization(Base):
     teams = relationship("Team", back_populates="organization", cascade="all, delete-orphan")
     invitations = relationship("OrganizationInvitation", back_populates="organization", cascade="all, delete-orphan")
     social_connections = relationship("SocialConnection", back_populates="organization", cascade="all, delete-orphan")
+    leads = relationship("Lead", back_populates="organization", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Organization(name='{self.name}', slug='{self.slug}')>"

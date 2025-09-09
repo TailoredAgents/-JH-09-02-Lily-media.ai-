@@ -81,3 +81,5 @@
 - When i say "v3" read '/Users/jeffreyhacker/Downloads/Audit prompt creation.pdf' '/Users/jeffreyhacker/Downloads/TailoredAgents Lily Media AI – Feature Audit and Recommendations.pdf'\
 and '/Users/jeffreyhacker/Downloads/Git project review.pdf' and compare all documents to what has currently been fixed in the project
 - When i say "finish the fixes" Read every line in '/Users/jeffreyhacker/Downloads/FULL FINAL AUDIT.pdf' and determine what still needs to be done
+- No mock tests, only real tests
+- When testing database use external link postgresql://socialmedia:BbsIYQtjBnhKwRL3F9kXbv1wrtsVxuTg@dpg-d2ln7eer433s739509lg-a.oregon-postgres.render.com/socialmedia_uq72
