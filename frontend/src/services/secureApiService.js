@@ -563,6 +563,51 @@ class SecureApiService {
   async getSystemStats() {
     return this.request('/api/admin/stats')
   }
+
+  // PW-FE-ADD-001: Settings API endpoints
+  async getSettings() {
+    return this.request('/api/v1/settings')
+  }
+
+  async updateSettings(settings) {
+    return this.request('/api/v1/settings', {
+      method: 'PUT',
+      body: settings,
+    })
+  }
+
+  async getPricingSettings() {
+    return this.request('/api/v1/settings/pricing')
+  }
+
+  async updatePricingSettings(settings) {
+    return this.request('/api/v1/settings/pricing', {
+      method: 'PUT',
+      body: settings,
+    })
+  }
+
+  async getWeatherSettings() {
+    return this.request('/api/v1/settings/weather')
+  }
+
+  async updateWeatherSettings(settings) {
+    return this.request('/api/v1/settings/weather', {
+      method: 'PUT',
+      body: settings,
+    })
+  }
+
+  async getBookingSettings() {
+    return this.request('/api/v1/settings/booking')
+  }
+
+  async updateBookingSettings(settings) {
+    return this.request('/api/v1/settings/booking', {
+      method: 'PUT',
+      body: settings,
+    })
+  }
 }
 
 // Create and export singleton instance
