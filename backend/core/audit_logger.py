@@ -81,6 +81,10 @@ class AuditEventType(Enum):
     GDPR_REQUEST = "gdpr_request"
     DATA_RETENTION_ACTION = "data_retention_action"
     PRIVACY_SETTINGS_CHANGED = "privacy_settings_changed"
+    
+    # Settings Management
+    SETTINGS_UPDATED = "settings_updated"
+    SETTINGS_ACCESSED = "settings_accessed"
 
 
 class AuditLog(Base):
@@ -575,4 +579,26 @@ def log_content_event(event_type: AuditEventType, user_id: str = None,
         user_id=user_id,
         resource=resource,
         details=details
+    )
+
+async def log_settings_event(event_type: AuditEventType, user_id: int, 
+                            organization_id: str, details: Dict[str, Any] = None,
+                            db: Any = None):
+    """Convenience function for logging settings-related events"""
+    logger = get_audit_logger()
+    
+    # Set database session for persistence if provided
+    if db and not logger.db_session:
+        logger.db_session = db
+    
+    return logger.log_event(
+        event_type=event_type,
+        user_id=str(user_id),
+        resource=f"organization/{organization_id}/settings",
+        action="update",
+        outcome="success",
+        details={
+            "organization_id": organization_id,
+            **(details or {})
+        }
     )

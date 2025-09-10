@@ -55,6 +55,7 @@ from . import (
     key_rotation,  # Encryption key rotation schedule and automation
     template_validation,  # Template coverage validation system for AI models
     error_taxonomy,  # Comprehensive error taxonomy mapping and classification
+    pw_settings,  # PW-SETTINGS-ADD-001: Pressure washing settings namespaces API
 )
 
 # Import CSRF router
@@ -121,6 +122,7 @@ ROUTERS = [
     key_rotation.router,  # Encryption key rotation schedule and automation
     template_validation.router,  # Template coverage validation system for AI models
     error_taxonomy.router,  # Comprehensive error taxonomy mapping and classification
+    pw_settings.router,  # PW-SETTINGS-ADD-001: Pressure washing settings namespaces API
 ]
 
 # Add CSRF router if available
