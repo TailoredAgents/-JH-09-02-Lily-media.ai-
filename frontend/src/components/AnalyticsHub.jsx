@@ -377,6 +377,57 @@ const BusinessKPIMetrics = ({ data, darkMode, loading }) => {
   )
 }
 
+// Analytics Table Component
+const AnalyticsTable = ({ darkMode }) => {
+  const tableData = [
+    { post: 'AI Marketing Trends 2025', platform: 'LinkedIn', reach: '12.4K', engagement: '5.2%', clicks: 234 },
+    { post: 'Social Media Analytics Guide', platform: 'Twitter', reach: '8.7K', engagement: '4.8%', clicks: 189 },
+    { post: 'Content Automation Tips', platform: 'Instagram', reach: '15.2K', engagement: '6.1%', clicks: 312 },
+    { post: 'Weekly Industry Update', platform: 'Facebook', reach: '9.3K', engagement: '3.9%', clicks: 156 },
+    { post: 'AI Tools Comparison', platform: 'LinkedIn', reach: '18.6K', engagement: '7.3%', clicks: 445 }
+  ]
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, delay: 1.0 }}
+      className={`p-6 rounded-xl backdrop-blur-md ${
+        darkMode ? 'bg-gray-800/80' : 'bg-white/80'
+      } border border-gray-200/20 shadow-lg`}
+    >
+      <h3 className={`text-lg font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+        Top Performing Posts
+      </h3>
+      
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className={`${darkMode ? 'text-gray-300' : 'text-gray-600'} text-sm`}>
+              <th className="text-left pb-3">Post</th>
+              <th className="text-left pb-3">Platform</th>
+              <th className="text-right pb-3">Reach</th>
+              <th className="text-right pb-3">Engagement</th>
+              <th className="text-right pb-3">Clicks</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tableData.map((row, index) => (
+              <tr key={index} className={`border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                <td className={`py-3 ${darkMode ? 'text-white' : 'text-gray-900'} font-medium`}>{row.post}</td>
+                <td className={`py-3 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{row.platform}</td>
+                <td className={`py-3 text-right ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{row.reach}</td>
+                <td className={`py-3 text-right ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{row.engagement}</td>
+                <td className={`py-3 text-right ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{row.clicks}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </motion.div>
+  )
+}
+
 // Social Metrics Component (secondary)
 const SocialMetrics = ({ darkMode }) => {
   const socialMetrics = [

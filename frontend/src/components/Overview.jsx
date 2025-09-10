@@ -34,11 +34,10 @@ const emptyMetrics = {
   totalPosts: 0,
   engagement: 0,
   followers: 0,
-  roi: 0,
+  // TODO: Add revenue-based ROI when payments/revenue tracking is implemented
   postsGrowth: 0,
   engagementGrowth: 0,
-  followersGrowth: 0,
-  roiGrowth: 0
+  followersGrowth: 0
 }
 
 const emptyChartData = {
