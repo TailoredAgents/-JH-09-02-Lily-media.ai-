@@ -281,6 +281,10 @@ export default function RealTimeStatusBar({
         fixed ${position === 'top' ? 'top-0' : 'bottom-0'} left-0 right-0 z-40 
         bg-white border-${position === 'top' ? 'b' : 't'} border-gray-200 shadow-lg
       `}
+        role="banner"
+        aria-label="System status bar"
+        aria-live="polite"
+        aria-atomic="false"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between py-2">
@@ -348,23 +352,28 @@ export default function RealTimeStatusBar({
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => setShowDropdown(!showDropdown)}
-                className="p-1 rounded hover:bg-gray-100"
-                title="View Details"
+                className="p-1 rounded hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                aria-expanded={showDropdown}
+                aria-controls="status-dropdown"
+                aria-label={showDropdown ? "Hide status details" : "Show status details"}
+                type="button"
               >
                 <ChevronUpIcon
                   className={`h-4 w-4 text-gray-600 transform transition-transform ${
                     showDropdown ? 'rotate-180' : ''
                   }`}
+                  aria-hidden="true"
                 />
               </button>
 
               {onToggle && (
                 <button
                   onClick={handleToggle}
-                  className="p-1 rounded hover:bg-gray-100"
-                  title="Expand Details"
+                  className="p-1 rounded hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  aria-label="Expand full status dashboard"
+                  type="button"
                 >
-                  <ChevronUpIcon className="h-4 w-4 text-gray-600" />
+                  <ChevronUpIcon className="h-4 w-4 text-gray-600" aria-hidden="true" />
                 </button>
               )}
             </div>
@@ -373,7 +382,12 @@ export default function RealTimeStatusBar({
 
         {/* Dropdown details */}
         {showDropdown && (
-          <div className="border-t border-gray-200 bg-gray-50">
+          <div 
+            id="status-dropdown"
+            className="border-t border-gray-200 bg-gray-50"
+            role="region"
+            aria-label="Detailed status information"
+          >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                 <StatusIndicator

@@ -159,30 +159,84 @@ const BillingOverview = () => {
         </p>
       </div>
       
-      {/* Trial Status Alert */}
+      {/* P1-10b: Enhanced Trial Status Alert with FTC Compliance */}
       {trialStatus && (
-        <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-          <div className="flex items-center">
-            <InformationCircleIcon className="h-5 w-5 text-blue-500 mr-3" />
+        <div className="mb-6 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-300 dark:border-yellow-700 rounded-lg p-6">
+          <div className="flex items-start">
+            <ExclamationTriangleIcon className="h-6 w-6 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-1 mr-4" />
             <div className="flex-1">
-              <h3 className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                Free Trial Active
+              <h3 className="text-lg font-bold text-yellow-900 dark:text-yellow-100 mb-2">
+                Important: Free Trial Information
               </h3>
-              <p className="text-sm text-blue-700 dark:text-blue-300">
-                {trialStatus.daysLeft > 0 
-                  ? `Your free trial ends in ${trialStatus.daysLeft} days (${trialStatus.trialEnd})`
-                  : 'Your free trial has ended'
-                }
-              </p>
+              
+              <div className="space-y-3">
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-yellow-200 dark:border-yellow-600">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-semibold text-gray-900 dark:text-white">Trial Status</span>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      trialStatus.daysLeft > 3 
+                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                        : trialStatus.daysLeft > 0 
+                        ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                        : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                    }`}>
+                      {trialStatus.daysLeft > 0 ? `${trialStatus.daysLeft} days remaining` : 'Trial ended'}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    {trialStatus.daysLeft > 0 
+                      ? `Your trial ends on ${trialStatus.trialEnd} at 11:59 PM`
+                      : 'Your free trial has ended'
+                    }
+                  </p>
+                </div>
+                
+                {trialStatus.daysLeft > 0 && (
+                  <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-yellow-200 dark:border-yellow-600">
+                    <h4 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center">
+                      <CreditCardIcon className="h-4 w-4 mr-2" />
+                      Automatic Billing Notice
+                    </h4>
+                    <div className="text-sm text-gray-700 dark:text-gray-300 space-y-1">
+                      <p>• <strong>You will be automatically charged</strong> the day after your trial ends</p>
+                      <p>• <strong>Cancel anytime</strong> before {trialStatus.trialEnd} to avoid charges</p>
+                      <p>• <strong>No cancellation fees</strong> or penalties apply</p>
+                    </div>
+                  </div>
+                )}
+                
+                {billingInfo?.amount && trialStatus.daysLeft > 0 && (
+                  <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-yellow-200 dark:border-yellow-600">
+                    <h4 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center">
+                      <BanknotesIcon className="h-4 w-4 mr-2" />
+                      Next Billing Information
+                    </h4>
+                    <div className="text-sm text-gray-700 dark:text-gray-300">
+                      <p>Amount: <strong>${(billingInfo.amount / 100).toFixed(2)}</strong></p>
+                      <p>Frequency: <strong>{billingInfo.interval || 'Monthly'}</strong></p>
+                      <p>Next charge: <strong>{new Date(new Date(trialStatus.trialEnd).getTime() + 24 * 60 * 60 * 1000).toLocaleDateString()}</strong></p>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <div className="mt-4 flex flex-wrap gap-3">
+                {trialStatus.daysLeft <= 7 && trialStatus.daysLeft > 0 && (
+                  <button
+                    onClick={() => setActiveTab('overview')}
+                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                  >
+                    Choose Plan
+                  </button>
+                )}
+                <button
+                  onClick={() => setActiveTab('manage')}
+                  className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg text-sm font-medium hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+                >
+                  Manage Billing
+                </button>
+              </div>
             </div>
-            {trialStatus.daysLeft <= 3 && (
-              <button
-                onClick={() => setActiveTab('overview')}
-                className="ml-4 inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200 dark:bg-blue-800 dark:text-blue-200 dark:hover:bg-blue-700 transition-colors"
-              >
-                Choose Plan
-              </button>
-            )}
           </div>
         </div>
       )}

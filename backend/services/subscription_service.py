@@ -1,6 +1,9 @@
 """
 Subscription tier enforcement service for multi-tenant SaaS
 Handles plan-based feature gating and Stripe integration
+
+P1-5a: MIGRATION NOTE - This service is transitioning from legacy tier system 
+to modern plan_id system. Plan-based logic takes precedence over legacy tiers.
 """
 import logging
 from typing import Dict, List, Optional, Any, Set
@@ -10,9 +13,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 
 from backend.db.database import get_db
-from backend.db.models import User
-from backend.db.multi_tenant_models import Organization
+from backend.db.models import User, Plan
+from backend.db.multi_tenant_models import Organization, UserOrganizationRole
 from backend.core.config import get_settings
+from backend.utils.tier_to_plan_migration import get_user_plan_capabilities
 
 logger = logging.getLogger(__name__)
 
@@ -176,7 +180,7 @@ class SubscriptionService:
     
     def get_user_tier(self, user_id: int) -> SubscriptionTier:
         """
-        Get effective tier for a user (considering both user and organization)
+        P1-5a: Get effective tier for a user (plan-based with legacy fallback)
         
         Args:
             user_id: User ID
@@ -189,17 +193,46 @@ class SubscriptionService:
             if not user:
                 return SubscriptionTier.BASIC
             
+            # P1-5a: Prefer plan-based capabilities over legacy tier system
+            if user.plan_id and user.plan:
+                capabilities = get_user_plan_capabilities(user, self.db)
+                if not capabilities.get('legacy', False):
+                    # Convert plan-based capabilities to legacy tier enum for compatibility
+                    plan_name = capabilities.get('plan_name', '').lower()
+                    if 'enterprise' in plan_name:
+                        return SubscriptionTier.ENTERPRISE
+                    elif 'pro' in plan_name or 'premium' in plan_name:
+                        return SubscriptionTier.PREMIUM
+                    else:
+                        return SubscriptionTier.BASIC
+            
+            # Fallback to legacy tier system
+            logger.warning(f"User {user_id} using legacy tier system - migration needed")
+            
             # Get user's individual tier
             user_tier = self.normalize_tier(user.tier)
             
             # Get organization tier (if user belongs to one)
             org_tier = SubscriptionTier.BASIC
             if user.default_organization_id:
-                org = self.db.query(Organization).filter(
-                    Organization.id == user.default_organization_id
+                # Verify user has access to this organization (security fix)
+                user_org_role = self.db.query(UserOrganizationRole).filter(
+                    and_(
+                        UserOrganizationRole.user_id == user_id,
+                        UserOrganizationRole.organization_id == user.default_organization_id,
+                        UserOrganizationRole.is_active == True
+                    )
                 ).first()
-                if org:
-                    org_tier = self.normalize_tier(org.plan_type)
+                
+                if user_org_role:
+                    # User is verified member, get organization details
+                    org = self.db.query(Organization).filter(
+                        Organization.id == user.default_organization_id
+                    ).first()
+                    if org:
+                        org_tier = self.normalize_tier(org.plan_type)
+                else:
+                    logger.warning(f"User {user_id} has default_organization_id but no valid role - potential security issue")
             
             # Return the highest tier available
             user_level = TIER_HIERARCHY[user_tier]
@@ -214,17 +247,52 @@ class SubscriptionService:
             logger.error(f"Failed to get user tier: {e}")
             return SubscriptionTier.BASIC
     
-    def get_organization_tier(self, organization_id: str) -> SubscriptionTier:
+    def get_user_plan_info(self, user_id: int) -> Dict[str, Any]:
         """
-        Get organization's subscription tier
+        P1-5a: Get complete plan information for a user (preferred modern method)
+        
+        Args:
+            user_id: User ID
+            
+        Returns:
+            Complete plan capabilities and information
+        """
+        try:
+            user = self.db.query(User).filter(User.id == user_id).first()
+            if not user:
+                return {'error': 'User not found', 'plan_name': 'free', 'capabilities': {}}
+            
+            return get_user_plan_capabilities(user, self.db)
+            
+        except Exception as e:
+            logger.error(f"Failed to get user plan info: {e}")
+            return {'error': str(e), 'plan_name': 'free', 'capabilities': {}}
+    
+    def get_organization_tier(self, organization_id: str, user_id: int) -> SubscriptionTier:
+        """
+        Get organization's subscription tier (with user access validation)
         
         Args:
             organization_id: Organization ID
+            user_id: User ID requesting access (for authorization)
             
         Returns:
             Organization's subscription tier
         """
         try:
+            # Verify user has access to this organization (security fix)
+            user_org_role = self.db.query(UserOrganizationRole).filter(
+                and_(
+                    UserOrganizationRole.user_id == user_id,
+                    UserOrganizationRole.organization_id == organization_id,
+                    UserOrganizationRole.is_active == True
+                )
+            ).first()
+            
+            if not user_org_role:
+                logger.warning(f"User {user_id} attempted unauthorized access to organization {organization_id}")
+                return SubscriptionTier.BASIC
+                
             org = self.db.query(Organization).filter(
                 Organization.id == organization_id
             ).first()

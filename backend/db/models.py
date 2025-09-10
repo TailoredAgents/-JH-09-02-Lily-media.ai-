@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import UUID
 from backend.db.database import Base
+from typing import Dict, Any
 import uuid
 
 # Import multi-tenant models to ensure all relationships are properly established
@@ -172,6 +173,7 @@ class ContentLog(Base):
     id = Column(Integer, primary_key=True, index=True)
     public_id = Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True, index=True, nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)  # P1-1b: Multi-tenancy support
     platform = Column(String, nullable=False)  # twitter, instagram, facebook
     content = Column(Text, nullable=False)
     content_type = Column(String, nullable=False)  # text, image, video
@@ -188,6 +190,14 @@ class ContentLog(Base):
     
     # Relationships
     user = relationship("User", back_populates="content_logs")
+    organization = relationship("Organization", backref="content_logs")
+    
+    # Indexes for multi-tenant query optimization
+    __table_args__ = (
+        Index('ix_content_logs_org_user', 'organization_id', 'user_id'),
+        Index('ix_content_logs_org_status', 'organization_id', 'status'),
+        Index('ix_content_logs_org_platform', 'organization_id', 'platform'),
+    )
 
 
 class ContentDraft(Base):
@@ -300,7 +310,7 @@ class UserSetting(Base):
     
     # Image Generation Preferences
     enable_auto_image_generation = Column(Boolean, default=True)
-    default_image_model = Column(String, default="grok2")  # grok2, dalle3, etc.
+    default_image_model = Column(String, default="grok2")  # grok2, gpt_image_1, etc. (OpenAI image models removed per policy)
     preferred_image_style = Column(JSON, default={
         "lighting": "natural",
         "composition": "rule_of_thirds",
@@ -1380,3 +1390,685 @@ class UsageRecord(Base):
         Index('idx_usage_type_period', usage_type, billing_period),
         Index('idx_usage_created', created_at.desc()),
     )
+
+
+# Pressure Washing Pricing Models
+
+class PricingRule(Base):
+    """
+    PW-PRICING-ADD-001: Organization-scoped pricing rules for pressure washing services
+    
+    Stores pricing configuration including base rates, bundles, seasonal modifiers,
+    and minimum job totals for computing ballpark quotes.
+    """
+    __tablename__ = "pricing_rules"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    organization_id = Column(String, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    # Pricing metadata
+    name = Column(String(255), nullable=False, default="Default Pricing")
+    description = Column(Text)
+    currency = Column(String(3), nullable=False, default="USD")  # ISO 4217 currency code
+    is_active = Column(Boolean, default=True, nullable=False)
+    
+    # Core pricing configuration
+    min_job_total = Column(Numeric(10, 2), nullable=False, default=150.00)  # Minimum job charge
+    
+    # Base rates per surface type (per square foot)
+    base_rates = Column(JSON, nullable=False, default={
+        "concrete": 0.15,
+        "brick": 0.18,
+        "vinyl_siding": 0.20,
+        "wood_deck": 0.25,
+        "roof": 0.30,
+        "driveway": 0.12,
+        "patio": 0.15,
+        "fence": 0.22
+    })
+    
+    # Service bundles with discount percentages
+    bundles = Column(JSON, nullable=False, default=[
+        {
+            "name": "House + Driveway Package",
+            "services": ["vinyl_siding", "driveway"],
+            "discount_pct": 0.15,
+            "description": "Save 15% when bundling house and driveway cleaning"
+        },
+        {
+            "name": "Complete Property Package", 
+            "services": ["vinyl_siding", "driveway", "patio", "fence"],
+            "discount_pct": 0.20,
+            "description": "Save 20% on full property cleaning"
+        }
+    ])
+    
+    # Seasonal pricing modifiers by month
+    seasonal_modifiers = Column(JSON, nullable=False, default={
+        "1": 0.8,   # January - Winter discount
+        "2": 0.8,   # February - Winter discount
+        "3": 1.2,   # March - Spring premium
+        "4": 1.2,   # April - Spring premium
+        "5": 1.1,   # May - Spring moderate
+        "6": 1.0,   # June - Standard
+        "7": 1.0,   # July - Standard
+        "8": 1.0,   # August - Standard
+        "9": 1.1,   # September - Fall moderate
+        "10": 1.1,  # October - Fall moderate
+        "11": 0.9,  # November - Fall discount
+        "12": 0.8   # December - Winter discount
+    })
+    
+    # Additional service rates (optional)
+    additional_services = Column(JSON, default={
+        "gutter_cleaning_per_linear_foot": 1.50,
+        "soft_wash_multiplier": 1.3,
+        "pressure_wash_multiplier": 1.0,
+        "stain_removal_multiplier": 1.5,
+        "sealant_application_multiplier": 2.0
+    })
+    
+    # Travel and logistics
+    travel_settings = Column(JSON, default={
+        "free_radius_miles": 15.0,
+        "rate_per_mile": 2.00,
+        "minimum_travel_charge": 25.00,
+        "maximum_travel_distance": 50.0
+    })
+    
+    # Pricing rule metadata
+    version = Column(Integer, nullable=False, default=1)  # For versioning pricing rules
+    effective_date = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    expiry_date = Column(DateTime(timezone=True))  # Optional expiration
+    
+    # Audit fields
+    created_by_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    
+    # Relationships
+    organization = relationship("Organization", backref="pricing_rules")
+    created_by = relationship("User")
+    
+    # Indexes for performance and multi-tenancy
+    __table_args__ = (
+        Index('ix_pricing_rules_org_active', organization_id, is_active),
+        Index('ix_pricing_rules_org_effective', organization_id, effective_date),
+        UniqueConstraint('organization_id', 'name', name='uq_pricing_rule_org_name'),
+    )
+    
+    def __repr__(self):
+        return f"<PricingRule(org={self.organization_id}, name='{self.name}', active={self.is_active})>"
+    
+    def to_dict(self):
+        """Convert pricing rule to dictionary for API responses"""
+        return {
+            "id": self.id,
+            "organization_id": self.organization_id,
+            "name": self.name,
+            "description": self.description,
+            "currency": self.currency,
+            "is_active": self.is_active,
+            "min_job_total": float(self.min_job_total) if self.min_job_total else None,
+            "base_rates": self.base_rates,
+            "bundles": self.bundles,
+            "seasonal_modifiers": self.seasonal_modifiers,
+            "additional_services": self.additional_services,
+            "travel_settings": self.travel_settings,
+            "version": self.version,
+            "effective_date": self.effective_date.isoformat() if self.effective_date else None,
+            "expiry_date": self.expiry_date.isoformat() if self.expiry_date else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None
+        }
+
+
+class Quote(Base):
+    """
+    PW-PRICING-ADD-002: Organization-scoped quotes with status lifecycle
+    
+    Converts pricing computations into customer quotes that can be accepted/declined
+    to track lead conversion from DM inquiries to booked jobs.
+    """
+    __tablename__ = "quotes"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    organization_id = Column(String, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    # Lead relationship (optional - for quotes created from leads)
+    lead_id = Column(String, ForeignKey("leads.id", ondelete="SET NULL"), nullable=True, index=True)
+    
+    # Customer information (can be populated from lead or directly)
+    customer_email = Column(String, nullable=False, index=True)
+    customer_name = Column(String)
+    customer_phone = Column(String)
+    customer_address = Column(Text)
+    
+    # Quote content and pricing
+    line_items = Column(JSON, nullable=False, default=[])  # Detailed breakdown from pricing engine
+    subtotal = Column(Numeric(10, 2), nullable=False)
+    discounts = Column(Numeric(10, 2), nullable=False, default=0.00)
+    tax_amount = Column(Numeric(10, 2), nullable=False, default=0.00)
+    total = Column(Numeric(10, 2), nullable=False)
+    currency = Column(String(3), nullable=False, default="USD")
+    
+    # Quote lifecycle status
+    status = Column(String(20), nullable=False, default="draft", index=True)
+    # Status values: draft, sent, accepted, declined, expired
+    
+    # Status transitions tracking
+    sent_at = Column(DateTime(timezone=True))
+    accepted_at = Column(DateTime(timezone=True))
+    declined_at = Column(DateTime(timezone=True))
+    expired_at = Column(DateTime(timezone=True))
+    
+    # Quote metadata
+    quote_number = Column(String(50), unique=True, index=True)  # Human-readable quote number
+    valid_until = Column(DateTime(timezone=True))  # Quote expiration
+    notes = Column(Text)  # Internal notes
+    customer_notes = Column(Text)  # Notes visible to customer
+    
+    # Source tracking
+    source = Column(String(50), default="manual")  # manual, dm_inquiry, website, phone
+    source_metadata = Column(JSON, default={})  # Additional source context
+    
+    # Related pricing data
+    pricing_rule_id = Column(Integer, ForeignKey("pricing_rules.id"), nullable=True)
+    pricing_snapshot = Column(JSON)  # Snapshot of pricing computation for audit
+    
+    # Audit fields
+    created_by_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    updated_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    organization = relationship("Organization", backref="quotes")
+    pricing_rule = relationship("PricingRule", backref="quotes")
+    lead = relationship("Lead", back_populates="quotes")
+    created_by = relationship("User", foreign_keys=[created_by_id])
+    updated_by = relationship("User", foreign_keys=[updated_by_id])
+    
+    # Indexes for performance and multi-tenancy
+    __table_args__ = (
+        Index('ix_quotes_org_status', organization_id, status),
+        Index('ix_quotes_org_customer', organization_id, customer_email),
+        Index('ix_quotes_org_created', organization_id, created_at),
+        Index('ix_quotes_valid_until', valid_until),
+    )
+    
+    def __repr__(self):
+        return f"<Quote(id={self.id}, org={self.organization_id}, status={self.status}, total={self.total})>"
+
+
+class MediaAsset(Base):
+    """
+    PW-SEC-ADD-001: Secure media storage for quote photos and PII assets
+    
+    Stores encrypted media assets with organization isolation and audit trail.
+    Supports signed URLs for secure upload/download with TTL enforcement.
+    """
+    __tablename__ = "media_assets"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    organization_id = Column(String, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    # Optional relationship to lead (for quote photos)
+    lead_id = Column(String, ForeignKey("leads.id", ondelete="CASCADE"), nullable=True, index=True)
+    
+    # Storage metadata
+    storage_key = Column(String, nullable=False, unique=True, index=True)  # S3 key or file path
+    filename = Column(String, nullable=False)  # Original filename
+    mime_type = Column(String, nullable=False, index=True)
+    file_size = Column(Integer, nullable=False)
+    
+    # Security and integrity
+    sha256_hash = Column(String(64), nullable=False, index=True)  # File integrity hash
+    encryption_key = Column(Text, nullable=True)  # Encrypted storage key (for additional encryption)
+    
+    # Asset status and lifecycle
+    status = Column(String(20), nullable=False, default="active", index=True)  # active, deleted, expired
+    upload_completed = Column(Boolean, default=False, index=True)
+    
+    # TTL and access control
+    expires_at = Column(DateTime(timezone=True), nullable=True, index=True)  # Asset expiration
+    access_count = Column(Integer, default=0)  # Track download count for audit
+    last_accessed_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # Asset metadata (renamed from 'metadata' to avoid SQLAlchemy conflict)
+    asset_metadata = Column(JSON, default={})  # Width, height, EXIF data, etc.
+    tags = Column(JSON, default=[])  # Categorization tags
+    
+    # Audit fields
+    created_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=False)
+    updated_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Relationships
+    organization = relationship("Organization")
+    lead = relationship("Lead", back_populates="media_assets")
+    created_by = relationship("User", foreign_keys=[created_by_id])
+    updated_by = relationship("User", foreign_keys=[updated_by_id])
+    
+    # Indexes for performance and multi-tenancy
+    __table_args__ = (
+        Index('ix_media_assets_org_status', organization_id, status),
+        Index('ix_media_assets_org_lead', organization_id, lead_id),
+        Index('ix_media_assets_org_created', organization_id, created_at),
+        Index('ix_media_assets_upload_status', upload_completed, status),
+        Index('ix_media_assets_expires', expires_at),
+    )
+    
+    def __repr__(self):
+        return f"<MediaAsset(id={self.id}, org={self.organization_id}, filename={self.filename}, size={self.file_size})>"
+    
+    def to_dict(self):
+        """Convert media asset to dictionary for API responses (redacts sensitive data)"""
+        return {
+            "id": self.id,
+            "organization_id": self.organization_id,
+            "lead_id": self.lead_id,
+            "filename": self.filename,
+            "mime_type": self.mime_type,
+            "file_size": self.file_size,
+            "sha256_hash": self.sha256_hash,
+            "status": self.status,
+            "upload_completed": self.upload_completed,
+            "expires_at": self.expires_at.isoformat() if self.expires_at else None,
+            "access_count": self.access_count,
+            "last_accessed_at": self.last_accessed_at.isoformat() if self.last_accessed_at else None,
+            "asset_metadata": self.asset_metadata,
+            "tags": self.tags,
+            "created_by_id": self.created_by_id,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+    
+    def is_expired(self) -> bool:
+        """Check if asset has expired"""
+        if not self.expires_at:
+            return False
+        return datetime.now(timezone.utc) > self.expires_at
+    
+    def can_access(self, user_org_id: str) -> bool:
+        """Check if user's organization can access this asset"""
+        return self.organization_id == user_org_id and self.status == "active" and not self.is_expired()
+    
+    def to_dict(self):
+        """Convert quote to dictionary for API responses"""
+        return {
+            "id": self.id,
+            "organization_id": self.organization_id,
+            "quote_number": self.quote_number,
+            "customer_email": self.customer_email,
+            "customer_name": self.customer_name,
+            "customer_phone": self.customer_phone,
+            "customer_address": self.customer_address,
+            "line_items": self.line_items,
+            "subtotal": float(self.subtotal) if self.subtotal else 0.0,
+            "discounts": float(self.discounts) if self.discounts else 0.0,
+            "tax_amount": float(self.tax_amount) if self.tax_amount else 0.0,
+            "total": float(self.total) if self.total else 0.0,
+            "currency": self.currency,
+            "status": self.status,
+            "sent_at": self.sent_at.isoformat() if self.sent_at else None,
+            "accepted_at": self.accepted_at.isoformat() if self.accepted_at else None,
+            "declined_at": self.declined_at.isoformat() if self.declined_at else None,
+            "expired_at": self.expired_at.isoformat() if self.expired_at else None,
+            "valid_until": self.valid_until.isoformat() if self.valid_until else None,
+            "notes": self.notes,
+            "customer_notes": self.customer_notes,
+            "source": self.source,
+            "source_metadata": self.source_metadata,
+            "pricing_rule_id": self.pricing_rule_id,
+            "created_by_id": self.created_by_id,
+            "updated_by_id": self.updated_by_id,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None
+        }
+    
+    @property
+    def is_expired(self):
+        """Check if quote has expired"""
+        from datetime import datetime, timezone
+        if not self.valid_until:
+            return False
+        return datetime.now(timezone.utc) > self.valid_until
+    
+    def can_transition_to(self, new_status: str) -> bool:
+        """Check if status transition is allowed"""
+        valid_transitions = {
+            "draft": ["sent", "declined"],
+            "sent": ["accepted", "declined", "expired"],
+            "accepted": [],  # Terminal state
+            "declined": [],  # Terminal state  
+            "expired": []    # Terminal state
+        }
+        return new_status in valid_transitions.get(self.status, [])
+
+
+class Job(Base):
+    """
+    PW-DM-ADD-001: Job model for scheduled pressure washing work
+    
+    Converts accepted quotes into first-class job objects with scheduling fields
+    to track booked work from quote acceptance to job completion.
+    """
+    __tablename__ = "jobs"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    organization_id = Column(String, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    # Source relationships
+    lead_id = Column(String, ForeignKey("leads.id", ondelete="SET NULL"), nullable=True, index=True)
+    quote_id = Column(String, ForeignKey("quotes.id", ondelete="SET NULL"), nullable=True, index=True)
+    
+    # Job details
+    job_number = Column(String(50), unique=True, index=True)  # Human-readable job number
+    service_type = Column(String(100), nullable=False)  # Main service type for the job
+    service_details = Column(JSON, default={})  # Detailed service breakdown from quote
+    
+    # Location and scheduling
+    address = Column(Text, nullable=False)  # Service location address
+    scheduled_for = Column(DateTime(timezone=True), nullable=True, index=True)  # Scheduled start time
+    duration_minutes = Column(Integer, nullable=True)  # Estimated job duration
+    
+    # Crew assignment (optional)
+    crew = Column(JSON, default={})  # Crew assignments: {"lead_tech": "John", "crew_size": 2, "equipment": [...]}
+    crew_notes = Column(Text, nullable=True)  # Special instructions for crew
+    
+    # Job lifecycle status
+    status = Column(String(20), nullable=False, default="scheduled", index=True)
+    # Status values: scheduled, in_progress, completed, canceled, rescheduled
+    
+    # Status transitions tracking
+    started_at = Column(DateTime(timezone=True), nullable=True)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    canceled_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # Job results and completion data
+    completion_notes = Column(Text, nullable=True)  # Notes from crew upon completion
+    completion_photos = Column(JSON, default=[])  # Media asset IDs for before/after photos
+    customer_satisfaction = Column(Integer, nullable=True)  # 1-5 rating from customer
+    
+    # Pricing information (copied from quote at job creation)
+    estimated_cost = Column(Numeric(10, 2), nullable=False)  # Total cost from quote
+    actual_cost = Column(Numeric(10, 2), nullable=True)  # Actual cost if different
+    currency = Column(String(3), nullable=False, default="USD")
+    
+    # Internal tracking
+    internal_notes = Column(Text, nullable=True)  # Internal notes for job management
+    priority = Column(String(10), default="normal")  # normal, high, urgent
+    
+    # Customer information (denormalized for easy access)
+    customer_name = Column(String, nullable=True)
+    customer_phone = Column(String, nullable=True)
+    customer_email = Column(String, nullable=True, index=True)
+    
+    # Audit fields
+    created_by_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    updated_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    organization = relationship("Organization", backref="jobs")
+    lead = relationship("Lead", backref="jobs")
+    quote = relationship("Quote", backref="jobs")
+    created_by = relationship("User", foreign_keys=[created_by_id])
+    updated_by = relationship("User", foreign_keys=[updated_by_id])
+    
+    # Indexes for performance and multi-tenancy
+    __table_args__ = (
+        Index('ix_jobs_org_status', organization_id, status),
+        Index('ix_jobs_org_scheduled', organization_id, scheduled_for),
+        Index('ix_jobs_org_customer', organization_id, customer_email),
+        Index('ix_jobs_org_created', organization_id, created_at),
+        Index('ix_jobs_status_scheduled', status, scheduled_for),
+    )
+    
+    def __repr__(self):
+        return f"<Job(id={self.id}, org={self.organization_id}, status={self.status}, scheduled={self.scheduled_for})>"
+    
+    def can_transition_to(self, new_status: str) -> bool:
+        """Check if status transition is allowed for job lifecycle"""
+        valid_transitions = {
+            "scheduled": ["in_progress", "canceled", "rescheduled"],
+            "rescheduled": ["scheduled", "in_progress", "canceled"],
+            "in_progress": ["completed", "canceled"],
+            "completed": [],  # Terminal state
+            "canceled": []    # Terminal state
+        }
+        return new_status in valid_transitions.get(self.status, [])
+    
+    def is_overdue(self) -> bool:
+        """Check if job is overdue (scheduled time has passed but not completed)"""
+        if not self.scheduled_for or self.status in ["completed", "canceled"]:
+            return False
+        from datetime import datetime, timezone
+        return datetime.now(timezone.utc) > self.scheduled_for
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert Job to dictionary for API responses"""
+        return {
+            "id": self.id,
+            "organization_id": self.organization_id,
+            "lead_id": self.lead_id,
+            "quote_id": self.quote_id,
+            "job_number": self.job_number,
+            "service_type": self.service_type,
+            "service_details": self.service_details,
+            "address": self.address,
+            "scheduled_for": self.scheduled_for.isoformat() if self.scheduled_for else None,
+            "duration_minutes": self.duration_minutes,
+            "crew": self.crew,
+            "crew_notes": self.crew_notes,
+            "status": self.status,
+            "started_at": self.started_at.isoformat() if self.started_at else None,
+            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "canceled_at": self.canceled_at.isoformat() if self.canceled_at else None,
+            "completion_notes": self.completion_notes,
+            "completion_photos": self.completion_photos,
+            "customer_satisfaction": self.customer_satisfaction,
+            "estimated_cost": float(self.estimated_cost) if self.estimated_cost else 0.0,
+            "actual_cost": float(self.actual_cost) if self.actual_cost else None,
+            "currency": self.currency,
+            "internal_notes": self.internal_notes,
+            "priority": self.priority,
+            "customer_name": self.customer_name,
+            "customer_phone": self.customer_phone,
+            "customer_email": self.customer_email,
+            "created_by_id": self.created_by_id,
+            "updated_by_id": self.updated_by_id,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+# P1-5b: Webhook Event Idempotency Store Models
+
+class WebhookIdempotencyRecord(Base):
+    """
+    P1-5b: Idempotency tracking for webhook events to prevent duplicate processing
+    """
+    __tablename__ = "webhook_idempotency_records"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Idempotency key (hash of event signature + payload content)
+    idempotency_key = Column(String(64), unique=True, nullable=False, index=True)
+    
+    # Webhook identification
+    platform = Column(String(50), nullable=False, index=True)
+    event_type = Column(String(100), nullable=False, index=True)
+    webhook_id = Column(String(255), nullable=True, index=True)  # Platform-provided ID
+    
+    # Tenant isolation
+    organization_id = Column(Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
+    
+    # Processing tracking
+    processing_result = Column(String(50), nullable=False)  # WebhookProcessingResult
+    processed_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    processing_time_ms = Column(Integer, nullable=True)
+    
+    # Event data summary (no sensitive info)
+    event_summary = Column(JSON, nullable=True)
+    
+    # Expiration for cleanup
+    expires_at = Column(DateTime(timezone=True), nullable=False, index=True)
+    
+    # Relationships
+    user = relationship("User", foreign_keys=[user_id])
+    organization = relationship("Organization", foreign_keys=[organization_id])
+    
+    # Indexes for performance
+    __table_args__ = (
+        Index('idx_webhook_idempotency_platform_event', 'platform', 'event_type'),
+        Index('idx_webhook_idempotency_expires', 'expires_at'),
+        Index('idx_webhook_idempotency_org', 'organization_id'),
+    )
+
+
+class WebhookDeliveryTracker(Base):
+    """
+    P1-5b: Enhanced webhook delivery tracking with retry logic and reliability monitoring
+    """
+    __tablename__ = "webhook_delivery_tracking"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Webhook identification
+    webhook_id = Column(String(255), nullable=False, index=True)
+    platform = Column(String(50), nullable=False, index=True)
+    event_type = Column(String(100), nullable=False, index=True)
+    
+    # Tenant isolation
+    organization_id = Column(Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
+    
+    # Delivery status
+    delivery_status = Column(String(50), nullable=False, index=True)  # WebhookDeliveryStatus
+    attempt_count = Column(Integer, default=0, nullable=False)
+    max_retries = Column(Integer, default=5, nullable=False)
+    
+    # Timing
+    first_attempted_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    last_attempted_at = Column(DateTime(timezone=True), nullable=True)
+    next_retry_at = Column(DateTime(timezone=True), nullable=True, index=True)
+    delivered_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # Failure tracking
+    failure_reason = Column(String(100), nullable=True)
+    last_error_message = Column(Text, nullable=True)
+    consecutive_failures = Column(Integer, default=0, nullable=False)
+    
+    # Performance metrics
+    total_processing_time_ms = Column(Integer, default=0, nullable=False)
+    avg_response_time_ms = Column(Integer, nullable=True)
+    
+    # Event payload metadata (no sensitive data)
+    event_metadata = Column(JSON, nullable=True)
+    
+    # Relationships
+    user = relationship("User", foreign_keys=[user_id])
+    organization = relationship("Organization", foreign_keys=[organization_id])
+    
+    # Indexes for performance
+    __table_args__ = (
+        Index('idx_webhook_delivery_status', 'delivery_status'),
+        Index('idx_webhook_delivery_next_retry', 'next_retry_at'),
+        Index('idx_webhook_delivery_platform_event', 'platform', 'event_type'),
+        Index('idx_webhook_delivery_org', 'organization_id'),
+    )
+
+
+# PW-DM-REPLACE-001: Lead management for pressure washing DM pipeline
+class Lead(Base):
+    """
+    Lead model for tracking potential customers from social media DMs
+    Converts social interactions with pricing intent into actionable sales objects
+    """
+    __tablename__ = "leads"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    organization_id = Column(String, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    # Source tracking - linked to SocialInteraction
+    interaction_id = Column(String, ForeignKey("social_interactions.id", ondelete="SET NULL"), nullable=True, index=True)
+    source_platform = Column(String, nullable=False, index=True)  # facebook, instagram, twitter
+    
+    # Contact information (optional - extracted from DM content or profile)
+    contact_name = Column(String, nullable=True)
+    contact_email = Column(String, nullable=True, index=True)
+    contact_phone = Column(String, nullable=True)
+    contact_address = Column(Text, nullable=True)  # Physical address for service location
+    
+    # Lead details
+    requested_services = Column(JSON, nullable=False, default=[])  # List of service types requested
+    pricing_intent = Column(String, nullable=True)  # Detected intent: "quote_request", "price_inquiry", "service_interest"
+    extracted_surfaces = Column(JSON, nullable=True)  # Surface data if detected: {"driveway": {"area": 1000}, ...}
+    extracted_details = Column(JSON, nullable=True)  # Other extracted details from DM
+    
+    # Lead management
+    status = Column(String(20), nullable=False, default="new", index=True)  # new, contacted, qualified, closed
+    priority_score = Column(Float, default=0.0)  # 0-100 priority based on intent strength and details
+    notes = Column(Text, nullable=True)  # Internal notes for lead management
+    
+    # Audit and tracking
+    created_by_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    updated_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Relationships
+    organization = relationship("Organization", back_populates="leads")
+    interaction = relationship("SocialInteraction")
+    created_by = relationship("User", foreign_keys=[created_by_id])
+    updated_by = relationship("User", foreign_keys=[updated_by_id])
+    quotes = relationship("Quote", back_populates="lead")
+    media_assets = relationship("MediaAsset", back_populates="lead", cascade="all, delete-orphan")
+    
+    # Multi-tenant indexes for performance
+    __table_args__ = (
+        Index('idx_lead_org_status', 'organization_id', 'status'),
+        Index('idx_lead_org_created', 'organization_id', 'created_at'),
+        Index('idx_lead_platform_org', 'source_platform', 'organization_id'),
+        Index('idx_lead_contact_email', 'contact_email'),
+        Index('idx_lead_priority', 'priority_score'),
+    )
+    
+    def can_transition_to(self, new_status: str) -> bool:
+        """Validate status transitions for lead lifecycle"""
+        valid_transitions = {
+            "new": ["contacted", "qualified", "closed"],
+            "contacted": ["qualified", "closed"],
+            "qualified": ["closed"],
+            "closed": []  # Terminal state
+        }
+        return new_status in valid_transitions.get(self.status, [])
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert Lead to dictionary for API responses"""
+        return {
+            "id": self.id,
+            "organization_id": self.organization_id,
+            "interaction_id": self.interaction_id,
+            "source_platform": self.source_platform,
+            "contact_name": self.contact_name,
+            "contact_email": self.contact_email,
+            "contact_phone": self.contact_phone,
+            "contact_address": self.contact_address,
+            "requested_services": self.requested_services,
+            "pricing_intent": self.pricing_intent,
+            "extracted_surfaces": self.extracted_surfaces,
+            "extracted_details": self.extracted_details,
+            "status": self.status,
+            "priority_score": self.priority_score,
+            "notes": self.notes,
+            "created_by_id": self.created_by_id,
+            "updated_by_id": self.updated_by_id,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }

@@ -219,6 +219,9 @@ export default function NotificationSystem() {
   const [toasts, setToasts] = useState([])
   const [showDropdown, setShowDropdown] = useState(false)
   const [notifications, setNotifications] = useState([])
+  const [toastQueue, setToastQueue] = useState([])
+  const MAX_VISIBLE_TOASTS = 5
+  const MAX_QUEUE_SIZE = 20
   
   const { api, connectionStatus } = useEnhancedApi()
   const { showToast } = useNotifications()
@@ -263,19 +266,74 @@ export default function NotificationSystem() {
     return () => clearInterval(interval)
   }, [fetchNotifications, isAuthenticated, shouldPoll, getPollingInterval])
 
-  // Add toast notification
+  // Process toast queue
+  const processToastQueue = useCallback(() => {
+    setToasts(prev => {
+      if (prev.length < MAX_VISIBLE_TOASTS && toastQueue.length > 0) {
+        const nextToast = toastQueue[0]
+        setToastQueue(queue => queue.slice(1))
+        return [...prev, nextToast]
+      }
+      return prev
+    })
+  }, [toastQueue])
+
+  // Process queue when toasts change
+  useEffect(() => {
+    processToastQueue()
+  }, [processToastQueue, toasts.length])
+
+  // Add toast notification with queue management
   const addToast = useCallback((notification) => {
     const id = Math.random().toString(36).substr(2, 9)
+    const timestamp = Date.now()
+    
     const toast = {
       id,
       type: notification.type || 'info',
       title: notification.title,
       message: notification.message,
       duration: notification.duration || 5000,
-      action: notification.action
+      action: notification.action,
+      retryAction: notification.retryAction,
+      maxRetries: notification.maxRetries || 3,
+      retryCount: 0,
+      priority: notification.priority || 'normal', // 'high', 'normal', 'low'
+      persistent: notification.persistent || false,
+      timestamp
     }
     
-    setToasts(prev => [...prev, toast])
+    // Check for duplicate toasts (same title and message within 2 seconds)
+    const isDuplicate = toasts.concat(toastQueue).some(existing => 
+      existing.title === toast.title && 
+      existing.message === toast.message && 
+      timestamp - existing.timestamp < 2000
+    )
+    
+    if (isDuplicate) {
+      return // Don't add duplicate toasts
+    }
+    
+    // Add directly if we have space, otherwise queue it
+    setToasts(prev => {
+      if (prev.length < MAX_VISIBLE_TOASTS) {
+        return [...prev, toast]
+      } else {
+        // Add to queue with priority handling
+        setToastQueue(queue => {
+          const newQueue = [...queue, toast]
+          
+          // Sort by priority (high first) and limit queue size
+          return newQueue
+            .sort((a, b) => {
+              const priorityOrder = { high: 3, normal: 2, low: 1 }
+              return (priorityOrder[b.priority] || 2) - (priorityOrder[a.priority] || 2)
+            })
+            .slice(0, MAX_QUEUE_SIZE)
+        })
+        return prev
+      }
+    })
     
     // Also add to in-app notifications if it's an important notification
     if (notification.persistent) {
@@ -289,12 +347,72 @@ export default function NotificationSystem() {
       }
       setNotifications(prev => [inAppNotification, ...prev])
     }
-  }, [])
+  }, [toasts, toastQueue])
 
   // Remove toast notification
   const removeToast = useCallback((id) => {
     setToasts(prev => prev.filter(toast => toast.id !== id))
   }, [])
+
+  // Handle retry failures
+  const handleRetryFailure = useCallback((toastId, error) => {
+    // Update the toast with retry failure information
+    setToasts(prev => prev.map(toast => {
+      if (toast.id === toastId) {
+        return {
+          ...toast,
+          message: `${toast.message} (Retry failed: ${error.message || 'Unknown error'})`,
+          type: 'error',
+          duration: 8000 // Extend duration for error feedback
+        }
+      }
+      return toast
+    }))
+  }, [])
+
+  // Batch notification handling for multiple related notifications
+  const addBatchToast = useCallback((notifications, options = {}) => {
+    const batchId = Math.random().toString(36).substr(2, 9)
+    const { title = 'Multiple Operations', priority = 'normal' } = options
+    
+    if (notifications.length === 1) {
+      addToast(notifications[0])
+      return
+    }
+
+    const successCount = notifications.filter(n => n.type === 'success').length
+    const errorCount = notifications.filter(n => n.type === 'error').length
+    const warningCount = notifications.filter(n => n.type === 'warning').length
+
+    let batchType = 'info'
+    let batchMessage = `Completed ${notifications.length} operations`
+
+    if (errorCount > 0) {
+      batchType = 'error'
+      batchMessage = `${successCount} succeeded, ${errorCount} failed`
+    } else if (warningCount > 0) {
+      batchType = 'warning' 
+      batchMessage = `${successCount} succeeded with ${warningCount} warnings`
+    } else {
+      batchType = 'success'
+      batchMessage = `All ${successCount} operations completed successfully`
+    }
+
+    addToast({
+      type: batchType,
+      title,
+      message: batchMessage,
+      duration: 6000,
+      priority,
+      action: {
+        label: 'View Details',
+        onClick: () => {
+          // Show detailed breakdown in a modal or expand the notification
+          console.log('Batch details:', notifications)
+        }
+      }
+    })
+  }, [addToast])
 
   // Mark notification as read
   const markAsRead = useCallback(async (notificationId) => {
@@ -373,15 +491,19 @@ export default function NotificationSystem() {
         type: 'error',
         title: 'Connection Issue',
         message: event.detail.message || 'Having trouble connecting to the server',
-        duration: 8000,
-        action: event.detail.retryAction ? {
-          label: 'Retry',
-          onClick: event.detail.retryAction
-        } : {
-          label: 'Refresh',
-          onClick: () => window.location.reload()
+        duration: 12000,
+        priority: 'high',
+        retryAction: event.detail.retryAction,
+        maxRetries: event.detail.maxRetries || 3,
+        action: {
+          label: 'Dismiss',
+          onClick: () => {} // Will be handled by toast dismiss
         }
       })
+    }
+
+    const handleBatchNotification = (event) => {
+      addBatchToast(event.detail.notifications, event.detail.options)
     }
 
     // Listen for custom events
@@ -391,6 +513,7 @@ export default function NotificationSystem() {
     window.addEventListener('workflowCompleted', handleWorkflowCompleted)
     window.addEventListener('systemAlert', handleSystemAlert)
     window.addEventListener('apiError', handleApiError)
+    window.addEventListener('createBatchNotification', handleBatchNotification)
 
     return () => {
       window.removeEventListener('createNotification', handleCreateNotification)
@@ -399,6 +522,7 @@ export default function NotificationSystem() {
       window.removeEventListener('workflowCompleted', handleWorkflowCompleted)
       window.removeEventListener('systemAlert', handleSystemAlert)
       window.removeEventListener('apiError', handleApiError)
+      window.removeEventListener('createBatchNotification', handleBatchNotification)
     }
   }, [addToast])
 
@@ -423,12 +547,28 @@ export default function NotificationSystem() {
 
   return (
     <>
-      {/* Toast notifications container */}
+      {/* Toast notifications container with accessibility */}
       {toasts.length > 0 && createPortal(
-        <div className="fixed inset-0 z-50 flex flex-col items-end justify-start p-6 space-y-4 pointer-events-none">
+        <div 
+          className="fixed inset-0 z-50 flex flex-col items-end justify-start p-6 space-y-4 pointer-events-none"
+          aria-label="Notifications"
+          role="region"
+        >
           {toasts.map((toast) => (
-            <Toast key={toast.id} notification={toast} onClose={removeToast} />
+            <Toast 
+              key={toast.id} 
+              notification={toast} 
+              onDismiss={removeToast}
+              onRetry={handleRetryFailure}
+            />
           ))}
+          
+          {/* Queue indicator */}
+          {toastQueue.length > 0 && (
+            <div className="fixed bottom-6 right-6 bg-gray-800 text-white px-3 py-1 rounded-full text-xs pointer-events-auto">
+              {toastQueue.length} more notification{toastQueue.length !== 1 ? 's' : ''}
+            </div>
+          )}
         </div>,
         document.body
       )}
@@ -481,7 +621,40 @@ export const createWorkflowCompletedNotification = (workflowType) => {
   window.dispatchEvent(event)
 }
 
-export const createSystemAlertNotification = (message) => {
-  const event = new CustomEvent('systemAlert', { detail: { message } })
+export const createSystemAlertNotification = (message, severity = 'warning') => {
+  const event = new CustomEvent('systemAlert', { detail: { message, severity } })
+  window.dispatchEvent(event)
+}
+
+// Enhanced notification creation with retry support
+export const createRetryableNotification = (notification) => {
+  const event = new CustomEvent('createNotification', { 
+    detail: {
+      ...notification,
+      retryAction: notification.retryAction,
+      maxRetries: notification.maxRetries || 3,
+      priority: notification.priority || 'normal'
+    }
+  })
+  window.dispatchEvent(event)
+}
+
+// Batch notification creation
+export const createBatchNotification = (notifications, options = {}) => {
+  const event = new CustomEvent('createBatchNotification', { 
+    detail: { notifications, options }
+  })
+  window.dispatchEvent(event)
+}
+
+// API error with retry mechanism
+export const createApiErrorNotification = (message, retryAction, maxRetries = 3) => {
+  const event = new CustomEvent('apiError', { 
+    detail: { 
+      message,
+      retryAction,
+      maxRetries
+    }
+  })
   window.dispatchEvent(event)
 }

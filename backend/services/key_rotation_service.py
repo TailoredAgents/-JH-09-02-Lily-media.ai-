@@ -573,6 +573,104 @@ class KeyRotationService:
             report["recommendations"].append("✅ All encryption keys are within rotation schedule")
         
         return report
+    
+    def generate_procedure_documentation(self) -> Dict[str, Any]:
+        """P1-2c: Generate current key rotation procedure documentation"""
+        current_config = self.get_key_rotation_schedule()
+        
+        documentation = {
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "version": "2.0",
+            "title": "Key Rotation Procedures - Auto-Generated",
+            "system_status": {
+                "overall_status": current_config["overall_status"],
+                "total_key_types": len(KeyType),
+                "overdue_count": current_config["overdue_key_types"],
+                "active_keys_count": sum(
+                    len(self.get_active_keys(key_type)) for key_type in KeyType
+                )
+            },
+            "rotation_schedules": {
+                key_type.value: {
+                    "rotation_interval_days": self.rotation_schedules.get(key_type, 90),
+                    "grace_period_days": self.grace_periods.get(key_type, 30),
+                    "priority": "Critical" if key_type == KeyType.TOKEN_ENCRYPTION else
+                              "High" if key_type in [KeyType.DATABASE_ENCRYPTION, KeyType.SESSION_ENCRYPTION, KeyType.API_SIGNATURE] else
+                              "Medium"
+                }
+                for key_type in KeyType
+            },
+            "current_key_status": {
+                key_type.value: {
+                    "active_keys": len(self.get_active_keys(key_type)),
+                    "status": current_config["key_types"].get(key_type.value, {}).get("status", "unknown"),
+                    "oldest_key_age_days": current_config["key_types"].get(key_type.value, {}).get("oldest_key_age_days", 0),
+                    "is_overdue": current_config["key_types"].get(key_type.value, {}).get("is_overdue", False)
+                }
+                for key_type in KeyType
+            },
+            "api_endpoints": {
+                "status": "/api/v1/key-rotation/status",
+                "schedule": "/api/v1/key-rotation/schedule",
+                "execute": "/api/v1/key-rotation/execute",
+                "report": "/api/v1/key-rotation/report",
+                "events": "/api/v1/key-rotation/events",
+                "rollback": "/api/v1/key-rotation/rollback"
+            },
+            "emergency_procedures": {
+                "immediate_rotation_required": [
+                    "1. Assess impact: GET /api/v1/key-rotation/impact/{key_type}",
+                    "2. Force rotation: POST /api/v1/key-rotation/schedule with force=true",
+                    "3. Monitor progress: GET /api/v1/key-rotation/events/{event_id}",
+                    "4. Verify completion: GET /api/v1/key-rotation/report"
+                ],
+                "rollback_procedure": [
+                    "1. Identify failed event ID",
+                    "2. Execute rollback: POST /api/v1/key-rotation/rollback/{event_id}",
+                    "3. Verify rollback: GET /api/v1/key-rotation/events/{event_id}",
+                    "4. Investigate root cause"
+                ]
+            },
+            "compliance_requirements": {
+                "sox": "Quarterly key rotation documentation required",
+                "pci_dss": "Key rotation for payment-related data",
+                "gdpr": "Key rotation for EU user data",
+                "audit_logging": "All operations logged to audit trail"
+            },
+            "monitoring_metrics": {
+                "key_age_threshold": "Rotation schedule + grace period",
+                "rotation_success_rate": "Target: >99%",
+                "migration_performance": "Target: >1000 records/second",
+                "error_rate_threshold": "Alert: >1%"
+            }
+        }
+        
+        # Add recommendations based on current status
+        documentation["current_recommendations"] = []
+        
+        if current_config["overdue_key_types"] > 0:
+            documentation["current_recommendations"].append({
+                "priority": "CRITICAL",
+                "message": f"{current_config['overdue_key_types']} key types require immediate rotation",
+                "action": "Execute emergency key rotation procedure"
+            })
+        
+        for key_type_str, details in current_config["key_types"].items():
+            if details.get("is_overdue"):
+                documentation["current_recommendations"].append({
+                    "priority": "HIGH",
+                    "message": f"{key_type_str} keys are {details['oldest_key_age_days']} days old",
+                    "action": f"Schedule rotation (target: every {details['rotation_interval_days']} days)"
+                })
+        
+        if not documentation["current_recommendations"]:
+            documentation["current_recommendations"].append({
+                "priority": "INFO",
+                "message": "All encryption keys are within rotation schedule",
+                "action": "Continue monitoring key age"
+            })
+        
+        return documentation
 
 # Global service instance
 key_rotation_service = KeyRotationService()

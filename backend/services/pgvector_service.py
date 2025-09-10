@@ -31,9 +31,10 @@ class PgVectorService:
     """Production vector search service using pgvector"""
     
     def __init__(self, db_session: Session):
+        from backend.core.constants import EMBEDDINGS_DIMENSION
         self.db = db_session
         self.embedding_model = "text-embedding-3-large"  # 3072 dimensions
-        self.embedding_dimensions = 3072
+        self.embedding_dimensions = EMBEDDINGS_DIMENSION
         
     async def ensure_extension(self):
         """Ensure pgvector extension is enabled"""

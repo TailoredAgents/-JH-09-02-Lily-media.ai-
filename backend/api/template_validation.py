@@ -11,7 +11,8 @@ from sqlalchemy.orm import Session
 from typing import Dict, Any, List, Optional
 import logging
 
-from backend.core.dependencies import get_db, get_current_admin_user
+from backend.db.database import get_db
+from backend.auth.dependencies import get_admin_user
 from backend.db.models import User
 from backend.services.template_validation_service import (
     TemplateValidationService,
@@ -43,7 +44,7 @@ class ValidationRequest(BaseModel):
 @router.get("/status", response_model=Dict[str, Any])
 async def get_validation_status(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_admin_user)
+    current_user: User = Depends(get_admin_user)
 ) -> Dict[str, Any]:
     """Get current template validation status overview"""
     try:
@@ -102,7 +103,7 @@ async def get_validation_status(
 async def validate_templates(
     request: ValidationRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_admin_user)
+    current_user: User = Depends(get_admin_user)
 ) -> ValidationResponse:
     """Run comprehensive template validation"""
     try:
@@ -197,7 +198,7 @@ async def validate_templates(
 async def validate_specific_model(
     model_name: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_admin_user)
+    current_user: User = Depends(get_admin_user)
 ) -> Dict[str, Any]:
     """Validate a specific model template"""
     try:
@@ -259,7 +260,7 @@ async def validate_specific_model(
 @router.get("/coverage/report", response_model=Dict[str, Any])
 async def get_coverage_report(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_admin_user)
+    current_user: User = Depends(get_admin_user)
 ) -> Dict[str, Any]:
     """Get detailed template coverage report"""
     try:
@@ -332,7 +333,7 @@ async def get_coverage_report(
 @router.post("/fix/auto", response_model=Dict[str, Any])
 async def auto_fix_issues(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_admin_user)
+    current_user: User = Depends(get_admin_user)
 ) -> Dict[str, Any]:
     """Automatically fix common template validation issues"""
     try:

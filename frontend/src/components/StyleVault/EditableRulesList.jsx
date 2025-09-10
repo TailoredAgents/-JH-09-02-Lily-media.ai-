@@ -4,8 +4,58 @@ import {
   XMarkIcon,
   CheckCircleIcon,
   EllipsisVerticalIcon,
+  Bars3Icon,
 } from '@heroicons/react/24/outline'
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
+import KeyboardDragDrop from '../KeyboardDragDrop'
+import AccessibleDragDrop from '../AccessibleDragDrop'
+
+// Individual rule item component for both mouse and keyboard modes
+const RuleItem = ({ 
+  rule, 
+  index, 
+  isSelected, 
+  colorClasses, 
+  isDoType, 
+  onUpdate, 
+  onRemove, 
+  inputMode 
+}) => {
+  return (
+    <div className={`group relative ${isSelected ? 'ring-2 ring-blue-500 bg-blue-50' : ''}`}>
+      <div className="flex items-center space-x-2">
+        {inputMode === 'mouse' && (
+          <div className="text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing">
+            <Bars3Icon className="w-4 h-4" aria-hidden="true" />
+          </div>
+        )}
+        
+        <div className="flex-1">
+          <textarea
+            value={rule}
+            onChange={(e) => onUpdate(index, e.target.value)}
+            className={`w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-offset-2 ${colorClasses.input}`}
+            rows={rule.length > 60 ? 2 : 1}
+            placeholder={isDoType 
+              ? 'Enter a brand guideline...' 
+              : 'Enter a brand restriction...'
+            }
+            aria-label={`${isDoType ? 'Brand guideline' : 'Brand restriction'} ${index + 1}`}
+          />
+        </div>
+        
+        <button
+          onClick={() => onRemove(index)}
+          className="text-gray-400 hover:text-red-600 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 rounded p-1"
+          title={`Remove ${isDoType ? 'guideline' : 'restriction'}`}
+          aria-label={`Remove ${isDoType ? 'guideline' : 'restriction'} ${index + 1}`}
+          type="button"
+        >
+          <XMarkIcon className="w-4 h-4" aria-hidden="true" />
+        </button>
+      </div>
+    </div>
+  )
+}
 
 const EditableRulesList = ({ rules, type, onUpdate, onCancel }) => {
   const [localRules, setLocalRules] = useState(rules || [])
@@ -35,13 +85,10 @@ const EditableRulesList = ({ rules, type, onUpdate, onCancel }) => {
     setLocalRules(updatedRules)
   }
 
-  const handleDragEnd = (result) => {
-    if (!result.destination) return
-
+  const handleRuleMove = (fromIndex, toIndex) => {
     const items = Array.from(localRules)
-    const [reorderedItem] = items.splice(result.source.index, 1)
-    items.splice(result.destination.index, 0, reorderedItem)
-
+    const [reorderedItem] = items.splice(fromIndex, 1)
+    items.splice(toIndex, 0, reorderedItem)
     setLocalRules(items)
   }
 
@@ -83,64 +130,59 @@ const EditableRulesList = ({ rules, type, onUpdate, onCancel }) => {
           </p>
         </div>
 
-        {/* Existing Rules */}
+        {/* Existing Rules with Accessible Drag and Drop */}
         {localRules.length > 0 && (
-          <DragDropContext onDragEnd={handleDragEnd}>
-            <Droppable droppableId="rules">
-              {(provided) => (
-                <div
-                  {...provided.droppableProps}
-                  ref={provided.innerRef}
-                  className="space-y-2 mb-4"
-                >
-                  {localRules.map((rule, index) => (
-                    <Draggable key={index} draggableId={`rule-${index}`} index={index}>
-                      {(provided, snapshot) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          className={`group relative ${
-                            snapshot.isDragging ? 'shadow-lg' : ''
-                          }`}
-                        >
-                          <div className="flex items-center space-x-2">
-                            <div
-                              {...provided.dragHandleProps}
-                              className="text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing"
-                            >
-                              <EllipsisVerticalIcon className="w-4 h-4" />
-                            </div>
-                            
-                            <div className="flex-1">
-                              <textarea
-                                value={rule}
-                                onChange={(e) => updateRule(index, e.target.value)}
-                                className={`w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-sm resize-none ${colorClasses.input}`}
-                                rows={rule.length > 60 ? 2 : 1}
-                                placeholder={isDoType 
-                                  ? 'Enter a brand guideline...' 
-                                  : 'Enter a brand restriction...'
-                                }
-                              />
-                            </div>
-                            
-                            <button
-                              onClick={() => removeRule(index)}
-                              className="text-gray-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                              title="Remove rule"
-                            >
-                              <XMarkIcon className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </Draggable>
-                  ))}
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>
-          </DragDropContext>
+          <div className="mb-4">
+            <AccessibleDragDrop
+              showToggle={localRules.length > 1}
+              defaultMode="mouse"
+              instructions={true}
+              keyboardAlternative={
+                <KeyboardDragDrop
+                  items={localRules.map((rule, index) => ({ 
+                    id: index, 
+                    content: rule, 
+                    index 
+                  }))}
+                  onMove={(fromId, toId) => {
+                    const fromIndex = typeof fromId === 'number' ? fromId : parseInt(fromId)
+                    const toIndex = typeof toId === 'number' ? toId : parseInt(toId)
+                    handleRuleMove(fromIndex, toIndex)
+                  }}
+                  renderItem={(item, isSelected) => (
+                    <RuleItem
+                      rule={item.content}
+                      index={item.index}
+                      isSelected={isSelected}
+                      colorClasses={colorClasses}
+                      isDoType={isDoType}
+                      onUpdate={updateRule}
+                      onRemove={removeRule}
+                      inputMode="keyboard"
+                    />
+                  )}
+                  instructions={false}
+                  className="space-y-2"
+                />
+              }
+            >
+              <div className="space-y-2">
+                {localRules.map((rule, index) => (
+                  <RuleItem
+                    key={index}
+                    rule={rule}
+                    index={index}
+                    isSelected={false}
+                    colorClasses={colorClasses}
+                    isDoType={isDoType}
+                    onUpdate={updateRule}
+                    onRemove={removeRule}
+                    inputMode="mouse"
+                  />
+                ))}
+              </div>
+            </AccessibleDragDrop>
+          </div>
         )}
 
         {/* Add New Rule */}
@@ -172,7 +214,7 @@ const EditableRulesList = ({ rules, type, onUpdate, onCancel }) => {
           </div>
           
           <p className="text-xs text-gray-500">
-            Press Enter to add, or use Shift+Enter for line breaks. Drag to reorder.
+            Press Enter to add, or use Shift+Enter for line breaks. Use drag-and-drop or keyboard navigation to reorder.
           </p>
         </div>
 

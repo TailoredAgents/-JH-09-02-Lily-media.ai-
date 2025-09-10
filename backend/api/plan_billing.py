@@ -33,6 +33,8 @@ class CreateCheckoutRequest(BaseModel):
     annual_billing: bool = Field(False, description="Whether to use annual billing")
     success_url: str = Field(..., description="URL to redirect on successful payment")
     cancel_url: str = Field(..., description="URL to redirect on cancelled payment")
+    # P1-10b: FTC compliance - track terms acceptance
+    terms_accepted_at: Optional[str] = Field(None, description="ISO timestamp when user accepted terms")
 
 class CheckoutResponse(BaseModel):
     session_id: str

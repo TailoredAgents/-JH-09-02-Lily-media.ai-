@@ -1,0 +1,497 @@
+{
+  "id": null,
+  "title": "Lily Media AI - Capacity Planning & SLO Tracking",
+  "tags": ["capacity", "slo", "sli", "forecasting"],
+  "style": "dark",
+  "timezone": "browser",
+  "refresh": "5m",
+  "schemaVersion": 39,
+  "fiscalYearStartMonth": 0,
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "SLO Status Overview",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "slo_status{slo_name=\"API Availability\"}",
+          "legendFormat": "API Availability",
+          "refId": "A"
+        },
+        {
+          "expr": "slo_status{slo_name=\"API Response Time\"}",
+          "legendFormat": "API Latency",
+          "refId": "B"
+        },
+        {
+          "expr": "slo_status{slo_name=\"Database Availability\"}",
+          "legendFormat": "Database",
+          "refId": "C"
+        },
+        {
+          "expr": "slo_status{slo_name=\"Vector Search Performance\"}",
+          "legendFormat": "Vector Search",
+          "refId": "D"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "unit": "short",
+          "min": 0,
+          "max": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "green",
+                "value": 2
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "text": "VIOLATED"
+                },
+                "1": {
+                  "text": "AT RISK"
+                },
+                "2": {
+                  "text": "HEALTHY"
+                }
+              },
+              "type": "value"
+            }
+          ]
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "horizontal",
+        "textMode": "value_and_name",
+        "colorMode": "background",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 2,
+      "title": "Error Budget Consumption",
+      "type": "bargauge",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "targets": [
+        {
+          "expr": "(1 - slo_error_budget_remaining) * 100",
+          "legendFormat": "{{ slo_name }}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 50
+              },
+              {
+                "color": "orange",
+                "value": 80
+              },
+              {
+                "color": "red",
+                "value": 95
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true
+      }
+    },
+    {
+      "id": 3,
+      "title": "Current SLO Performance",
+      "type": "gauge",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "targets": [
+        {
+          "expr": "slo_current_percentage",
+          "legendFormat": "{{ slo_name }}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "unit": "percent",
+          "min": 90,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": 90
+              },
+              {
+                "color": "yellow",
+                "value": 95
+              },
+              {
+                "color": "green",
+                "value": 99
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      }
+    },
+    {
+      "id": 4,
+      "title": "Capacity Utilization",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "targets": [
+        {
+          "expr": "capacity_utilization_percentage{resource_type=\"database_connections\"}",
+          "legendFormat": "Database Connections %",
+          "refId": "A"
+        },
+        {
+          "expr": "capacity_utilization_percentage{resource_type=\"vector_store_memory\"}",
+          "legendFormat": "Vector Store Memory %",
+          "refId": "B"
+        },
+        {
+          "expr": "process_memory_usage_bytes / (2 * 1024 * 1024 * 1024) * 100",
+          "legendFormat": "System Memory %",
+          "refId": "C"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Growth Trends",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "targets": [
+        {
+          "expr": "vector_store_growth_rate_vectors_per_hour",
+          "legendFormat": "Vector Growth (vectors/hr)",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(http_requests_total[1h])",
+          "legendFormat": "API Request Growth (req/hr)",
+          "refId": "B"
+        },
+        {
+          "expr": "increase(database_queries_total[1h])",
+          "legendFormat": "Database Query Growth (queries/hr)",
+          "refId": "C"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "short",
+          "min": 0
+        }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Capacity Forecasting",
+      "type": "table",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "targets": [
+        {
+          "expr": "capacity_forecast_days_remaining",
+          "legendFormat": "{{ resource_type }}",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "unit": "d",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "orange",
+                "value": 30
+              },
+              {
+                "color": "yellow",
+                "value": 90
+              },
+              {
+                "color": "green",
+                "value": 180
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "showHeader": true
+      },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "indexByName": {},
+            "renameByName": {
+              "resource_type": "Resource",
+              "Value": "Days Until Exhaustion"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "SLO Violation History",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "targets": [
+        {
+          "expr": "increase(slo_violations_total{severity=\"critical\"}[1h])",
+          "legendFormat": "Critical Violations",
+          "refId": "A"
+        },
+        {
+          "expr": "increase(slo_violations_total{severity=\"warning\"}[1h])",
+          "legendFormat": "Warning Violations",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "short",
+          "min": 0
+        }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "time_window",
+        "type": "custom",
+        "options": [
+          {
+            "text": "1 hour",
+            "value": "1h",
+            "selected": false
+          },
+          {
+            "text": "6 hours", 
+            "value": "6h",
+            "selected": false
+          },
+          {
+            "text": "24 hours",
+            "value": "24h",
+            "selected": true
+          },
+          {
+            "text": "7 days",
+            "value": "7d",
+            "selected": false
+          },
+          {
+            "text": "30 days",
+            "value": "30d",
+            "selected": false
+          }
+        ]
+      }
+    ]
+  },
+  "annotations": {
+    "list": [
+      {
+        "name": "SLO Violations",
+        "datasource": "Prometheus",
+        "enable": true,
+        "expr": "increase(slo_violations_total[1h]) > 0",
+        "iconColor": "red",
+        "titleFormat": "SLO Violation",
+        "textFormat": "{{ slo_name }} SLO violated"
+      },
+      {
+        "name": "Capacity Warnings",
+        "datasource": "Prometheus", 
+        "enable": true,
+        "expr": "capacity_utilization_percentage > 80",
+        "iconColor": "orange",
+        "titleFormat": "Capacity Warning",
+        "textFormat": "{{ resource_type }} utilization high"
+      }
+    ]
+  }
+}

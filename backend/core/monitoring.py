@@ -112,6 +112,140 @@ class PrometheusMetrics:
             registry=self.registry
         )
         
+        # OAuth Token Refresh Metrics (P1-4b)
+        self.oauth_token_refresh_total = Counter(
+            'oauth_token_refresh_total',
+            'Total OAuth token refresh operations',
+            ['platform', 'success', 'organization_id'],
+            registry=self.registry
+        )
+        
+        self.oauth_token_refresh_duration_seconds = Histogram(
+            'oauth_token_refresh_duration_seconds',
+            'OAuth token refresh operation duration in seconds',
+            ['platform'],
+            registry=self.registry
+        )
+        
+        # Webhook Validation Metrics (P1-4c)
+        self.webhook_validations_total = Counter(
+            'webhook_validations_total',
+            'Total webhook signature validations',
+            ['platform', 'result', 'threat_level'],
+            registry=self.registry
+        )
+        
+        self.webhook_validation_duration_seconds = Histogram(
+            'webhook_validation_duration_seconds',
+            'Webhook signature validation duration in seconds',
+            ['platform'],
+            registry=self.registry
+        )
+        
+        self.webhook_threats_total = Counter(
+            'webhook_threats_total',
+            'Total webhook security threats detected',
+            ['platform', 'threat_type'],
+            registry=self.registry
+        )
+        
+        self.webhook_delivery_success_rate = Gauge(
+            'webhook_delivery_success_rate',
+            'Current webhook delivery success rate percentage',
+            ['platform'],
+            registry=self.registry
+        )
+        
+        # Embedding Validation Metrics (P1-7a)
+        self.embedding_validations_total = Counter(
+            'embedding_validations_total',
+            'Total embedding validation attempts',
+            ['result', 'dimension'],
+            registry=self.registry
+        )
+        
+        self.embedding_validation_duration_seconds = Histogram(
+            'embedding_validation_duration_seconds',
+            'Embedding validation duration in seconds',
+            registry=self.registry
+        )
+        
+        self.embedding_dimension_mismatches_total = Counter(
+            'embedding_dimension_mismatches_total',
+            'Total embedding dimension mismatches',
+            ['expected_dimension', 'actual_dimension'],
+            registry=self.registry
+        )
+        
+        # Vector Store Performance Metrics (P1-7b)
+        self.vector_store_operations_total = Counter(
+            'vector_store_operations_total',
+            'Total vector store operations',
+            ['operation', 'success'],
+            registry=self.registry
+        )
+        
+        self.vector_store_operation_duration_seconds = Histogram(
+            'vector_store_operation_duration_seconds',
+            'Vector store operation duration in seconds',
+            ['operation'],
+            registry=self.registry
+        )
+        
+        self.vector_store_memory_usage_mb = Gauge(
+            'vector_store_memory_usage_mb',
+            'Vector store memory usage in MB',
+            registry=self.registry
+        )
+        
+        self.vector_store_index_size_vectors = Gauge(
+            'vector_store_index_size_vectors',
+            'Number of vectors in the index',
+            registry=self.registry
+        )
+        
+        # Storage Growth Monitoring (P1-7d)
+        self.vector_store_memory_usage_bytes = Gauge(
+            'vector_store_memory_usage_bytes',
+            'Memory usage of vector store in bytes',
+            ['component'],
+            registry=self.registry
+        )
+        
+        self.vector_store_disk_usage_bytes = Gauge(
+            'vector_store_disk_usage_bytes',
+            'Disk usage of vector store in bytes',
+            ['component', 'file_type'],
+            registry=self.registry
+        )
+        
+        self.vector_store_growth_rate = Gauge(
+            'vector_store_growth_rate_vectors_per_hour',
+            'Rate of vector additions per hour',
+            registry=self.registry
+        )
+        
+        # Index Performance Monitoring (P1-7d)  
+        self.vector_store_fragmentation_ratio = Gauge(
+            'vector_store_fragmentation_ratio',
+            'Index fragmentation ratio (0-1, higher is more fragmented)',
+            registry=self.registry
+        )
+        
+        self.vector_store_rebuild_frequency = Counter(
+            'vector_store_rebuild_operations_total',
+            'Total vector store rebuild operations',
+            ['trigger_reason'],
+            registry=self.registry
+        )
+        
+        self.vector_store_search_accuracy = Histogram(
+            'vector_store_search_accuracy_score',
+            'Search result accuracy scores',
+            buckets=[0.5, 0.6, 0.7, 0.8, 0.85, 0.9, 0.95, 0.98, 1.0],
+            registry=self.registry
+        )
+        
         # Celery Task Metrics
         self.celery_tasks_total = Counter(
             'celery_tasks_total',
@@ -159,34 +293,7 @@ class PrometheusMetrics:
             registry=self.registry
         )
         
-        # Webhook Reliability Metrics (4 metrics)
-        self.webhook_validations_total = Counter(
-            'webhook_validations_total',
-            'Total webhook signature validations',
-            ['platform', 'result', 'threat_level'],
-            registry=self.registry
-        )
-        
-        self.webhook_validation_duration_seconds = Histogram(
-            'webhook_validation_duration_seconds',
-            'Webhook signature validation duration',
-            ['platform'],
-            registry=self.registry
-        )
-        
-        self.webhook_threats_detected_total = Counter(
-            'webhook_threats_detected_total',
-            'Total webhook security threats detected',
-            ['platform', 'threat_type'],
-            registry=self.registry
-        )
-        
-        self.webhook_delivery_success_rate = Gauge(
-            'webhook_delivery_success_rate',
-            'Current webhook delivery success rate percentage',
-            ['platform'],
-            registry=self.registry
-        )
+# Duplicate webhook metrics removed - using P1-4c section metrics instead
         
         # Image Quality Monitoring Metrics (4 metrics) 
         self.image_quality_scores_distribution = Histogram(
@@ -272,6 +379,149 @@ class PrometheusMetrics:
             status_code=str(status_code)
         ).inc()
     
+    def record_oauth_refresh(self, platform: str, success: bool, duration_seconds: float, organization_id: str):
+        """Record OAuth token refresh operation (P1-4b)"""
+        if not PROMETHEUS_AVAILABLE:
+            return
+        
+        # Record total count with success/failure
+        self.oauth_token_refresh_total.labels(
+            platform=platform,
+            success=str(success).lower(),
+            organization_id=organization_id
+        ).inc()
+        
+        # Record duration
+        self.oauth_token_refresh_duration_seconds.labels(platform=platform).observe(duration_seconds)
+    
+    def record_webhook_validation(self, platform: str, result: str, threat_level: str):
+        """Record webhook signature validation (P1-4c)"""
+        if not PROMETHEUS_AVAILABLE:
+            return
+        
+        self.webhook_validations_total.labels(
+            platform=platform,
+            result=result,
+            threat_level=threat_level
+        ).inc()
+    
+    def record_webhook_validation_time(self, platform: str, duration_seconds: float):
+        """Record webhook validation duration (P1-4c)"""
+        if not PROMETHEUS_AVAILABLE:
+            return
+        
+        self.webhook_validation_duration_seconds.labels(platform=platform).observe(duration_seconds)
+    
+    def record_webhook_threat(self, platform: str, threat_type: str):
+        """Record webhook security threat (P1-4c)"""
+        if not PROMETHEUS_AVAILABLE:
+            return
+        
+        self.webhook_threats_total.labels(
+            platform=platform,
+            threat_type=threat_type
+        ).inc()
+    
+    def record_embedding_validation(self, is_valid: bool, dimension: int, duration_seconds: float):
+        """Record embedding validation result (P1-7a)"""
+        if not PROMETHEUS_AVAILABLE:
+            return
+        
+        result = "valid" if is_valid else "invalid"
+        self.embedding_validations_total.labels(
+            result=result,
+            dimension=str(dimension)
+        ).inc()
+        
+        self.embedding_validation_duration_seconds.observe(duration_seconds)
+    
+    def record_embedding_dimension_mismatch(self, expected_dimension: int, actual_dimension: int):
+        """Record embedding dimension mismatch (P1-7a)"""
+        if not PROMETHEUS_AVAILABLE:
+            return
+        
+        self.embedding_dimension_mismatches_total.labels(
+            expected_dimension=str(expected_dimension),
+            actual_dimension=str(actual_dimension)
+        ).inc()
+    
+    def record_vector_store_operation(self, operation: str, success: bool, duration_seconds: float, vector_count: int):
+        """Record vector store operation (P1-7b)"""
+        if not PROMETHEUS_AVAILABLE:
+            return
+        
+        # Record operation count
+        self.vector_store_operations_total.labels(
+            operation=operation,
+            success=str(success).lower()
+        ).inc()
+        
+        # Record operation duration
+        self.vector_store_operation_duration_seconds.labels(
+            operation=operation
+        ).observe(duration_seconds)
+    
+    def record_vector_store_memory_usage(self, memory_mb: float):
+        """Record vector store memory usage (P1-7b)"""
+        if not PROMETHEUS_AVAILABLE:
+            return
+        
+        self.vector_store_memory_usage_mb.set(memory_mb)
+    
+    def record_vector_store_index_size(self, size_vectors: int):
+        """Record vector store index size (P1-7b)"""
+        if not PROMETHEUS_AVAILABLE:
+            return
+        
+        self.vector_store_index_size_vectors.set(size_vectors)
+    
+    # Storage Growth Monitoring Methods (P1-7d)
+    def record_vector_store_memory_usage(self, component: str, memory_bytes: int):
+        """Record vector store memory usage by component"""
+        if not PROMETHEUS_AVAILABLE:
+            return
+        
+        self.vector_store_memory_usage_bytes.labels(component=component).set(memory_bytes)
+    
+    def record_vector_store_disk_usage(self, component: str, file_type: str, disk_bytes: int):
+        """Record vector store disk usage by component and file type"""
+        if not PROMETHEUS_AVAILABLE:
+            return
+        
+        self.vector_store_disk_usage_bytes.labels(
+            component=component,
+            file_type=file_type
+        ).set(disk_bytes)
+    
+    def record_vector_store_growth_rate(self, vectors_per_hour: float):
+        """Record vector store growth rate"""
+        if not PROMETHEUS_AVAILABLE:
+            return
+        
+        self.vector_store_growth_rate.set(vectors_per_hour)
+    
+    # Index Performance Monitoring Methods (P1-7d)
+    def record_vector_store_fragmentation(self, fragmentation_ratio: float):
+        """Record vector store index fragmentation ratio"""
+        if not PROMETHEUS_AVAILABLE:
+            return
+        
+        self.vector_store_fragmentation_ratio.set(fragmentation_ratio)
+    
+    def record_vector_store_rebuild(self, trigger_reason: str):
+        """Record vector store rebuild operation"""
+        if not PROMETHEUS_AVAILABLE:
+            return
+        
+        self.vector_store_rebuild_frequency.labels(trigger_reason=trigger_reason).inc()
+    
+    def record_vector_store_search_accuracy(self, accuracy_score: float):
+        """Record search result accuracy score"""
+        if not PROMETHEUS_AVAILABLE:
+            return
+        
+        self.vector_store_search_accuracy.observe(accuracy_score)
+    
     def record_celery_task(self, task_name: str, status: str, duration: Optional[float] = None):
         """Record Celery task metrics"""
         if not PROMETHEUS_AVAILABLE:
@@ -351,11 +601,11 @@ class PrometheusMetrics:
             return
         self.webhook_validation_duration_seconds.labels(platform=platform).observe(duration_seconds)
     
-    def record_webhook_threat(self, platform: str, threat_type: str):
-        """Record webhook security threat detected"""
+    def record_webhook_threat_detected(self, platform: str, threat_type: str):
+        """Record webhook security threat detected (duplicate method - use record_webhook_threat instead)"""
         if not PROMETHEUS_AVAILABLE:
             return
-        self.webhook_threats_detected_total.labels(
+        self.webhook_threats_total.labels(
             platform=platform,
             threat_type=threat_type
         ).inc()

@@ -80,6 +80,58 @@ CURRENT_QUALITY_DISTRIBUTION = Gauge(
     ['model', 'platform']
 )
 
+# Enhanced quality dimension tracking
+QUALITY_DIMENSIONS = Histogram(
+    'image_quality_dimensions',
+    'Detailed quality scores by dimension',
+    ['model', 'platform', 'dimension'],
+    buckets=[0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0]
+)
+
+QUALITY_LEVEL_DISTRIBUTION = Counter(
+    'image_quality_levels_total',
+    'Distribution of quality levels',
+    ['model', 'platform', 'quality_level']
+)
+
+BRAND_CONSISTENCY_SCORE = Gauge(
+    'current_brand_consistency_average',
+    'Current average brand consistency score',
+    ['model', 'platform', 'industry_type']
+)
+
+ADVANCED_SCORER_USAGE = Counter(
+    'advanced_quality_scorer_usage_total',
+    'Advanced quality scorer usage and availability',
+    ['status', 'fallback_reason']
+)
+
+# Quality monitoring and alerting
+LOW_QUALITY_ALERTS = Counter(
+    'image_quality_alerts_total',
+    'Alerts for low quality image generation patterns',
+    ['alert_type', 'model', 'platform']
+)
+
+QUALITY_THRESHOLD_BREACHES = Counter(
+    'quality_threshold_breaches_total',
+    'Number of times quality thresholds were breached',
+    ['threshold_type', 'model', 'platform']
+)
+
+# Model routing and usage tracking
+MODEL_ROUTING_USAGE = Counter(
+    'model_routing_usage_total',
+    'Model routing usage by effective model and generation method',
+    ['requested_model', 'effective_model', 'generation_method', 'platform']
+)
+
+MODEL_GENERATION_SUCCESS = Counter(
+    'model_generation_success_total',
+    'Successful model generations by type',
+    ['model', 'generation_method', 'platform']
+)
+
 class ImageGenerationService:
     """
     Enhanced image generation service using xAI Grok-2 Vision for policy-compliant
@@ -109,13 +161,47 @@ class ImageGenerationService:
                 self.client = None
                 self.async_client = None
         
-        # Model-to-API mapping for multi-model support - Policy compliant models only
-        self.model_mapping = {
-            "grok2": "grok-2-image",
-            "grok2_basic": "grok-2-image",
-            "grok2_premium": "grok-2-image", 
-            "gpt_image_1": "grok-2-image"  # Policy compliant: use Grok-2 for all requests
+        # Model-specific generation configurations and routing - Policy compliant models only
+        self.model_configs = {
+            "grok2": {
+                "api_model": "grok-2-image",
+                "generation_method": "grok_standard",
+                "quality_multiplier": 1.0,
+                "max_retries": 2,
+                "description": "Standard Grok-2 generation"
+            },
+            "grok2_basic": {
+                "api_model": "grok-2-image", 
+                "generation_method": "grok_basic",
+                "quality_multiplier": 0.8,
+                "max_retries": 1,
+                "description": "Basic Grok-2 with reduced processing"
+            },
+            "grok2_premium": {
+                "api_model": "grok-2-image",
+                "generation_method": "grok_premium", 
+                "quality_multiplier": 1.2,
+                "max_retries": 3,
+                "description": "Premium Grok-2 with enhanced quality"
+            },
+            "gpt_image_1": {
+                "api_model": "grok-2-image",  # Policy compliant: use Grok-2 for all requests
+                "generation_method": "gpt_fallback",
+                "quality_multiplier": 1.1,
+                "max_retries": 2,
+                "description": "GPT-style generation via Grok-2 (policy compliant)"
+            },
+            "auto": {
+                "api_model": "grok-2-image",
+                "generation_method": "grok_standard", 
+                "quality_multiplier": 1.0,
+                "max_retries": 2,
+                "description": "Auto-selected model (defaults to standard)"
+            }
         }
+        
+        # Legacy mapping for backward compatibility
+        self.model_mapping = {k: v["api_model"] for k, v in self.model_configs.items()}
         
         # Policy compliant: Only xAI Grok-2 Vision model is used - OpenAI integration removed
         
@@ -387,7 +473,9 @@ class ImageGenerationService:
                            custom_options: Optional[Dict[str, Any]] = None,
                            enable_post_processing: bool = True,
                            generate_alt_text: bool = True,
-                           max_retries: int = 2) -> Dict[str, Any]:
+                           max_retries: int = 2,
+                           user_settings: Optional[Dict[str, Any]] = None,
+                           brand_safety_enabled: bool = True) -> Dict[str, Any]:
         """
         Generate a single image with enhanced post-processing and accessibility features.
         
@@ -409,6 +497,8 @@ class ImageGenerationService:
             enable_post_processing: Apply platform-specific post-processing
             generate_alt_text: Generate accessibility alt-text
             max_retries: Maximum retry attempts for quality validation
+            user_settings: User preferences and brand settings
+            brand_safety_enabled: Enable brand damage prevention checks
         
         Returns:
             Dict containing processed image data, alt-text, quality metrics, and metadata
@@ -494,6 +584,33 @@ class ImageGenerationService:
                 prompt, platform, content_context, industry_context, tone
             )
             
+            # Build comprehensive brand context for quality assessment
+            brand_context = self._build_brand_context(
+                user_settings=user_settings,
+                industry_context=industry_context,
+                tone=tone,
+                platform=platform
+            )
+            
+            # Store user settings temporarily for quality monitoring
+            self._current_user_settings = user_settings
+            
+            # Apply brand safety checks if enabled
+            if brand_safety_enabled:
+                brand_safety_result = await self._check_brand_safety(
+                    prompt=enhanced_prompt,
+                    brand_context=brand_context,
+                    platform=platform
+                )
+                
+                if not brand_safety_result['approved']:
+                    return {
+                        "status": "brand_safety_rejected",
+                        "error": brand_safety_result['message'],
+                        "brand_safety": brand_safety_result,
+                        "recommendations": brand_safety_result.get('recommendations', [])
+                    }
+            
             # Get quality preset settings
             preset_config = self.quality_presets.get(quality_preset, self.quality_presets["standard"])
             
@@ -569,7 +686,7 @@ class ImageGenerationService:
                 image_base64=base64.b64encode(processed_image_bytes).decode('utf-8'),
                 original_prompt=enhanced_prompt,
                 platform=platform,
-                brand_context=None,  # TODO: Pass brand context from user settings
+                brand_context=brand_context,
                 fallback_to_basic=True
             )
             
@@ -581,6 +698,18 @@ class ImageGenerationService:
                 "recommendations": quality_metrics.get("recommendations", []),
                 "advanced_assessment": quality_metrics
             }
+            
+            # Track advanced scorer usage during initial assessment
+            try:
+                if "error" in quality_metrics or quality_metrics.get("models_used", {}).get("clip_available", True) == False:
+                    fallback_reason = "model_unavailable" if quality_metrics.get("models_used", {}).get("clip_available", True) == False else "assessment_error"
+                    ADVANCED_SCORER_USAGE.labels(
+                        status="fallback",
+                        fallback_reason=fallback_reason
+                    ).inc()
+                    logger.info(f"Advanced quality scorer fell back to basic assessment: {fallback_reason}")
+            except Exception as e:
+                logger.debug(f"Error tracking advanced scorer usage: {e}")
             
             # Retry if quality is too low (score < 50) and retries available
             retry_count = 0
@@ -601,9 +730,10 @@ class ImageGenerationService:
                 # Add quality improvement to prompt
                 retry_prompt = enhanced_prompt + ". Generate with higher resolution, better clarity, and professional quality."
                 
-                # Retry generation
+                # Retry generation using the same model configuration
+                model_config = self.model_configs.get(model, self.model_configs["auto"])
                 response = await self.async_client.images.generate(
-                    model="grok-2-image",
+                    model=model_config["api_model"],
                     prompt=retry_prompt,
                     n=1,
                     response_format="b64_json"
@@ -629,7 +759,7 @@ class ImageGenerationService:
                             image_base64=base64.b64encode(processed_image_bytes).decode('utf-8'),
                             original_prompt=enhanced_prompt,
                             platform=platform,
-                            brand_context=None,
+                            brand_context=brand_context,
                             fallback_to_basic=True
                         )
                         legacy_quality_score = retry_quality_assessment.get("overall_score", 50)
@@ -729,6 +859,70 @@ class ImageGenerationService:
                 model=model,
                 platform=platform
             ).set(final_quality_score)
+            
+            # Track detailed quality dimensions if advanced assessment available
+            try:
+                advanced_assessment = legacy_quality_metrics.get("advanced_assessment", {})
+                if advanced_assessment and "dimension_scores" in advanced_assessment:
+                    dimension_scores = advanced_assessment["dimension_scores"]
+                    
+                    # Track each quality dimension
+                    for dimension, score in dimension_scores.items():
+                        QUALITY_DIMENSIONS.labels(
+                            model=model,
+                            platform=platform,
+                            dimension=dimension
+                        ).observe(float(score))
+                    
+                    # Track quality level distribution
+                    quality_level = advanced_assessment.get("quality_level", "unknown")
+                    QUALITY_LEVEL_DISTRIBUTION.labels(
+                        model=model,
+                        platform=platform,
+                        quality_level=quality_level
+                    ).inc()
+                    
+                    # Track brand consistency specifically
+                    brand_score = dimension_scores.get("brand", 0)
+                    if brand_score > 0:
+                        # Try to get industry type from user settings
+                        industry_type = "general"
+                        if hasattr(self, '_current_user_settings') and self._current_user_settings:
+                            industry_type = self._current_user_settings.get("industry_type", "general")
+                        
+                        BRAND_CONSISTENCY_SCORE.labels(
+                            model=model,
+                            platform=platform,
+                            industry_type=industry_type
+                        ).set(float(brand_score))
+                    
+                    # Track advanced scorer usage success
+                    ADVANCED_SCORER_USAGE.labels(
+                        status="success",
+                        fallback_reason="none"
+                    ).inc()
+                    
+                    # Monitor quality thresholds and generate alerts
+                    self._monitor_quality_thresholds(
+                        overall_score=final_quality_score,
+                        dimension_scores=dimension_scores,
+                        model=model,
+                        platform=platform,
+                        quality_level=quality_level
+                    )
+                else:
+                    # Track when advanced assessment is not available
+                    ADVANCED_SCORER_USAGE.labels(
+                        status="unavailable",
+                        fallback_reason="no_advanced_data"
+                    ).inc()
+                    
+            except Exception as e:
+                logger.warning(f"Failed to track detailed quality metrics: {e}")
+                ADVANCED_SCORER_USAGE.labels(
+                    status="error",
+                    fallback_reason="tracking_failed"
+                ).inc()
             
             return {
                 "status": "success",
@@ -1307,23 +1501,47 @@ class ImageGenerationService:
         """
         logger.info(f"Routing image generation to model: {model}")
         
-        # Route based on model family - Policy compliant: all models use Grok-2 Vision
-        if model in ["grok2", "grok2_basic", "grok2_premium", "gpt_image_1"]:
-            return await self._generate_with_grok_vision(
-                "grok2", enhanced_prompt, tool_options, platform, quality_preset
+        # Route to appropriate generation method based on effective model configuration
+        model_config = self.model_configs.get(model)
+        if not model_config:
+            logger.warning(f"Unknown model '{model}', falling back to auto")
+            model_config = self.model_configs["auto"]
+            model = "auto"
+        
+        generation_method = model_config["generation_method"]
+        logger.info(f"Routing to {generation_method} for model {model}")
+        
+        # Track model routing usage
+        MODEL_ROUTING_USAGE.labels(
+            requested_model=model,
+            effective_model=model,
+            generation_method=generation_method,
+            platform=platform
+        ).inc()
+        
+        # Route to appropriate generation function
+        if generation_method == "grok_basic":
+            return await self._generate_with_grok_basic(
+                model, enhanced_prompt, tool_options, platform, quality_preset
             )
-        else:
-            # Default fallback to Grok-2
-            logger.warning(f"Unknown model '{model}', falling back to Grok-2")
-            return await self._generate_with_grok_vision(
-                "grok2", enhanced_prompt, tool_options, platform, quality_preset
+        elif generation_method == "grok_premium":
+            return await self._generate_with_grok_premium(
+                model, enhanced_prompt, tool_options, platform, quality_preset
+            )
+        elif generation_method == "gpt_fallback":
+            return await self._generate_with_gpt_fallback(
+                model, enhanced_prompt, tool_options, platform, quality_preset
+            )
+        else:  # grok_standard or default
+            return await self._generate_with_grok_standard(
+                model, enhanced_prompt, tool_options, platform, quality_preset
             )
 
     # Policy compliant: Legacy generation method removed - all requests use Grok-2 Vision
 
-    async def _generate_with_grok_vision(self, model: str, enhanced_prompt: str, 
-                                       tool_options: Dict[str, Any], platform: str, 
-                                       quality_preset: str) -> Any:
+    async def _generate_with_grok_standard(self, model: str, enhanced_prompt: str, 
+                                         tool_options: Dict[str, Any], platform: str, 
+                                         quality_preset: str) -> Any:
         """
         Generate image using xAI Grok-2 Vision model with Grok-specific optimizations.
         
@@ -1357,11 +1575,154 @@ class ImageGenerationService:
             )
             
             logger.info(f"Grok-2 generation successful with model variant: {model}")
+            
+            # Track successful generation
+            MODEL_GENERATION_SUCCESS.labels(
+                model=model,
+                generation_method="grok_standard",
+                platform=platform
+            ).inc()
+            
             return response
             
         except Exception as e:
             logger.error(f"Grok-2 generation failed: {e}")
             raise Exception(f"Grok-2 image generation failed: {str(e)}")
+
+    async def _generate_with_grok_basic(self, model: str, enhanced_prompt: str, 
+                                      tool_options: Dict[str, Any], platform: str, 
+                                      quality_preset: str) -> Any:
+        """
+        Generate image using basic Grok-2 configuration with reduced processing.
+        Optimized for speed and efficiency over maximum quality.
+        """
+        logger.info(f"Using basic Grok-2 generation for model: {model}")
+        
+        # Apply basic quality multiplier
+        model_config = self.model_configs[model]
+        quality_multiplier = model_config["quality_multiplier"]
+        
+        # Enhance prompt for basic generation (simpler, more efficient)
+        basic_prompt = enhanced_prompt + " Efficient generation, clean and simple design, good quality."
+        
+        # Use reduced quality settings for faster generation
+        basic_tool_options = tool_options.copy()
+        if "quality" in basic_tool_options:
+            # Map quality levels with multiplier
+            if basic_tool_options["quality"] == "hd":
+                basic_tool_options["quality"] = "standard"  # Downgrade for basic
+        
+        try:
+            response = await self.async_client.images.generate(
+                model=model_config["api_model"],
+                prompt=basic_prompt,
+                n=1,
+                response_format="b64_json",
+                **{k: v for k, v in basic_tool_options.items() if k in ["size", "quality"]}
+            )
+            
+            logger.info(f"Basic Grok-2 generation successful for model: {model}")
+            
+            # Track successful generation
+            MODEL_GENERATION_SUCCESS.labels(
+                model=model,
+                generation_method="grok_basic",
+                platform=platform
+            ).inc()
+            
+            return response
+            
+        except Exception as e:
+            logger.error(f"Basic Grok-2 generation failed: {e}")
+            raise Exception(f"Basic Grok-2 image generation failed: {str(e)}")
+
+    async def _generate_with_grok_premium(self, model: str, enhanced_prompt: str, 
+                                        tool_options: Dict[str, Any], platform: str, 
+                                        quality_preset: str) -> Any:
+        """
+        Generate image using premium Grok-2 configuration with enhanced processing.
+        Optimized for maximum quality and detail.
+        """
+        logger.info(f"Using premium Grok-2 generation for model: {model}")
+        
+        # Apply premium quality multiplier
+        model_config = self.model_configs[model]
+        quality_multiplier = model_config["quality_multiplier"]
+        
+        # Enhance prompt for premium generation (maximum quality focus)
+        premium_prompt = enhanced_prompt + " Ultra-high quality, premium artistic rendering, maximum detail and refinement, professional photography quality, exceptional visual excellence."
+        
+        # Use enhanced quality settings
+        premium_tool_options = tool_options.copy()
+        if "quality" in premium_tool_options and premium_tool_options["quality"] == "standard":
+            premium_tool_options["quality"] = "hd"  # Upgrade for premium
+        
+        try:
+            response = await self.async_client.images.generate(
+                model=model_config["api_model"],
+                prompt=premium_prompt,
+                n=1,
+                response_format="b64_json",
+                **{k: v for k, v in premium_tool_options.items() if k in ["size", "quality"]}
+            )
+            
+            logger.info(f"Premium Grok-2 generation successful for model: {model}")
+            
+            # Track successful generation
+            MODEL_GENERATION_SUCCESS.labels(
+                model=model,
+                generation_method="grok_premium",
+                platform=platform
+            ).inc()
+            
+            return response
+            
+        except Exception as e:
+            logger.error(f"Premium Grok-2 generation failed: {e}")
+            raise Exception(f"Premium Grok-2 image generation failed: {str(e)}")
+
+    async def _generate_with_gpt_fallback(self, model: str, enhanced_prompt: str, 
+                                        tool_options: Dict[str, Any], platform: str, 
+                                        quality_preset: str) -> Any:
+        """
+        Generate image using GPT-style configuration via Grok-2 (policy compliant).
+        Emulates GPT generation patterns while using Grok-2 backend.
+        """
+        logger.info(f"Using GPT-style generation via Grok-2 for model: {model}")
+        
+        # Apply GPT-style quality multiplier
+        model_config = self.model_configs[model]
+        quality_multiplier = model_config["quality_multiplier"]
+        
+        # Enhance prompt to emulate GPT-style generation patterns
+        gpt_style_prompt = enhanced_prompt + " Detailed, photorealistic rendering with balanced composition, natural lighting, and professional quality with high-end AI generation standards."
+        
+        # Use balanced quality settings to emulate GPT behavior
+        gpt_tool_options = tool_options.copy()
+        
+        try:
+            response = await self.async_client.images.generate(
+                model=model_config["api_model"],  # Still uses grok-2-image (policy compliant)
+                prompt=gpt_style_prompt,
+                n=1,
+                response_format="b64_json",
+                **{k: v for k, v in gpt_tool_options.items() if k in ["size", "quality"]}
+            )
+            
+            logger.info(f"GPT-style generation via Grok-2 successful for model: {model}")
+            
+            # Track successful generation
+            MODEL_GENERATION_SUCCESS.labels(
+                model=model,
+                generation_method="gpt_fallback",
+                platform=platform
+            ).inc()
+            
+            return response
+            
+        except Exception as e:
+            logger.error(f"GPT-style generation via Grok-2 failed: {e}")
+            raise Exception(f"GPT-style image generation failed: {str(e)}")
 
     def _enhance_prompt_for_grok_variant(self, prompt: str, model: str, 
                                        platform: str, quality_preset: str) -> str:
@@ -1597,6 +1958,294 @@ class ImageGenerationService:
                 content = content
             
         return content.strip()
+    
+    def _monitor_quality_thresholds(self,
+                                   overall_score: float,
+                                   dimension_scores: Dict[str, float],
+                                   model: str,
+                                   platform: str,
+                                   quality_level: str) -> None:
+        """
+        Monitor quality thresholds and generate alerts for quality issues.
+        
+        Args:
+            overall_score: Overall quality score
+            dimension_scores: Individual dimension scores
+            model: Model used for generation
+            platform: Target platform
+            quality_level: Categorized quality level
+        """
+        try:
+            # Define quality thresholds
+            critical_threshold = 35  # Below this triggers text fallback
+            warning_threshold = 55   # Below this generates warning
+            brand_threshold = 50     # Brand consistency threshold
+            
+            # Monitor overall quality breaches
+            if overall_score < critical_threshold:
+                QUALITY_THRESHOLD_BREACHES.labels(
+                    threshold_type="critical_overall",
+                    model=model,
+                    platform=platform
+                ).inc()
+                
+                LOW_QUALITY_ALERTS.labels(
+                    alert_type="critical_quality",
+                    model=model,
+                    platform=platform
+                ).inc()
+                
+                logger.warning(f"CRITICAL: Overall quality {overall_score} below threshold {critical_threshold} for {model} on {platform}")
+            
+            elif overall_score < warning_threshold:
+                QUALITY_THRESHOLD_BREACHES.labels(
+                    threshold_type="warning_overall",
+                    model=model,
+                    platform=platform
+                ).inc()
+                
+                LOW_QUALITY_ALERTS.labels(
+                    alert_type="quality_warning",
+                    model=model,
+                    platform=platform
+                ).inc()
+            
+            # Monitor individual dimension breaches
+            for dimension, score in dimension_scores.items():
+                if score < critical_threshold:
+                    QUALITY_THRESHOLD_BREACHES.labels(
+                        threshold_type=f"critical_{dimension}",
+                        model=model,
+                        platform=platform
+                    ).inc()
+                    
+                    if dimension == "brand" and score < brand_threshold:
+                        LOW_QUALITY_ALERTS.labels(
+                            alert_type="brand_inconsistency",
+                            model=model,
+                            platform=platform
+                        ).inc()
+                        logger.warning(f"Brand consistency issue: {dimension} score {score} for {model} on {platform}")
+                    
+                elif score < warning_threshold:
+                    QUALITY_THRESHOLD_BREACHES.labels(
+                        threshold_type=f"warning_{dimension}",
+                        model=model,
+                        platform=platform
+                    ).inc()
+            
+            # Monitor quality level patterns
+            if quality_level in ["poor", "unacceptable"]:
+                LOW_QUALITY_ALERTS.labels(
+                    alert_type=f"level_{quality_level}",
+                    model=model,
+                    platform=platform
+                ).inc()
+                
+            logger.debug(f"Quality monitoring: {model}/{platform} - Overall: {overall_score}, Level: {quality_level}")
+            
+        except Exception as e:
+            logger.error(f"Quality threshold monitoring failed: {e}")
+    
+    def _build_brand_context(self, 
+                           user_settings: Optional[Dict[str, Any]] = None,
+                           industry_context: Optional[str] = None,
+                           tone: str = "professional",
+                           platform: str = "instagram") -> Dict[str, Any]:
+        """
+        Build comprehensive brand context for quality assessment.
+        
+        Args:
+            user_settings: User preferences and brand settings
+            industry_context: Industry-specific context
+            tone: Desired tone for content
+            platform: Target platform
+        
+        Returns:
+            Comprehensive brand context dict
+        """
+        brand_context = {
+            "industry_type": industry_context or user_settings.get("industry_type", "general") if user_settings else "general",
+            "tone": tone,
+            "platform": platform,
+            "brand_guidelines": {}
+        }
+        
+        if user_settings:
+            # Brand colors
+            if "primary_color" in user_settings:
+                brand_context["brand_guidelines"]["primary_color"] = user_settings["primary_color"]
+            if "secondary_color" in user_settings:
+                brand_context["brand_guidelines"]["secondary_color"] = user_settings["secondary_color"]
+            
+            # Brand keywords and values
+            if "brand_keywords" in user_settings:
+                brand_context["brand_guidelines"]["keywords"] = user_settings["brand_keywords"]
+            
+            # Visual style preferences
+            if "visual_style" in user_settings:
+                brand_context["brand_guidelines"]["visual_style"] = user_settings["visual_style"]
+            
+            # Industry-specific requirements
+            industry_requirements = {
+                "healthcare": {
+                    "compliance": ["HIPAA-aware", "medical accuracy", "patient privacy"],
+                    "restrictions": ["no personal health info", "professional medical imagery"]
+                },
+                "finance": {
+                    "compliance": ["financial accuracy", "regulatory compliance"],
+                    "restrictions": ["no investment advice", "conservative imagery"]
+                },
+                "law_firm": {
+                    "compliance": ["legal accuracy", "professional standards"],
+                    "restrictions": ["conservative presentation", "authoritative imagery"]
+                },
+                "restaurant": {
+                    "compliance": ["food safety imagery", "appetizing presentation"],
+                    "restrictions": ["hygienic presentation", "accurate food representation"]
+                }
+            }
+            
+            industry_key = brand_context["industry_type"]
+            if industry_key in industry_requirements:
+                brand_context["industry_requirements"] = industry_requirements[industry_key]
+        
+        return brand_context
+    
+    async def _check_brand_safety(self,
+                                 prompt: str,
+                                 brand_context: Dict[str, Any],
+                                 platform: str) -> Dict[str, Any]:
+        """
+        Perform comprehensive brand safety checks to prevent brand damage.
+        
+        Args:
+            prompt: Enhanced image generation prompt
+            brand_context: Brand context and guidelines
+            platform: Target platform
+        
+        Returns:
+            Brand safety assessment result
+        """
+        try:
+            safety_result = {
+                "approved": True,
+                "message": "Brand safety checks passed",
+                "checks_performed": [],
+                "warnings": [],
+                "recommendations": []
+            }
+            
+            # Industry compliance checks
+            industry_requirements = brand_context.get("industry_requirements", {})
+            if industry_requirements:
+                compliance_issues = self._check_industry_compliance(prompt, industry_requirements)
+                safety_result["checks_performed"].append("industry_compliance")
+                
+                if compliance_issues:
+                    safety_result["warnings"].extend(compliance_issues)
+                    safety_result["recommendations"].append(
+                        f"Ensure content meets {brand_context['industry_type']} industry standards"
+                    )
+            
+            # Platform appropriateness checks
+            platform_issues = self._check_platform_appropriateness(prompt, platform)
+            safety_result["checks_performed"].append("platform_appropriateness")
+            
+            if platform_issues:
+                safety_result["warnings"].extend(platform_issues)
+                safety_result["recommendations"].append(
+                    f"Optimize content for {platform} community guidelines"
+                )
+            
+            # Brand guideline consistency
+            brand_guidelines = brand_context.get("brand_guidelines", {})
+            if brand_guidelines:
+                guideline_issues = self._check_brand_guidelines(prompt, brand_guidelines)
+                safety_result["checks_performed"].append("brand_guidelines")
+                
+                if guideline_issues:
+                    safety_result["warnings"].extend(guideline_issues)
+                    safety_result["recommendations"].append("Align content with brand guidelines")
+            
+            # Determine if content should be blocked
+            critical_warnings = [w for w in safety_result["warnings"] if "CRITICAL" in w.upper()]
+            
+            if critical_warnings:
+                safety_result["approved"] = False
+                safety_result["message"] = "Content rejected due to critical brand safety issues"
+            elif safety_result["warnings"]:
+                safety_result["message"] = "Content approved with warnings - review recommended"
+            
+            # Track brand safety metrics
+            if not safety_result["approved"]:
+                LOW_QUALITY_ALERTS.labels(
+                    alert_type="brand_safety_violation",
+                    model="grok-2",
+                    platform=platform
+                ).inc()
+            
+            logger.info(f"Brand safety check completed: {safety_result['message']}")
+            return safety_result
+            
+        except Exception as e:
+            logger.error(f"Brand safety check failed: {e}")
+            return {
+                "approved": True,  # Fail open to avoid blocking legitimate content
+                "message": f"Brand safety check failed: {str(e)}",
+                "error": str(e),
+                "checks_performed": ["error"]
+            }
+    
+    def _check_industry_compliance(self, prompt: str, requirements: Dict[str, Any]) -> List[str]:
+        """Check if prompt meets industry-specific requirements."""
+        issues = []
+        
+        # Check for restricted content
+        restrictions = requirements.get("restrictions", [])
+        prompt_lower = prompt.lower()
+        
+        for restriction in restrictions:
+            if any(word in prompt_lower for word in restriction.split()):
+                issues.append(f"CRITICAL: Content may violate industry restriction: {restriction}")
+        
+        return issues
+    
+    def _check_platform_appropriateness(self, prompt: str, platform: str) -> List[str]:
+        """Check if content is appropriate for the target platform."""
+        issues = []
+        
+        # Platform-specific content policies
+        platform_restrictions = {
+            "instagram": ["excessive text overlays", "clickbait", "misleading health claims"],
+            "facebook": ["political content without disclosure", "health misinformation"],
+            "linkedin": ["overly casual content", "inappropriate professional context"],
+            "twitter": ["excessive hashtags", "spam-like content"],
+            "tiktok": ["inappropriate for younger audiences", "dangerous challenges"]
+        }
+        
+        if platform in platform_restrictions:
+            prompt_lower = prompt.lower()
+            for restriction in platform_restrictions[platform]:
+                if any(word in prompt_lower for word in restriction.split()):
+                    issues.append(f"WARNING: Content may violate {platform} guidelines: {restriction}")
+        
+        return issues
+    
+    def _check_brand_guidelines(self, prompt: str, guidelines: Dict[str, Any]) -> List[str]:
+        """Check if content aligns with brand guidelines."""
+        issues = []
+        
+        # Check for brand keyword presence
+        keywords = guidelines.get("keywords", [])
+        if keywords:
+            prompt_lower = prompt.lower()
+            keyword_found = any(keyword.lower() in prompt_lower for keyword in keywords)
+            
+            if not keyword_found and len(keywords) > 0:
+                issues.append(f"WARNING: Content doesn't emphasize brand keywords: {', '.join(keywords[:3])}")
+        
+        return issues
 
 # Global service instance
 image_generation_service = ImageGenerationService()

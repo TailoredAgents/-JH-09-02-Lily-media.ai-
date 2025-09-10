@@ -48,10 +48,15 @@ app = FastAPI(
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://socialmedia-frontend-pycc.onrender.com",  # Production frontend
+        "https://socialmedia-api-wxip.onrender.com",       # Production API (self)
+        "http://localhost:3000",                           # Development frontend
+        "http://localhost:8000"                            # Development backend
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "Accept", "Origin", "User-Agent", "DNT", "Cache-Control", "X-Mx-ReqToken", "Keep-Alive", "X-Requested-With", "If-Modified-Since"],
 )
 
 # Add error tracking middleware

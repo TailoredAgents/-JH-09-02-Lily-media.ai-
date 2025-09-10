@@ -56,6 +56,13 @@ from . import (
     template_validation,  # Template coverage validation system for AI models
     error_taxonomy,  # Comprehensive error taxonomy mapping and classification
     pw_settings,  # PW-SETTINGS-ADD-001: Pressure washing settings namespaces API
+    pw_pricing,  # PW-PRICING-ADD-001: Pressure washing pricing engine with org-scoping
+    pw_quotes,  # PW-PRICING-ADD-002: Pressure washing quote endpoints with status lifecycle
+    secure_media,  # PW-SEC-ADD-001: Secure media storage with signed URLs
+    leads,  # PW-DM-ADD-002: Lead management and media attachment API
+    jobs,  # PW-DM-ADD-001: Job management and scheduling API
+    weather,  # PW-WEATHER-ADD-001: Weather thresholds and job rescheduling API
+    business_analytics,  # PW-ANALYTICS-ADD-001: Business KPIs analytics with org-scoped data
 )
 
 # Import CSRF router
@@ -123,6 +130,13 @@ ROUTERS = [
     template_validation.router,  # Template coverage validation system for AI models
     error_taxonomy.router,  # Comprehensive error taxonomy mapping and classification
     pw_settings.router,  # PW-SETTINGS-ADD-001: Pressure washing settings namespaces API
+    pw_pricing.router,  # PW-PRICING-ADD-001: Pressure washing pricing engine with org-scoping
+    pw_quotes.router,  # PW-PRICING-ADD-002: Pressure washing quote endpoints with status lifecycle
+    secure_media.router,  # PW-SEC-ADD-001: Secure media storage with signed URLs
+    leads.router,  # PW-DM-ADD-002: Lead management and media attachment API
+    jobs.router,  # PW-DM-ADD-001: Job management and scheduling API
+    weather.router,  # PW-WEATHER-ADD-001: Weather thresholds and job rescheduling API
+    business_analytics.router,  # PW-ANALYTICS-ADD-001: Business KPIs analytics with org-scoped data
 ]
 
 # Add CSRF router if available

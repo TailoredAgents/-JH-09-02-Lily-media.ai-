@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import FocusTrappedModal from '../FocusTrappedModal'
 import {
   PhotoIcon,
   EyeIcon,
@@ -200,8 +201,8 @@ const AssetGrid = ({
 
               {/* Favorite star */}
               {asset.is_favorite && (
-                <div className="absolute top-2 right-2 z-10">
-                  <StarSolidIcon className="w-4 h-4 text-yellow-400" />
+                <div className="absolute top-2 right-2 z-10" aria-label="Favorite asset">
+                  <StarSolidIcon className="w-4 h-4 text-yellow-400" aria-hidden="true" />
                 </div>
               )}
 
@@ -210,12 +211,12 @@ const AssetGrid = ({
                 {asset.thumbnail_url ? (
                   <img
                     src={asset.thumbnail_url}
-                    alt={asset.name}
+                    alt={`${type === 'logos' ? 'Logo' : type === 'images' ? 'Image' : 'Asset'}: ${asset.name}`}
                     className="w-full h-32 object-cover group-hover:scale-105 transition-transform duration-200"
                   />
                 ) : (
-                  <div className="w-full h-32 flex items-center justify-center">
-                    <PhotoIcon className="w-8 h-8 text-gray-400" />
+                  <div className="w-full h-32 flex items-center justify-center" aria-label="No preview available">
+                    <PhotoIcon className="w-8 h-8 text-gray-400" aria-hidden="true" />
                   </div>
                 )}
 
@@ -224,18 +225,18 @@ const AssetGrid = ({
                   <div className="flex space-x-2">
                     <button
                       onClick={() => setShowPreview(asset)}
-                      className="p-2 bg-white rounded-full text-gray-700 hover:bg-gray-100"
-                      title="Preview"
+                      className="p-2 bg-white rounded-full text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                      aria-label={`Preview ${asset.name}`}
                     >
-                      <EyeIcon className="w-4 h-4" />
+                      <EyeIcon className="w-4 h-4" aria-hidden="true" />
                     </button>
                     <a
                       href={asset.download_url}
                       download={asset.name}
-                      className="p-2 bg-white rounded-full text-gray-700 hover:bg-gray-100"
-                      title="Download"
+                      className="p-2 bg-white rounded-full text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                      aria-label={`Download ${asset.name}`}
                     >
-                      <ArrowDownTrayIcon className="w-4 h-4" />
+                      <ArrowDownTrayIcon className="w-4 h-4" aria-hidden="true" />
                     </a>
                   </div>
                 </div>
@@ -249,10 +250,10 @@ const AssetGrid = ({
                   </p>
                   <button
                     onClick={() => onDelete(asset.id)}
-                    className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-600 ml-2"
-                    title="Delete"
+                    className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-600 ml-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 rounded focus:opacity-100"
+                    aria-label={`Delete ${asset.name}`}
                   >
-                    <TrashIcon className="w-4 h-4" />
+                    <TrashIcon className="w-4 h-4" aria-hidden="true" />
                   </button>
                 </div>
 
@@ -320,27 +321,18 @@ const AssetPreviewModal = ({ asset, onClose }) => {
   }
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-      <div className="relative bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">
-              {asset.name}
-            </h3>
-            <p className="text-sm text-gray-500 mt-1">
-              {formatFileSize(asset.file_size)} • {asset.width}x{asset.height} •
-              Uploaded {formatDate(asset.created_at)}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
-            <XMarkIcon className="h-6 w-6" />
-          </button>
-        </div>
+    <FocusTrappedModal
+      isOpen={true}
+      onClose={onClose}
+      title={asset.name}
+      size="xl"
+    >
+      <div className="p-6">
+        <p className="text-sm text-gray-500 mb-6">
+          {formatFileSize(asset.file_size)} • {asset.width}x{asset.height} • 
+          Uploaded {formatDate(asset.created_at)}
+        </p>
 
-        <div className="p-6">
           <div
             className="flex items-center justify-center bg-gray-50 rounded-lg mb-6"
             style={{ minHeight: '400px' }}
@@ -403,25 +395,24 @@ const AssetPreviewModal = ({ asset, onClose }) => {
             )}
           </div>
 
-          <div className="mt-6 flex justify-end space-x-3">
-            <a
-              href={asset.download_url}
-              download={asset.name}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-            >
-              <ArrowDownTrayIcon className="w-4 h-4 mr-2" />
-              Download
-            </a>
-            <button
-              onClick={onClose}
-              className="inline-flex items-center px-4 py-2 bg-purple-600 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-purple-700"
-            >
-              Close
-            </button>
-          </div>
+        <div className="mt-6 flex justify-end space-x-3">
+          <a
+            href={asset.download_url}
+            download={asset.name}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+          >
+            <ArrowDownTrayIcon className="w-4 h-4 mr-2" />
+            Download
+          </a>
+          <button
+            onClick={onClose}
+            className="inline-flex items-center px-4 py-2 bg-purple-600 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-purple-700"
+          >
+            Close
+          </button>
         </div>
       </div>
-    </div>
+    </FocusTrappedModal>
   )
 }
 

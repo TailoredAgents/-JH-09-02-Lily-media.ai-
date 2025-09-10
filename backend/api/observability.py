@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import text
 
 from backend.core.telemetry import telemetry_manager, get_tracer, get_meter, OPENTELEMETRY_AVAILABLE
+from backend.services.alerting_service import get_alerting_service
 
 # Optional OpenTelemetry imports
 if OPENTELEMETRY_AVAILABLE:
@@ -358,3 +359,117 @@ async def get_observability_configuration(
             "PROMETHEUS_PORT": os.getenv('PROMETHEUS_PORT', '8000'),
         }
     }
+
+@router.get("/alerting/health")
+async def get_alerting_health_check():
+    """
+    Get comprehensive alerting system health status
+    P0-11b: Alerting rules configuration monitoring
+    """
+    try:
+        alerting_service = get_alerting_service()
+        health = alerting_service.generate_alerting_health_check()
+        
+        # Add additional runtime checks
+        health["runtime_checks"] = {
+            "config_file_accessible": alerting_service.config_path.exists(),
+            "groups_loaded": len(alerting_service.alert_groups) > 0,
+            "validation_passed": alerting_service.validate_alerting_config()["validation_status"] == "passed"
+        }
+        
+        return health
+        
+    except Exception as e:
+        logger.error(f"Alerting health check failed: {e}")
+        return {
+            "alerting_system_health": {
+                "status": "error",
+                "error": str(e)
+            },
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+@router.get("/alerting/summary")
+async def get_alerting_summary(
+    user: User = Depends(current_active_user),
+):
+    """
+    Get comprehensive alerting configuration summary
+    P0-11b: Alerting rules monitoring and reporting
+    """
+    try:
+        alerting_service = get_alerting_service()
+        summary = alerting_service.get_alerting_summary()
+        
+        # Add configuration details
+        summary["configuration_details"] = {
+            "config_path": str(alerting_service.config_path),
+            "last_validated": datetime.utcnow().isoformat(),
+            "validation_result": alerting_service.validate_alerting_config()
+        }
+        
+        return summary
+        
+    except Exception as e:
+        logger.error(f"Alerting summary failed: {e}")
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Failed to get alerting summary: {str(e)}"
+        )
+
+@router.get("/alerting/rules")
+async def get_alerting_rules(
+    team: Optional[str] = Query(None, description="Filter rules by team"),
+    escalation_level: Optional[str] = Query(None, description="Filter by escalation level"),
+    user: User = Depends(current_active_user),
+):
+    """
+    Get detailed alerting rules information with optional filtering
+    P0-11b: Alert rule inspection and management
+    """
+    try:
+        alerting_service = get_alerting_service()
+        
+        # Get all rules
+        all_rules = []
+        for group in alerting_service.alert_groups:
+            for rule in group.rules:
+                rule_data = {
+                    "group": group.name,
+                    "name": rule.name,
+                    "expression": rule.expr,
+                    "duration": rule.duration,
+                    "severity": rule.severity.value,
+                    "escalation_level": rule.escalation_level.value,
+                    "team": rule.team,
+                    "summary": rule.summary,
+                    "description": rule.description,
+                    "runbook_url": rule.runbook_url
+                }
+                
+                # Apply filters
+                if team and rule.team != team:
+                    continue
+                if escalation_level and rule.escalation_level.value != escalation_level:
+                    continue
+                    
+                all_rules.append(rule_data)
+        
+        return {
+            "rules": all_rules,
+            "total_rules": len(all_rules),
+            "filters_applied": {
+                "team": team,
+                "escalation_level": escalation_level
+            },
+            "available_teams": list(set(rule.team for group in alerting_service.alert_groups for rule in group.rules)),
+            "available_escalation_levels": ["p0", "p1", "p2"],
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Alerting rules retrieval failed: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get alerting rules: {str(e)}"
+        )

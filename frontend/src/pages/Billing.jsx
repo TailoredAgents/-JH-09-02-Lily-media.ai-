@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useNotifications } from '../hooks/useNotifications'
 import { usePlanConditionals } from '../hooks/usePlanConditionals'
 import BillingOverview from '../components/billing/BillingOverview'
+import CancellationModal from '../components/billing/CancellationModal'
 import api from '../services/api'
 import {
   CreditCardIcon,
@@ -50,6 +51,7 @@ const EnhancedBilling = () => {
   const [portalLoading, setPortalLoading] = useState(false)
   const [annualBilling, setAnnualBilling] = useState(false)
   const [showPlanSelector, setShowPlanSelector] = useState(false)
+  const [showCancellationModal, setShowCancellationModal] = useState(false)
 
   useEffect(() => {
     loadBillingData()
@@ -183,6 +185,35 @@ const EnhancedBilling = () => {
     } finally {
       setPortalLoading(false)
     }
+  }
+
+  // P1-10a: Enhanced cancellation with consumer protection modal
+  const handleCancelSubscription = () => {
+    setShowCancellationModal(true)
+  }
+
+  const handleProceedToPortal = async (cancellationData) => {
+    setShowCancellationModal(false)
+    
+    // Submit cancellation feedback to API before redirecting
+    try {
+      if (cancellationData.reason) {
+        await api.request('/api/billing/cancellation-feedback', {
+          method: 'POST',
+          body: {
+            reason: cancellationData.reason,
+            feedback: cancellationData.feedback,
+            timestamp: cancellationData.timestamp
+          },
+        })
+      }
+    } catch (error) {
+      console.warn('Failed to submit cancellation feedback:', error)
+      // Don't block the user from cancelling if feedback submission fails
+    }
+
+    // Proceed to Stripe Customer Portal for final cancellation
+    handleManageSubscription()
   }
 
   const getPlanIcon = (planName) => {

@@ -10,7 +10,9 @@ import pickle
 import numpy as np
 from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime, timezone
+from contextlib import nullcontext
 from backend.core.config import get_utc_now
+from backend.core.constants import EMBEDDINGS_DIMENSION
 import logging
 
 try:
@@ -20,6 +22,13 @@ except ImportError:
     FAISS_AVAILABLE = False
     # Suppress the warning at import time - it will be shown only when actually used
     pass
+
+# Import monitoring for performance tracking (P1-7b)
+try:
+    from backend.services.vector_store_monitoring import vector_store_monitor, VectorOperation
+    MONITORING_AVAILABLE = True
+except ImportError:
+    MONITORING_AVAILABLE = False
 
 # Get logger (use application's logging configuration)
 logger = logging.getLogger(__name__)
@@ -38,7 +47,7 @@ class VectorStore:
     
     def __init__(
         self, 
-        dimension: int = 3072,
+        dimension: int = EMBEDDINGS_DIMENSION,
         index_path: str = "data/faiss_indexes",
         index_type: str = "flat_ip",
         max_vectors_in_memory: int = 100000
@@ -215,43 +224,71 @@ class VectorStore:
         if not FAISS_AVAILABLE:
             raise RuntimeError("FAISS not available")
         
-        if content_id is None:
-            content_id = str(uuid.uuid4())
-        
-        # Ensure vector is properly shaped and normalized
-        if vector.ndim == 1:
-            vector = vector.reshape(1, -1)
-        
-        # Verify vector is normalized for cosine similarity
-        norm = np.linalg.norm(vector)
-        if abs(norm - 1.0) > 0.001:
-            logger.warning(f"Vector norm {norm} != 1.0, normalizing")
-            vector = vector / norm
-        
-        # Add to index
-        self._index.add(vector.astype(np.float32))
-        
-        # Store metadata, mapping, and vector for rebuild capability
-        internal_id = str(self._next_internal_id)
-        self._id_mapping[internal_id] = content_id
-        self._metadata[internal_id] = {
-            'content_id': content_id,
-            'metadata': metadata or {},
-            'created_at': get_utc_now().isoformat(),
-            'vector_norm': float(norm)
-        }
-        
-        # Store the vector for potential rebuild operations
-        self._vectors[internal_id] = vector.flatten().astype(np.float32)
-        
-        self._next_internal_id += 1
-        
-        # Save periodically or when reaching threshold
-        if self._next_internal_id % 100 == 0:
-            self._save_all()
-        
-        logger.info(f"Added vector for content_id: {content_id}")
-        return content_id
+        # Monitor the add operation
+        if MONITORING_AVAILABLE:
+            monitor_context = vector_store_monitor.monitor_operation(
+                VectorOperation.ADD_SINGLE,
+                vector_count=1,
+                index_size=self.total_vectors
+            )
+        else:
+            monitor_context = nullcontext()
+            
+        with monitor_context:
+            if content_id is None:
+                content_id = str(uuid.uuid4())
+            
+            # Validate vector dimension
+            if vector.ndim == 1:
+                if vector.shape[0] != self.dimension:
+                    raise ValueError(f"Vector dimension {vector.shape[0]} != expected {self.dimension}")
+                vector = vector.reshape(1, -1)
+            elif vector.ndim == 2:
+                if vector.shape[1] != self.dimension:
+                    raise ValueError(f"Vector dimension {vector.shape[1]} != expected {self.dimension}")
+                if vector.shape[0] != 1:
+                    raise ValueError(f"Expected single vector, got batch of {vector.shape[0]}")
+            else:
+                raise ValueError(f"Invalid vector shape: {vector.shape}")
+            
+            # Verify vector is normalized for cosine similarity
+            norm = np.linalg.norm(vector)
+            if abs(norm - 1.0) > 0.001:
+                logger.warning(f"Vector norm {norm} != 1.0, normalizing")
+                vector = vector / norm
+            
+            # Add to index
+            self._index.add(vector.astype(np.float32))
+            
+            # Store metadata, mapping, and vector for rebuild capability
+            internal_id = str(self._next_internal_id)
+            self._id_mapping[internal_id] = content_id
+            self._metadata[internal_id] = {
+                'content_id': content_id,
+                'metadata': metadata or {},
+                'created_at': get_utc_now().isoformat(),
+                'vector_norm': float(norm)
+            }
+            
+            # Store the vector for potential rebuild operations
+            self._vectors[internal_id] = vector.flatten().astype(np.float32)
+            
+            self._next_internal_id += 1
+            
+            # Save periodically or when reaching threshold
+            if self._next_internal_id % 100 == 0:
+                self._save_all()
+                
+                # Update storage growth metrics periodically (P1-7d)
+                if MONITORING_AVAILABLE:
+                    try:
+                        from backend.services.vector_store_monitoring import update_storage_monitoring
+                        update_storage_monitoring()
+                    except Exception as e:
+                        logger.debug(f"Failed to update storage monitoring: {e}")
+            
+            logger.info(f"Added vector for content_id: {content_id}")
+            return content_id
     
     def add_vectors_batch(
         self, 
@@ -275,41 +312,66 @@ class VectorStore:
         
         n_vectors = vectors.shape[0]
         
-        if content_ids is None:
-            content_ids = [str(uuid.uuid4()) for _ in range(n_vectors)]
-        
-        if metadata_list is None:
-            metadata_list = [{} for _ in range(n_vectors)]
-        
-        # Normalize vectors if needed
-        norms = np.linalg.norm(vectors, axis=1)
-        mask = np.abs(norms - 1.0) > 0.001
-        if np.any(mask):
-            logger.warning(f"Normalizing {np.sum(mask)} vectors")
-            vectors[mask] = vectors[mask] / norms[mask].reshape(-1, 1)
-        
-        # Add to index
-        self._index.add(vectors.astype(np.float32))
-        
-        # Store metadata, mappings, and vectors
-        for i, (content_id, metadata) in enumerate(zip(content_ids, metadata_list)):
-            internal_id = str(self._next_internal_id + i)
-            self._id_mapping[internal_id] = content_id
-            self._metadata[internal_id] = {
-                'content_id': content_id,
-                'metadata': metadata,
-                'created_at': get_utc_now().isoformat(),
-                'vector_norm': float(norms[i])
-            }
+        # Monitor the batch add operation
+        if MONITORING_AVAILABLE:
+            monitor_context = vector_store_monitor.monitor_operation(
+                VectorOperation.ADD_BATCH,
+                vector_count=n_vectors,
+                index_size=self.total_vectors
+            )
+        else:
+            monitor_context = nullcontext()
             
-            # Store the vector for potential rebuild operations
-            self._vectors[internal_id] = vectors[i].flatten().astype(np.float32)
-        
-        self._next_internal_id += n_vectors
-        self._save_all()
-        
-        logger.info(f"Added {n_vectors} vectors in batch")
-        return content_ids
+        with monitor_context:
+            # Validate batch vector dimensions
+            if vectors.ndim != 2:
+                raise ValueError(f"Expected 2D array for batch vectors, got shape: {vectors.shape}")
+            if vectors.shape[1] != self.dimension:
+                raise ValueError(f"Vector dimension {vectors.shape[1]} != expected {self.dimension}")
+            
+            if content_ids is None:
+                content_ids = [str(uuid.uuid4()) for _ in range(n_vectors)]
+            
+            if metadata_list is None:
+                metadata_list = [{} for _ in range(n_vectors)]
+            
+            # Normalize vectors if needed
+            norms = np.linalg.norm(vectors, axis=1)
+            mask = np.abs(norms - 1.0) > 0.001
+            if np.any(mask):
+                logger.warning(f"Normalizing {np.sum(mask)} vectors")
+                vectors[mask] = vectors[mask] / norms[mask].reshape(-1, 1)
+            
+            # Add to index
+            self._index.add(vectors.astype(np.float32))
+            
+            # Store metadata, mappings, and vectors
+            for i, (content_id, metadata) in enumerate(zip(content_ids, metadata_list)):
+                internal_id = str(self._next_internal_id + i)
+                self._id_mapping[internal_id] = content_id
+                self._metadata[internal_id] = {
+                    'content_id': content_id,
+                    'metadata': metadata,
+                    'created_at': get_utc_now().isoformat(),
+                    'vector_norm': float(norms[i])
+                }
+                
+                # Store the vector for potential rebuild operations
+                self._vectors[internal_id] = vectors[i].flatten().astype(np.float32)
+            
+            self._next_internal_id += n_vectors
+            self._save_all()
+            
+            # Update storage growth metrics for batch operations (P1-7d)
+            if MONITORING_AVAILABLE:
+                try:
+                    from backend.services.vector_store_monitoring import update_storage_monitoring
+                    update_storage_monitoring()
+                except Exception as e:
+                    logger.debug(f"Failed to update storage monitoring: {e}")
+            
+            logger.info(f"Added {n_vectors} vectors in batch")
+            return content_ids
     
     def search(
         self, 
@@ -331,16 +393,34 @@ class VectorStore:
         if not FAISS_AVAILABLE or self.total_vectors == 0:
             return []
         
-        # Ensure query vector is properly shaped and normalized
-        if query_vector.ndim == 1:
-            query_vector = query_vector.reshape(1, -1)
+        # Monitor search performance (P1-7b)
+        monitor_context = None
+        if MONITORING_AVAILABLE:
+            monitor_context = vector_store_monitor.monitor_operation(
+                VectorOperation.SEARCH_SIMILARITY, 
+                vector_count=k,
+                index_size=self.total_vectors
+            )
+            monitor_context.__enter__()
         
-        norm = np.linalg.norm(query_vector)
-        if abs(norm - 1.0) > 0.001:
-            query_vector = query_vector / norm
-        
-        # Search index
-        scores, indices = self._index.search(query_vector.astype(np.float32), k)
+        try:
+            # Ensure query vector is properly shaped and normalized
+            if query_vector.ndim == 1:
+                query_vector = query_vector.reshape(1, -1)
+            
+            norm = np.linalg.norm(query_vector)
+            if abs(norm - 1.0) > 0.001:
+                query_vector = query_vector / norm
+            
+            # Search index
+            scores, indices = self._index.search(query_vector.astype(np.float32), k)
+        except Exception as e:
+            if monitor_context:
+                monitor_context.__exit__(type(e), e, None)
+            raise
+        else:
+            if monitor_context:
+                monitor_context.__exit__(None, None, None)
         
         results = []
         for score, idx in zip(scores[0], indices[0]):
@@ -497,95 +577,114 @@ class VectorStore:
             logger.warning("FAISS not available, cannot rebuild index")
             return
         
-        logger.info("Rebuilding FAISS index from stored vectors...")
-        
-        # Get all valid vectors (ones that still have metadata)
-        valid_vectors = []
-        valid_internal_ids = []
-        
-        for internal_id in self._metadata.keys():
-            if internal_id in self._vectors:
-                valid_vectors.append(self._vectors[internal_id])
-                valid_internal_ids.append(internal_id)
-        
-        if not valid_vectors:
-            logger.info("No valid vectors to rebuild, creating empty index")
-            # Create fresh empty index
+        # Monitor the rebuild operation
+        if MONITORING_AVAILABLE:
+            monitor_context = vector_store_monitor.monitor_operation(
+                VectorOperation.REBUILD_INDEX,
+                vector_count=self.total_vectors,
+                index_size=self.total_vectors
+            )
+        else:
+            monitor_context = nullcontext()
+            
+        with monitor_context:
+            logger.info("Rebuilding FAISS index from stored vectors...")
+            
+            # Get all valid vectors (ones that still have metadata)
+            valid_vectors = []
+            valid_internal_ids = []
+            
+            for internal_id in self._metadata.keys():
+                if internal_id in self._vectors:
+                    valid_vectors.append(self._vectors[internal_id])
+                    valid_internal_ids.append(internal_id)
+            
+            if not valid_vectors:
+                logger.info("No valid vectors to rebuild, creating empty index")
+                # Create fresh empty index
+                if self.index_type == "flat_ip":
+                    self._index = faiss.IndexFlatIP(self.dimension)
+                elif self.index_type == "hnsw":
+                    self._index = faiss.IndexHNSWFlat(self.dimension, 32)
+                    self._index.hnsw.efConstruction = 40
+                    self._index.hnsw.efSearch = 16
+                elif self.index_type == "ivf":
+                    quantizer = faiss.IndexFlatIP(self.dimension)
+                    self._index = faiss.IndexIVFFlat(quantizer, self.dimension, 100)
+                else:
+                    self._index = faiss.IndexFlatIP(self.dimension)
+                    
+                self._save_index()
+                logger.info("Empty index created and saved")
+                return
+            
+            # Convert vectors to numpy array
+            vectors_array = np.array(valid_vectors).astype(np.float32)
+            
+            # Ensure vectors are properly shaped
+            if vectors_array.ndim == 1:
+                vectors_array = vectors_array.reshape(1, -1)
+            
+            logger.info(f"Rebuilding index with {len(valid_vectors)} valid vectors")
+            
+            # Create fresh index
             if self.index_type == "flat_ip":
-                self._index = faiss.IndexFlatIP(self.dimension)
+                new_index = faiss.IndexFlatIP(self.dimension)
             elif self.index_type == "hnsw":
-                self._index = faiss.IndexHNSWFlat(self.dimension, 32)
-                self._index.hnsw.efConstruction = 40
-                self._index.hnsw.efSearch = 16
+                new_index = faiss.IndexHNSWFlat(self.dimension, 32)
+                new_index.hnsw.efConstruction = 40
+                new_index.hnsw.efSearch = 16
             elif self.index_type == "ivf":
                 quantizer = faiss.IndexFlatIP(self.dimension)
-                self._index = faiss.IndexIVFFlat(quantizer, self.dimension, 100)
+                new_index = faiss.IndexIVFFlat(quantizer, self.dimension, min(100, len(valid_vectors)))
+                # Train the index if needed
+                if not new_index.is_trained:
+                    new_index.train(vectors_array)
             else:
-                self._index = faiss.IndexFlatIP(self.dimension)
-                
-            self._save_index()
-            logger.info("Empty index created and saved")
-            return
-        
-        # Convert vectors to numpy array
-        vectors_array = np.array(valid_vectors).astype(np.float32)
-        
-        # Ensure vectors are properly shaped
-        if vectors_array.ndim == 1:
-            vectors_array = vectors_array.reshape(1, -1)
-        
-        logger.info(f"Rebuilding index with {len(valid_vectors)} valid vectors")
-        
-        # Create fresh index
-        if self.index_type == "flat_ip":
-            new_index = faiss.IndexFlatIP(self.dimension)
-        elif self.index_type == "hnsw":
-            new_index = faiss.IndexHNSWFlat(self.dimension, 32)
-            new_index.hnsw.efConstruction = 40
-            new_index.hnsw.efSearch = 16
-        elif self.index_type == "ivf":
-            quantizer = faiss.IndexFlatIP(self.dimension)
-            new_index = faiss.IndexIVFFlat(quantizer, self.dimension, min(100, len(valid_vectors)))
-            # Train the index if needed
-            if not new_index.is_trained:
-                new_index.train(vectors_array)
-        else:
-            new_index = faiss.IndexFlatIP(self.dimension)
-        
-        # Add all valid vectors to new index
-        new_index.add(vectors_array)
-        
-        # Replace the old index
-        self._index = new_index
-        
-        # Clean up ID mapping - rebuild it sequentially for consistency
-        new_id_mapping = {}
-        for i, internal_id in enumerate(valid_internal_ids):
-            new_id_mapping[str(i)] = self._id_mapping[internal_id]
-        
-        # Update metadata with new internal IDs
-        new_metadata = {}
-        for i, old_internal_id in enumerate(valid_internal_ids):
-            new_internal_id = str(i)
-            new_metadata[new_internal_id] = self._metadata[old_internal_id]
-        
-        # Update vectors dict with new internal IDs
-        new_vectors = {}
-        for i, old_internal_id in enumerate(valid_internal_ids):
-            new_internal_id = str(i)
-            new_vectors[new_internal_id] = self._vectors[old_internal_id]
-        
-        # Replace old data structures
-        self._id_mapping = new_id_mapping
-        self._metadata = new_metadata
-        self._vectors = new_vectors
-        self._next_internal_id = len(valid_internal_ids)
-        
-        # Save everything
-        self._save_all()
-        
-        logger.info(f"Index rebuilt successfully with {self.total_vectors} vectors")
-        logger.info(f"Memory usage: {self._estimate_memory_usage():.2f} MB")
+                new_index = faiss.IndexFlatIP(self.dimension)
+            
+            # Add all valid vectors to new index
+            new_index.add(vectors_array)
+            
+            # Replace the old index
+            self._index = new_index
+            
+            # Clean up ID mapping - rebuild it sequentially for consistency
+            new_id_mapping = {}
+            for i, internal_id in enumerate(valid_internal_ids):
+                new_id_mapping[str(i)] = self._id_mapping[internal_id]
+            
+            # Update metadata with new internal IDs
+            new_metadata = {}
+            for i, old_internal_id in enumerate(valid_internal_ids):
+                new_internal_id = str(i)
+                new_metadata[new_internal_id] = self._metadata[old_internal_id]
+            
+            # Update vectors dict with new internal IDs
+            new_vectors = {}
+            for i, old_internal_id in enumerate(valid_internal_ids):
+                new_internal_id = str(i)
+                new_vectors[new_internal_id] = self._vectors[old_internal_id]
+            
+            # Replace old data structures
+            self._id_mapping = new_id_mapping
+            self._metadata = new_metadata
+            self._vectors = new_vectors
+            self._next_internal_id = len(valid_internal_ids)
+            
+            # Save everything
+            self._save_all()
+            
+            # Update storage metrics after rebuild (P1-7d)
+            if MONITORING_AVAILABLE:
+                try:
+                    from backend.services.vector_store_monitoring import update_storage_monitoring
+                    update_storage_monitoring()
+                except Exception as e:
+                    logger.debug(f"Failed to update storage monitoring after rebuild: {e}")
+            
+            logger.info(f"Index rebuilt successfully with {self.total_vectors} vectors")
+            logger.info(f"Memory usage: {self._estimate_memory_usage():.2f} MB")
     
     def _save_all(self):
         """Save all components to disk."""

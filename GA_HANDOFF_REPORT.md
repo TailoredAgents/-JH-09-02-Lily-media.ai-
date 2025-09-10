@@ -74,7 +74,7 @@ The Lily Media AI social media management platform has undergone extensive devel
 **Current State**: Single model (Grok-2) with basic prompts
 **Required**: Multi-model routing with quality scoring
 - **Missing**: `PromptContract` Pydantic models
-- **Missing**: Model-specific templates (DALL-E 3, GPT-Image-1)
+- **Missing**: Model-specific templates (GPT-Image-1, Grok-2)
 - **Missing**: `ModelRouter` with automatic model selection
 - **Missing**: CLIP-based aesthetic quality scoring
 - **Missing**: Style vault for user personalization

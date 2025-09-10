@@ -65,13 +65,27 @@ class ErrorBoundary extends React.Component {
 
       // Default error UI
       return (
-        <div className="min-h-96 flex items-center justify-center bg-gray-50 rounded-lg border border-gray-200">
+        <div 
+          className="min-h-96 flex items-center justify-center bg-gray-50 rounded-lg border border-gray-200"
+          role="alert"
+          aria-labelledby="error-boundary-title"
+          aria-describedby="error-boundary-message"
+        >
           <div className="text-center p-8">
-            <ExclamationTriangleIcon className="mx-auto h-16 w-16 text-red-500 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <ExclamationTriangleIcon 
+              className="mx-auto h-16 w-16 text-red-500 mb-4" 
+              aria-hidden="true"
+            />
+            <h3 
+              id="error-boundary-title"
+              className="text-lg font-medium text-gray-900 mb-2"
+            >
               {this.props.title || 'Something went wrong'}
             </h3>
-            <p className="text-sm text-gray-600 mb-6 max-w-md">
+            <p 
+              id="error-boundary-message"
+              className="text-sm text-gray-600 mb-6 max-w-md"
+            >
               {this.props.message || 'We encountered an unexpected error. Please try refreshing the page or contact support if the problem persists.'}
             </p>
             
@@ -99,16 +113,20 @@ class ErrorBoundary extends React.Component {
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button
                 onClick={this.handleRetry}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                aria-label="Retry the operation that caused the error"
+                type="button"
               >
-                <ArrowPathIcon className="h-4 w-4 mr-2" />
+                <ArrowPathIcon className="h-4 w-4 mr-2" aria-hidden="true" />
                 Try Again
               </button>
               
               {this.props.showRefresh && (
                 <button
                   onClick={() => window.location.reload()}
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                  aria-label="Refresh the page to reload the application"
+                  type="button"
                 >
                   Refresh Page
                 </button>

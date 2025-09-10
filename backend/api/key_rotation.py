@@ -20,6 +20,9 @@ from backend.services.key_rotation_service import (
     KeyRotationService, KeyType, KeyRotationStatus,
     get_key_rotation_service
 )
+from backend.services.automated_key_rotation_scheduler import (
+    get_key_rotation_scheduler, SchedulerConfig
+)
 from backend.core.api_version import create_versioned_router
 
 logger = logging.getLogger(__name__)
@@ -297,6 +300,35 @@ async def get_key_rotation_report(
             detail="Failed to generate key rotation report"
         )
 
+@router.get("/procedures/documentation")
+async def get_key_rotation_procedure_documentation(
+    current_user: User = Depends(get_admin_user),
+    key_service: KeyRotationService = Depends(get_key_rotation_service)
+) -> Dict[str, Any]:
+    """
+    P1-2c: Get comprehensive key rotation procedure documentation
+    
+    Returns auto-generated documentation including current system status,
+    rotation schedules, emergency procedures, and compliance requirements.
+    """
+    try:
+        documentation = key_service.generate_procedure_documentation()
+        
+        logger.info(f"P1-2c: Key rotation procedure documentation generated for admin {current_user.id}")
+        
+        return {
+            "status": "success",
+            "documentation": documentation,
+            "static_documentation_available": "/docs/KEY_ROTATION_PROCEDURES.md"
+        }
+        
+    except Exception as e:
+        logger.error(f"P1-2c: Failed to generate procedure documentation: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to generate procedure documentation"
+        )
+
 @router.get("/health")
 async def key_rotation_health_check(
     current_user: User = Depends(get_admin_user),
@@ -464,6 +496,86 @@ async def _emergency_rotation_task(event_id: str, key_type: str, reason: str, ad
             
     except Exception as e:
         logger.error(f"Emergency key rotation task failed: {key_type} - {e}")
+
+@router.get("/scheduler/status")
+async def get_scheduler_status(
+    current_user: User = Depends(get_admin_user)
+) -> Dict[str, Any]:
+    """
+    Get automated key rotation scheduler status
+    
+    Returns current status, statistics, and upcoming rotations
+    for the automated key rotation scheduler.
+    """
+    try:
+        scheduler = get_key_rotation_scheduler()
+        status = scheduler.get_scheduler_status()
+        
+        return status
+        
+    except Exception as e:
+        logger.error(f"Failed to get scheduler status: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to retrieve scheduler status"
+        )
+
+@router.post("/scheduler/pause")
+async def pause_scheduler(
+    current_user: User = Depends(get_admin_user)
+) -> JSONResponse:
+    """
+    Pause the automated key rotation scheduler
+    
+    Temporarily stops automated key rotation scheduling.
+    Active rotations will complete but no new ones will be scheduled.
+    """
+    try:
+        scheduler = get_key_rotation_scheduler()
+        await scheduler.pause_scheduler()
+        
+        logger.info(f"Scheduler paused by admin {current_user.id}")
+        
+        return JSONResponse(content={
+            "message": "Key rotation scheduler paused",
+            "status": "paused",
+            "paused_at": datetime.now(timezone.utc).isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to pause scheduler: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to pause scheduler"
+        )
+
+@router.post("/scheduler/resume")
+async def resume_scheduler(
+    current_user: User = Depends(get_admin_user)
+) -> JSONResponse:
+    """
+    Resume the automated key rotation scheduler
+    
+    Resumes automated key rotation scheduling after being paused.
+    """
+    try:
+        scheduler = get_key_rotation_scheduler()
+        await scheduler.resume_scheduler()
+        
+        logger.info(f"Scheduler resumed by admin {current_user.id}")
+        
+        return JSONResponse(content={
+            "message": "Key rotation scheduler resumed",
+            "status": "active",
+            "resumed_at": datetime.now(timezone.utc).isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to resume scheduler: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to resume scheduler"
+        )
 
 @router.post("/schedule-all")
 async def schedule_all_overdue_rotations(

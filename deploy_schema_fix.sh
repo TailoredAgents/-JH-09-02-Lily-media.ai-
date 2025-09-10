@@ -12,7 +12,7 @@ echo "==============================="
 if [ -z "$DATABASE_URL" ]; then
     echo "❌ ERROR: DATABASE_URL environment variable is not set"
     echo "Please set it with:"
-    echo "export DATABASE_URL='postgresql://socialmedia:BbsIYQtjBnhKwRL3F9kXbv1wrtsVxuTg@dpg-d2ln7eer433s739509lg-a.oregon-postgres.render.com/socialmedia_uq72'"
+    echo "export DATABASE_URL='postgresql://username:password@host/database'"  # P0-2d: Template only - use actual credentials
     exit 1
 fi
 

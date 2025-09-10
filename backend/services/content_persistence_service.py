@@ -23,6 +23,7 @@ class ContentPersistenceService:
     def create_content(
         self,
         user_id: int,
+        organization_id: str,
         title: str,
         content: str,
         platform: str = "twitter",
@@ -40,6 +41,7 @@ class ContentPersistenceService:
             # Create content log entry
             content_log = ContentLog(
                 user_id=user_id,
+                organization_id=organization_id,
                 platform=platform,
                 content=content,
                 content_type=content_type,
@@ -68,6 +70,7 @@ class ContentPersistenceService:
     def get_content_list(
         self,
         user_id: int,
+        organization_id: str,
         page: int = 1,
         limit: int = 20,
         platform: Optional[str] = None,
@@ -75,7 +78,10 @@ class ContentPersistenceService:
     ) -> Dict[str, Any]:
         """Get paginated content list for user"""
         try:
-            query = self.db.query(ContentLog).filter(ContentLog.user_id == user_id)
+            query = self.db.query(ContentLog).filter(
+                ContentLog.user_id == user_id,
+                ContentLog.organization_id == organization_id
+            )
             
             # Apply filters
             if platform:
@@ -132,12 +138,13 @@ class ContentPersistenceService:
             logger.error(f"Error getting content list: {str(e)}")
             raise
     
-    def get_content_by_id(self, user_id: int, content_id: int) -> Optional[ContentLog]:
+    def get_content_by_id(self, user_id: int, organization_id: str, content_id: int) -> Optional[ContentLog]:
         """Get single content item by ID"""
         try:
             content = self.db.query(ContentLog).filter(
                 ContentLog.id == content_id,
-                ContentLog.user_id == user_id
+                ContentLog.user_id == user_id,
+                ContentLog.organization_id == organization_id
             ).first()
             
             return content
@@ -149,12 +156,13 @@ class ContentPersistenceService:
     def update_content(
         self,
         user_id: int,
+        organization_id: str,
         content_id: int,
         updates: Dict[str, Any]
     ) -> Optional[ContentLog]:
         """Update existing content"""
         try:
-            content = self.get_content_by_id(user_id, content_id)
+            content = self.get_content_by_id(user_id, organization_id, content_id)
             if not content:
                 return None
             
@@ -184,10 +192,10 @@ class ContentPersistenceService:
             self.db.rollback()
             raise
     
-    def delete_content(self, user_id: int, content_id: int) -> bool:
+    def delete_content(self, user_id: int, organization_id: str, content_id: int) -> bool:
         """Delete content item"""
         try:
-            content = self.get_content_by_id(user_id, content_id)
+            content = self.get_content_by_id(user_id, organization_id, content_id)
             if not content:
                 return False
             
@@ -205,13 +213,14 @@ class ContentPersistenceService:
     def mark_as_published(
         self,
         user_id: int,
+        organization_id: str,
         content_id: int,
         platform_post_id: str,
         published_at: Optional[datetime] = None
     ) -> Optional[ContentLog]:
         """Mark content as published with platform post ID"""
         try:
-            content = self.get_content_by_id(user_id, content_id)
+            content = self.get_content_by_id(user_id, organization_id, content_id)
             if not content:
                 return None
             
@@ -233,12 +242,13 @@ class ContentPersistenceService:
     def update_engagement_metrics(
         self,
         user_id: int,
+        organization_id: str,
         content_id: int,
         metrics: Dict[str, int]
     ) -> Optional[ContentLog]:
         """Update engagement metrics for published content"""
         try:
-            content = self.get_content_by_id(user_id, content_id)
+            content = self.get_content_by_id(user_id, organization_id, content_id)
             if not content:
                 return None
             
@@ -259,6 +269,7 @@ class ContentPersistenceService:
     
     def get_scheduled_content(
         self,
+        organization_id: Optional[str] = None,
         user_id: Optional[int] = None,
         platform: Optional[str] = None,
         before: Optional[datetime] = None
@@ -266,6 +277,10 @@ class ContentPersistenceService:
         """Get scheduled content that needs to be published"""
         try:
             query = self.db.query(ContentLog).filter(ContentLog.status == "scheduled")
+            
+            # Always filter by organization_id for multi-tenant isolation
+            if organization_id:
+                query = query.filter(ContentLog.organization_id == organization_id)
             
             if user_id:
                 query = query.filter(ContentLog.user_id == user_id)

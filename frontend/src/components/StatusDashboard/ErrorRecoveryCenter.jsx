@@ -209,6 +209,9 @@ function ErrorIncident({ error, onRecover, onDismiss, onDetails }) {
   return (
     <div
       className={`border-l-4 ${category.borderColor} bg-white rounded-r-lg shadow-sm p-4 mb-4`}
+      role="article"
+      aria-labelledby={`error-title-${error.id}`}
+      aria-describedby={`error-message-${error.id}`}
     >
       <div className="flex items-start justify-between">
         <div className="flex items-start space-x-3">
@@ -218,7 +221,12 @@ function ErrorIncident({ error, onRecover, onDismiss, onDetails }) {
 
           <div className="flex-1">
             <div className="flex items-center space-x-2 mb-1">
-              <h3 className="font-semibold text-gray-900">{error.title}</h3>
+              <h3 
+                id={`error-title-${error.id}`}
+                className="font-semibold text-gray-900"
+              >
+                {error.title}
+              </h3>
               <span
                 className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
                   error.severity === 'critical'
@@ -239,7 +247,12 @@ function ErrorIncident({ error, onRecover, onDismiss, onDetails }) {
               )}
             </div>
 
-            <p className="text-gray-600 text-sm mb-3">{error.message}</p>
+            <p 
+              id={`error-message-${error.id}`}
+              className="text-gray-600 text-sm mb-3"
+            >
+              {error.message}
+            </p>
 
             <div className="flex items-center space-x-4 text-xs text-gray-500">
               <span>Occurred: {error.timestamp.toLocaleTimeString()}</span>

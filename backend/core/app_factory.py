@@ -135,6 +135,43 @@ def setup_middleware(app: FastAPI, config: AppConfig) -> None:
         logger.info("Error tracking middleware added")
     except ImportError:
         logger.debug("Error tracking middleware not available")
+    
+    # Setup observability middleware with OpenTelemetry
+    try:
+        from backend.core.observability_middleware import setup_observability_middleware
+        observability_success = setup_observability_middleware(app)
+        if observability_success:
+            logger.info("✅ OBSERVABILITY: OpenTelemetry middleware configured successfully")
+        else:
+            logger.warning("⚠️ OpenTelemetry observability middleware setup failed")
+    except ImportError as e:
+        logger.debug("Observability middleware not available: {}".format(e))
+    except Exception as e:
+        logger.error("❌ Failed to setup observability middleware: {}".format(e))
+
+    # Setup plan enforcement middleware  
+    try:
+        from backend.core.plan_enforcement import setup_plan_enforcement_middleware
+        plan_enforcement_success = setup_plan_enforcement_middleware(app)
+        if plan_enforcement_success:
+            logger.info("✅ SECURITY: Plan enforcement middleware configured successfully")
+        else:
+            logger.warning("⚠️ Plan enforcement middleware setup failed")
+    except ImportError as e:
+        logger.debug("Plan enforcement middleware not available: {}".format(e))
+    except Exception as e:
+        logger.error("❌ Failed to setup plan enforcement middleware: {}".format(e))
+    
+    # Setup monitoring middleware (CRITICAL for production observability)
+    try:
+        from backend.core.monitoring_middleware import setup_monitoring_middleware
+        setup_monitoring_middleware(app)
+        logger.info("✅ MONITORING: Comprehensive monitoring middleware configured successfully")
+    except ImportError as e:
+        logger.error("❌ CRITICAL: Monitoring middleware not available: {}".format(e))
+        logger.error("⚠️ Production monitoring and alerting is NOT enabled!")
+    except Exception as e:
+        logger.error("❌ Failed to setup monitoring middleware: {}".format(e))
 
 
 def _setup_fallback_cors(app: FastAPI, config: AppConfig) -> None:
@@ -153,10 +190,10 @@ def _setup_fallback_cors(app: FastAPI, config: AppConfig) -> None:
     if config.environment == "development":
         app.add_middleware(
             CORSMiddleware,
-            allow_origins=["*"],
+            allow_origins=os.getenv("CORS_ORIGINS", "http://localhost:3000").split(","),
             allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"]
+            allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+            allow_headers=["Authorization", "Content-Type", "X-Requested-With", "Accept", "X-CSRF-Token"]
         )
     else:
         app.add_middleware(
@@ -313,9 +350,9 @@ def setup_health_endpoints(app: FastAPI, config: AppConfig, loaded_routers: List
         }
 
 
-def create_app(config: Optional[AppConfig] = None) -> FastAPI:
+async def create_app_async(config: Optional[AppConfig] = None) -> FastAPI:
     """
-    Create FastAPI application with factory pattern.
+    Create FastAPI application with factory pattern (async version with health gates).
     
     Args:
         config: Optional configuration object
@@ -323,6 +360,106 @@ def create_app(config: Optional[AppConfig] = None) -> FastAPI:
     Returns:
         Configured FastAPI application
     """
+    if config is None:
+        config = AppConfig()
+    
+    # Setup logging first
+    if config.environment == "development":
+        from backend.core.logging import setup_development_logging
+        setup_development_logging()
+    else:
+        from backend.core.logging import setup_production_logging
+        setup_production_logging()
+    
+    logger.info("Creating FastAPI application")
+    logger.info("Environment: {}".format(config.environment))
+    logger.info("API Version: {}".format(config.api_version))
+    
+    # Run startup health gates in production
+    if config.environment == "production":
+        logger.info("🔍 Running production startup health gates...")
+        try:
+            from backend.core.startup_health_gates import StartupHealthGates
+            health_gates = StartupHealthGates()
+            result = await health_gates.run_health_gates()
+            
+            if not result.ready_for_traffic:
+                logger.error("❌ STARTUP FAILED: Health gates validation failed")
+                logger.error("Failed checks: {}".format([check.name for check in result.check_results if check.status.value == 'fail']))
+                for check in result.check_results:
+                    if check.status.value == 'fail':
+                        logger.error("  - {}: {}".format(check.name, check.message))
+                
+                # In production, fail fast if health gates don't pass
+                raise RuntimeError("Application failed startup health gates validation")
+            else:
+                logger.info("✅ Startup health gates passed ({} passed, {} warnings, {} failed)".format(result.passed_checks, result.warning_checks, result.failed_checks))
+                
+        except ImportError as e:
+            logger.error("❌ CRITICAL: Startup health gates not available: {}".format(e))
+            if config.environment == "production":
+                raise RuntimeError("Startup health gates required in production but not available")
+    
+    # Create FastAPI app
+    app = FastAPI(
+        title=config.title,
+        description=config.description,
+        version=config.version,
+        docs_url=config.docs_url,
+        redoc_url=config.redoc_url,
+        debug=config.debug
+    )
+    
+    # Setup middleware
+    setup_middleware(app, config)
+    
+    # Setup routers
+    loaded_routers, failed_routers = setup_routers(app)
+    
+    # Setup static files
+    setup_static_files(app)
+    
+    # Setup exception handlers
+    setup_exception_handlers(app, loaded_routers)
+    
+    # Setup health endpoints
+    setup_health_endpoints(app, config, loaded_routers, failed_routers)
+    
+    # Log startup summary
+    logger.info("=" * 50)
+    logger.info("FastAPI application created successfully")
+    logger.info("Environment: {}".format(config.environment))
+    logger.info("Loaded {} routers successfully".format(len(loaded_routers)))
+    logger.info("Failed to load {} routers".format(len(failed_routers)))
+    logger.info("Total routes: {}".format(len(app.routes)))
+    logger.info("=" * 50)
+    
+    return app
+
+
+def create_app(config: Optional[AppConfig] = None) -> FastAPI:
+    """
+    Create FastAPI application with factory pattern (sync wrapper).
+    
+    Args:
+        config: Optional configuration object
+        
+    Returns:
+        Configured FastAPI application
+    """
+    import asyncio
+    
+    # For production environments, run async version with health gates
+    if config and config.environment == "production":
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        
+        return loop.run_until_complete(create_app_async(config))
+    
+    # For non-production, use the sync version
     if config is None:
         config = AppConfig()
     
@@ -383,7 +520,7 @@ def create_development_app() -> FastAPI:
 
 
 def create_production_app() -> FastAPI:
-    """Create app configured for production."""
+    """Create app configured for production with health gates."""
     config = AppConfig(environment="production", debug=False, enable_docs=False)
     return create_app(config)
 

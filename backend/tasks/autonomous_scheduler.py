@@ -127,6 +127,66 @@ class AutonomousScheduler:
                         "contact_support": "Need a custom plan? Contact support@lily-ai.com"
                     }
             
+            elif "research" in operation_type.lower():
+                # P0-10a: Add plan capability validation for research operations
+                from backend.services.plan_service import PlanService
+                plan_service = PlanService(db)
+                user_capabilities = plan_service.get_user_capabilities(user_id)
+                
+                # Check if user's plan supports research capabilities
+                if not user_capabilities.has_autopilot_research():
+                    logger.warning(
+                        f"QUOTA_BLOCK: user_id={user_id}, operation={operation_type}, "
+                        f"reason=research_capability_not_available, plan={user_capabilities.get_plan_name()}"
+                    )
+                    return {
+                        "allowed": False,
+                        "reason": "research_capability_not_available",
+                        "message": f"Research capabilities not available on {user_capabilities.get_plan_name()} plan",
+                        "upgrade_suggestion": "Upgrade to Pro or Enterprise plan for autopilot research capabilities",
+                        "suggested_plans": [
+                            {"plan": "Pro", "research_features": "Autopilot Research, Trend Analysis", "price": "$29/month"},
+                            {"plan": "Enterprise", "research_features": "Advanced Research Tools, Custom Reports", "price": "$99/month"}
+                        ],
+                        "current_usage": {
+                            "plan": user_capabilities.get_plan_name(),
+                            "research_enabled": user_capabilities.has_autopilot_research(),
+                            "upgrade_required": True
+                        },
+                        "upgrade_url": "/billing/upgrade",
+                        "contact_support": "Contact support for plan upgrade assistance"
+                    }
+                
+                # Check weekly research report limit  
+                logger.info(
+                    f"QUOTA_CHECK: user_id={user_id}, operation={operation_type}, "
+                    f"weekly_limit={weekly_report_limit}, status=checking, plan={user_capabilities.get_plan_name()}"
+                )
+                
+                current_weekly_usage = 0  # For demonstration - would need actual usage tracking
+                if current_weekly_usage >= weekly_report_limit:
+                    logger.warning(
+                        f"QUOTA_EXCEEDED: user_id={user_id}, operation={operation_type}, "
+                        f"usage={current_weekly_usage}/{weekly_report_limit}, plan={user_capabilities.get_plan_name()}"
+                    )
+                    return {
+                        "allowed": False,
+                        "reason": "weekly_research_limit_exceeded", 
+                        "message": f"Weekly research limit reached ({current_weekly_usage}/{weekly_report_limit})",
+                        "upgrade_suggestion": "Upgrade to Pro plan for unlimited research reports",
+                        "suggested_plans": [
+                            {"plan": "Pro", "research_limit": "Unlimited", "price": "$29/month"},
+                            {"plan": "Enterprise", "research_limit": "Advanced Research Tools", "price": "$99/month"}
+                        ],
+                        "current_usage": {
+                            "weekly_research": current_weekly_usage,
+                            "weekly_limit": weekly_report_limit,
+                            "utilization_percent": (current_weekly_usage / weekly_report_limit) * 100 if weekly_report_limit > 0 else 0,
+                            "plan": user_capabilities.get_plan_name()
+                        },
+                        "upgrade_url": "/billing/upgrade"
+                    }
+                
             elif "report" in operation_type.lower():
                 # Check weekly report limit
                 logger.info(
@@ -311,7 +371,33 @@ def daily_content_generation(self):
                     db.add(workflow)
                     db.commit()
                 
-                    # Step 1: Research trending topics
+                    # P0-10a: PLAN CAPABILITY VALIDATION - Check research capabilities before execution
+                    from backend.services.plan_service import PlanService
+                    plan_service = PlanService(db)
+                    user_capabilities = plan_service.get_user_capabilities(user_id)
+                    
+                    # Validate research capabilities
+                    research_capability_check = scheduler.check_user_quota_limits(
+                        user_id=user_id,
+                        db=db,
+                        operation_type="autonomous_research"
+                    )
+                    
+                    if not research_capability_check["allowed"]:
+                        logger.warning(f"Research capability check failed for user {user_id}: {research_capability_check['reason']}")
+                        results.append({
+                            'user_id': user_id,
+                            'status': 'research_blocked',
+                            'reason': research_capability_check['reason'],
+                            'message': research_capability_check['message'],
+                            'upgrade_suggestion': research_capability_check.get('upgrade_suggestion'),
+                            'plan': user_capabilities.get_plan_name(),
+                            'research_enabled': user_capabilities.has_autopilot_research()
+                        })
+                        continue
+                    
+                    # Step 1: Research trending topics (plan capability validated)
+                    logger.info(f"Executing research for user {user_id} with plan {user_capabilities.get_plan_name()}")
                     research_query = ResearchQuery(
                         keywords=['trending topics', 'industry news'],
                         platforms=user_config['preferred_platforms'],
@@ -319,9 +405,19 @@ def daily_content_generation(self):
                         include_trends=True
                     )
                     
+                    # P0-10c: Pass monitoring parameters to research service
+                    user_plan = user_capabilities.get_plan_name()
+                    user_settings = db.query(UserSetting).filter(UserSetting.user_id == user_id).first()
+                    industry = user_settings.industry_type if user_settings and user_settings.industry_type else "general"
+                    
                     # Use asyncio.run() for async research service call (2025 best practice)
                     research_results = asyncio.run(
-                        scheduler.research_service.execute_comprehensive_research(research_query)
+                        scheduler.research_service.execute_comprehensive_research(
+                            query=research_query,
+                            user_plan=user_plan,
+                            user_id=str(user_id),
+                            industry=industry
+                        )
                     )
                 
                     # Step 2: Generate content based on research

@@ -316,27 +316,47 @@ const Register = () => {
             </div>
           </div>
 
-          {/* Terms and Conditions */}
-          <div className="flex items-center">
-            <input
-              id="accept_terms"
-              name="accept_terms"
-              type="checkbox"
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              checked={formData.accept_terms}
-              onChange={(e) => setFormData(prev => ({ ...prev, accept_terms: e.target.checked }))}
-              disabled={isSubmitting}
-            />
-            <label htmlFor="accept_terms" className="ml-2 block text-sm text-gray-900">
-              I accept the{' '}
-              <a href="/terms" className="text-blue-600 hover:text-blue-500" target="_blank" rel="noopener noreferrer">
-                Terms of Service
-              </a>{' '}
-              and{' '}
-              <a href="/privacy" className="text-blue-600 hover:text-blue-500" target="_blank" rel="noopener noreferrer">
-                Privacy Policy
-              </a>
-            </label>
+          {/* P1-10b: Enhanced Terms and Billing Disclosure */}
+          <div className="space-y-4">
+            {/* Trial and Billing Notice */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="font-semibold text-blue-900 mb-2 flex items-center">
+                <svg className="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+                Important: Trial and Billing Information
+              </h4>
+              <div className="text-sm text-blue-800 space-y-1">
+                <p>• Your account includes a <strong>14-day free trial</strong></p>
+                <p>• After the trial, you can <strong>upgrade to a paid plan</strong> to continue using premium features</p>
+                <p>• <strong>No payment required</strong> during registration - you choose when to upgrade</p>
+                <p>• <strong>Cancel anytime</strong> with no fees or penalties</p>
+              </div>
+            </div>
+            
+            {/* Terms and Conditions */}
+            <div className="flex items-start space-x-3">
+              <input
+                id="accept_terms"
+                name="accept_terms"
+                type="checkbox"
+                className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                checked={formData.accept_terms}
+                onChange={(e) => setFormData(prev => ({ ...prev, accept_terms: e.target.checked }))}
+                disabled={isSubmitting}
+              />
+              <label htmlFor="accept_terms" className="text-sm text-gray-900">
+                I acknowledge that I have read and agree to the{' '}
+                <a href="/terms" className="text-blue-600 hover:text-blue-500 font-medium" target="_blank" rel="noopener noreferrer">
+                  Terms of Service
+                </a>
+                {' '}and{' '}
+                <a href="/privacy" className="text-blue-600 hover:text-blue-500 font-medium" target="_blank" rel="noopener noreferrer">
+                  Privacy Policy
+                </a>
+                . I understand that future upgrades to paid plans will include automatic billing terms that will be clearly disclosed before any payment is required.
+              </label>
+            </div>
           </div>
           {validationErrors.accept_terms && (
             <p className="mt-1 text-sm text-red-600">{validationErrors.accept_terms}</p>
