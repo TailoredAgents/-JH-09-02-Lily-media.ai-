@@ -1,1209 +1,636 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { useEnhancedApi } from '../hooks/useEnhancedApi'
-import { useNotifications } from '../hooks/useNotifications'
-import { useTheme } from '../contexts/ThemeContext'
 import { usePlan } from '../contexts/PlanContext'
-import { error as logError } from '../utils/logger.js'
-import SocialPlatformManager from '../components/SocialPlatforms/SocialPlatformManager'
-import ErrorLogs from '../components/ErrorLogs'
-import StyleVault from '../components/StyleVault'
-import PlanGate from '../components/PlanGate'
+import api from '../services/api'
 import {
-  UserIcon,
-  KeyIcon,
-  LinkIcon,
-  BellIcon,
   CogIcon,
-  CheckCircleIcon,
-  XCircleIcon,
+  CurrencyDollarIcon,
+  CloudIcon,
+  CalendarDaysIcon,
   ExclamationTriangleIcon,
-  ArrowPathIcon,
-  MagnifyingGlassIcon,
-  ChatBubbleLeftRightIcon,
-  SunIcon,
-  MoonIcon,
-  ComputerDesktopIcon,
+  InformationCircleIcon,
+  CheckCircleIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline'
+
+const TABS = [
+  {
+    id: 'pricing',
+    name: 'Pricing',
+    icon: CurrencyDollarIcon,
+    description: 'Configure pricing rules, rates, and bundles',
+  },
+  {
+    id: 'weather',
+    name: 'Weather',
+    icon: CloudIcon,
+    description: 'Set weather thresholds and rescheduling policies',
+  },
+  {
+    id: 'booking',
+    name: 'Booking Policies',
+    icon: CalendarDaysIcon,
+    description: 'Configure booking rules and requirements',
+  },
+]
 
 export default function Settings() {
   const { user } = useAuth()
-  const { api, connectionStatus, checkApiHealth, clearCache } = useEnhancedApi()
-  const { showSuccess, showError } = useNotifications()
-  const { isDarkMode, setTheme, theme, systemTheme } = useTheme()
+  const { plan } = usePlan()
 
-  const [isLoading, setIsLoading] = useState(false)
-  const [isResearching, setIsResearching] = useState(false)
-  const [researchProgress, setResearchProgress] = useState(0)
-  const [researchStage, setResearchStage] = useState('')
-  const [apiHealth, setApiHealth] = useState(null)
+  const [activeTab, setActiveTab] = useState('pricing')
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [errors, setErrors] = useState({})
+  const [successMessage, setSuccessMessage] = useState('')
 
-  const [settings, setSettings] = useState({
-    industryContext: {
-      companyName: '',
-      industry: 'Technology',
-      companyDescription: '',
-      targetAudience: '',
-      brandTone: 'Professional',
-      keyTopics: '',
+  // Settings state
+  const [pricingSettings, setPricingSettings] = useState({
+    base_rates: {
+      house_washing: 0.15,
+      pressure_washing: 0.12,
+      soft_wash: 0.18,
+      deck_cleaning: 0.2,
+      concrete_cleaning: 0.1,
+      gutter_cleaning: 0.08,
     },
-    notifications: {
-      goalMilestones: true,
-      contentPublished: true,
-      workflowComplete: true,
-      systemAlerts: true,
-      apiErrors: true,
-    },
-    automation: {
-      dailyWorkflows: true,
-      autoOptimization: false,
-      smartScheduling: true,
-      contentGeneration: true,
-    },
-    socialInbox: {
-      defaultResponsePersonality: 'professional',
-      autoResponseEnabled: false,
-      autoResponseConfidenceThreshold: 0.8,
-      autoResponseBusinessHoursOnly: true,
-      autoResponseDelayMinutes: 5,
-      businessHoursStart: '09:00',
-      businessHoursEnd: '17:00',
-      businessDays: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
-      escalationKeywords: [
-        'complaint',
-        'lawsuit',
-        'refund',
-        'angry',
-        'terrible',
-      ],
-      excludedResponseKeywords: ['spam', 'bot', 'fake'],
-    },
-    platforms: {
-      twitter: { connected: false, username: '' },
-      instagram: { connected: false, username: '' },
-      facebook: { connected: false, username: '' },
-    },
+    min_job_total: 150.0,
+    bundles: [
+      {
+        name: 'House + Driveway',
+        services: ['house_washing', 'concrete_cleaning'],
+        discount_percent: 15,
+      },
+    ],
+    seasonal_modifiers: [
+      {
+        season: 'spring',
+        multiplier: 1.1,
+        description: 'High demand season',
+      },
+    ],
   })
 
-  // Check API health on component mount
+  const [weatherSettings, setWeatherSettings] = useState({
+    rain_probability_threshold: 30,
+    wind_speed_threshold: 25,
+    temperature_threshold: 40,
+    lookahead_days: 3,
+    auto_reschedule: true,
+    notification_hours_ahead: 24,
+  })
+
+  const [bookingSettings, setBookingSettings] = useState({
+    intent_threshold: 0.75,
+    require_photos: true,
+    required_fields: ['customer_name', 'phone', 'address', 'service_type'],
+    auto_followup_hours: 24,
+    quiet_hours: {
+      enabled: true,
+      start: '20:00',
+      end: '08:00',
+    },
+    business_hours: {
+      monday: { enabled: true, start: '08:00', end: '18:00' },
+      tuesday: { enabled: true, start: '08:00', end: '18:00' },
+      wednesday: { enabled: true, start: '08:00', end: '18:00' },
+      thursday: { enabled: true, start: '08:00', end: '18:00' },
+      friday: { enabled: true, start: '08:00', end: '18:00' },
+      saturday: { enabled: true, start: '09:00', end: '17:00' },
+      sunday: { enabled: false, start: '10:00', end: '16:00' },
+    },
+    buffer_minutes: 30,
+  })
+
   useEffect(() => {
-    const checkHealth = async () => {
-      try {
-        const health = await checkApiHealth()
-        setApiHealth(health)
-      } catch (error) {
-        logError('Health check failed:', error)
-      }
-    }
+    loadSettings()
+  }, [])
 
-    checkHealth()
-    // Check health every 30 seconds
-    const interval = setInterval(checkHealth, 30000)
-    return () => clearInterval(interval)
-  }, [checkApiHealth])
-
-  const handleNotificationChange = (key) => {
-    setSettings((prev) => ({
-      ...prev,
-      notifications: {
-        ...prev.notifications,
-        [key]: !prev.notifications[key],
-      },
-    }))
-    showSuccess('Notification preferences updated')
-  }
-
-  const handleAutomationChange = (key) => {
-    setSettings((prev) => ({
-      ...prev,
-      automation: {
-        ...prev.automation,
-        [key]: !prev.automation[key],
-      },
-    }))
-    showSuccess('Automation settings updated')
-  }
-
-  const handleIndustryContextChange = (field, value) => {
-    setSettings((prev) => ({
-      ...prev,
-      industryContext: {
-        ...prev.industryContext,
-        [field]: value,
-      },
-    }))
-  }
-
-  const researchCompany = async () => {
-    if (!settings.industryContext.companyName.trim()) {
-      showError('Please enter a company name to research')
-      return
-    }
-
-    setIsResearching(true)
-    setResearchProgress(0)
-    setResearchStage('')
-
-    // Progress simulation stages
-    const stages = [
-      {
-        progress: 10,
-        stage: 'Initializing deep research agents...',
-        duration: 1000,
-      },
-      {
-        progress: 25,
-        stage: 'Gathering company intelligence and recent news...',
-        duration: 2500,
-      },
-      {
-        progress: 45,
-        stage: 'Analyzing market position and competitive landscape...',
-        duration: 2000,
-      },
-      {
-        progress: 65,
-        stage: 'Researching company culture and values...',
-        duration: 1500,
-      },
-      {
-        progress: 80,
-        stage: 'Identifying content opportunities and themes...',
-        duration: 1500,
-      },
-      {
-        progress: 95,
-        stage: 'Synthesizing insights and recommendations...',
-        duration: 1000,
-      },
-      { progress: 100, stage: 'Research complete!', duration: 500 },
-    ]
-
+  const loadSettings = async () => {
     try {
-      // Start progress simulation
-      const progressPromise = new Promise((resolve) => {
-        let currentStage = 0
-        const progressInterval = setInterval(
-          () => {
-            if (currentStage < stages.length) {
-              const stage = stages[currentStage]
-              setResearchProgress(stage.progress)
-              setResearchStage(stage.stage)
+      setLoading(true)
 
-              if (currentStage === stages.length - 1) {
-                setTimeout(() => {
-                  clearInterval(progressInterval)
-                  resolve()
-                }, stage.duration)
-              }
-              currentStage++
-            }
-          },
-          stages[Math.min(currentStage, stages.length - 1)]?.duration || 1000
-        )
-      })
-
-      // Call company research API (this will take time for real research)
-      const [response] = await Promise.all([
-        api.autonomous.researchCompany(settings.industryContext.companyName),
-        progressPromise, // Ensure progress completes
+      const [pricingData, weatherData, bookingData] = await Promise.allSettled([
+        api.getPricingSettings(),
+        api.getWeatherSettings(),
+        api.getBookingSettings(),
       ])
 
-      if (response && response.success) {
-        // Update settings with research results
-        setSettings((prev) => ({
-          ...prev,
-          industryContext: {
-            ...prev.industryContext,
-            industry: response.industry || prev.industryContext.industry,
-            companyDescription: response.description || '',
-            targetAudience: response.target_audience || '',
-            keyTopics: response.key_topics
-              ? response.key_topics.join(', ')
-              : '',
-          },
-        }))
+      if (pricingData.status === 'fulfilled' && pricingData.value) {
+        setPricingSettings({ ...pricingSettings, ...pricingData.value })
+      }
 
-        showSuccess(
-          `Deep research complete! Lily discovered ${response.insights?.recent_news?.length || 0} recent insights and ${response.insights?.content_themes?.length || 0} content opportunities for ${settings.industryContext.companyName}`
-        )
-      } else {
-        showError(
-          'Company research failed. Please try manually entering the information.'
-        )
+      if (weatherData.status === 'fulfilled' && weatherData.value) {
+        setWeatherSettings({ ...weatherSettings, ...weatherData.value })
+      }
+
+      if (bookingData.status === 'fulfilled' && bookingData.value) {
+        setBookingSettings({ ...bookingSettings, ...bookingData.value })
       }
     } catch (error) {
-      logError('Company research failed:', error)
-      showError(
-        'Failed to research company. Please check your connection and try again.'
-      )
+      console.error('Failed to load settings:', error)
+      setErrors({ general: 'Failed to load settings. Using defaults.' })
     } finally {
-      setIsResearching(false)
-      setResearchProgress(0)
-      setResearchStage('')
+      setLoading(false)
     }
   }
 
-  const saveIndustryContext = () => {
-    // Here you would typically save to backend/localStorage
-    showSuccess(
-      'Industry context updated! Lily will use this info for content creation.'
+  const saveSettings = async (settingsType) => {
+    try {
+      setSaving(true)
+      setErrors({})
+
+      let response
+      switch (settingsType) {
+        case 'pricing':
+          response = await api.updatePricingSettings(pricingSettings)
+          break
+        case 'weather':
+          response = await api.updateWeatherSettings(weatherSettings)
+          break
+        case 'booking':
+          response = await api.updateBookingSettings(bookingSettings)
+          break
+        default:
+          throw new Error('Invalid settings type')
+      }
+
+      setSuccessMessage(`${settingsType} settings saved successfully!`)
+      setTimeout(() => setSuccessMessage(''), 3000)
+    } catch (error) {
+      console.error('Failed to save settings:', error)
+      setErrors({
+        [settingsType]:
+          error.message || `Failed to save ${settingsType} settings`,
+      })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const isFieldDisabled = (feature) => {
+    // Check if field is plan-gated
+    const planGatedFeatures = {
+      seasonal_modifiers: ['pro', 'enterprise'],
+      bundles: ['pro', 'enterprise'],
+      auto_reschedule: ['basic', 'pro', 'enterprise'],
+      advanced_booking: ['pro', 'enterprise'],
+    }
+
+    return (
+      planGatedFeatures[feature] &&
+      !planGatedFeatures[feature].includes(plan?.tier)
     )
   }
 
-  const handleTestNotification = () => {
-    showSuccess('Test notification sent successfully!', 'Test Notification')
+  const PlanGateTooltip = ({ feature, children, disabled = false }) => {
+    if (!disabled) return children
+
+    return (
+      <div className="relative group">
+        {children}
+        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+          Upgrade to access {feature} feature
+          <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+        </div>
+      </div>
+    )
   }
 
-  const handleClearCache = async () => {
-    try {
-      setIsLoading(true)
-      clearCache()
-      showSuccess('Cache cleared successfully')
-    } catch (error) {
-      showError('Failed to clear cache')
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleExportData = async () => {
-    try {
-      setIsLoading(true)
-
-      // Gather all data for export
-      const [memoryData, goalsData, contentData, analyticsData] =
-        await Promise.allSettled([
-          api.memory.getAll(1, 1000),
-          api.goals.getAll(),
-          api.content.getAll(1, 1000),
-          api.analytics.getAnalytics(),
-        ])
-
-      const exportData = {
-        timestamp: new Date().toISOString(),
-        user: user,
-        memory: memoryData.status === 'fulfilled' ? memoryData.value : [],
-        goals: goalsData.status === 'fulfilled' ? goalsData.value : [],
-        content: contentData.status === 'fulfilled' ? contentData.value : [],
-        analytics:
-          analyticsData.status === 'fulfilled' ? analyticsData.value : {},
-      }
-
-      // Create and download file
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-        type: 'application/json',
-      })
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `ai-social-agent-export-${new Date().toISOString().split('T')[0]}.json`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(url)
-
-      showSuccess('Data exported successfully')
-    } catch (error) {
-      showError('Failed to export data')
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleExportCSV = async () => {
-    try {
-      setIsLoading(true)
-
-      const contentData = await api.content.getAll(1, 1000)
-
-      if (!contentData || contentData.length === 0) {
-        showError('No content data to export')
-        return
-      }
-
-      // Create CSV content
-      const headers = [
-        'ID',
-        'Title',
-        'Content',
-        'Platform',
-        'Status',
-        'Created Date',
-        'Scheduled Date',
-      ]
-      const csvRows = [headers.join(',')]
-
-      contentData.forEach((item) => {
-        const row = [
-          item.id || '',
-          `"${(item.title || '').replace(/"/g, '""')}"`,
-          `"${(item.content || '').replace(/"/g, '""')}"`,
-          item.platform || '',
-          item.status || '',
-          item.created_at || '',
-          item.scheduled_at || '',
-        ]
-        csvRows.push(row.join(','))
-      })
-
-      const csvContent = csvRows.join('\n')
-      const blob = new Blob([csvContent], { type: 'text/csv' })
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `ai-social-agent-content-${new Date().toISOString().split('T')[0]}.csv`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(url)
-
-      showSuccess('CSV exported successfully')
-    } catch (error) {
-      showError('Failed to export CSV')
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'connected':
-        return <CheckCircleIcon className="h-5 w-5 text-green-500" />
-      case 'disconnected':
-        return <XCircleIcon className="h-5 w-5 text-red-500" />
-      case 'reconnecting':
-        return <ExclamationTriangleIcon className="h-5 w-5 text-yellow-500" />
-      default:
-        return <ExclamationTriangleIcon className="h-5 w-5 text-gray-500" />
-    }
-  }
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'connected':
-        return 'text-green-600'
-      case 'disconnected':
-        return 'text-red-600'
-      case 'reconnecting':
-        return 'text-yellow-600'
-      default:
-        return 'text-gray-600'
-    }
-  }
-
-  return (
+  const renderPricingTab = () => (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Settings
-        </h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          Configure your brand, preferences, and integrations
-        </p>
-      </div>
-
-      {/* User Profile */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
-            <UserIcon className="h-5 w-5 mr-2" />
-            Profile
-          </h3>
-        </div>
-        <div className="p-6">
-          <div className="flex items-center space-x-4">
-            <div className="h-16 w-16 bg-blue-100 rounded-full flex items-center justify-center">
-              <UserIcon className="h-8 w-8 text-blue-600" />
-            </div>
-            <div>
-              <h4 className="text-lg font-medium text-gray-900">
-                {user?.name || 'Anonymous User'}
-              </h4>
-              <p className="text-sm text-gray-600">
-                {user?.email || 'No email available'}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                Member since{' '}
-                {user?.created_at
-                  ? new Date(user.created_at).toLocaleDateString()
-                  : 'Unknown'}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Theme Settings */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
-            {isDarkMode ? (
-              <MoonIcon className="h-5 w-5 mr-2" />
-            ) : (
-              <SunIcon className="h-5 w-5 mr-2" />
-            )}
-            Theme Preferences
-          </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Customize the appearance of the application
-          </p>
-        </div>
-        <div className="p-6">
-          <div className="space-y-4">
-            <p className="text-sm font-medium text-gray-900 dark:text-white">
-              Choose your preferred theme
-            </p>
-            <div className="space-y-3">
-              {[
-                {
-                  key: 'light',
-                  name: 'Light Mode',
-                  description: 'Clean and bright interface',
-                  icon: SunIcon,
-                },
-                {
-                  key: 'dark',
-                  name: 'Dark Mode',
-                  description: 'Easy on the eyes in low light',
-                  icon: MoonIcon,
-                },
-                {
-                  key: 'system',
-                  name: 'System',
-                  description: `Follow system preference (currently ${systemTheme})`,
-                  icon: ComputerDesktopIcon,
-                },
-              ].map((themeOption) => {
-                const Icon = themeOption.icon
-                const isSelected = theme === themeOption.key
-
-                return (
-                  <button
-                    key={themeOption.key}
-                    onClick={() => {
-                      setTheme(themeOption.key)
-                      showSuccess(`Theme changed to ${themeOption.name}`)
-                    }}
-                    className={`relative flex items-center space-x-3 w-full text-left p-4 rounded-lg border-2 transition-colors ${
-                      isSelected
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-950 dark:border-blue-400'
-                        : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700'
-                    }`}
-                  >
-                    <Icon
-                      className={`h-6 w-6 ${isSelected ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'}`}
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2">
-                        <span
-                          className={`text-sm font-medium ${isSelected ? 'text-blue-900 dark:text-blue-100' : 'text-gray-900 dark:text-white'}`}
-                        >
-                          {themeOption.name}
-                        </span>
-                        {isSelected && (
-                          <CheckCircleIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                        )}
-                      </div>
-                      <span
-                        className={`text-xs ${isSelected ? 'text-blue-700 dark:text-blue-200' : 'text-gray-500 dark:text-gray-400'}`}
-                      >
-                        {themeOption.description}
-                      </span>
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Industry Context */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
-            <CogIcon className="h-5 w-5 mr-2" />
-            Industry Context for Lily
-          </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Help Lily understand your business to create better, more targeted
-            content
-          </p>
-        </div>
-        <div className="p-6 space-y-6">
-          {/* Company Research Section */}
-          <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-            <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-3">
-              ✨ Quick Setup with AI Research
-            </h4>
-            <p className="text-sm text-blue-800 dark:text-blue-200 mb-4">
-              Just enter your company name and let Lily research everything else
-              for you!
-            </p>
-
-            <div className="flex space-x-3">
-              <div className="flex-1">
+      {/* Base Rates */}
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">
+          Base Rates (per sq ft)
+        </h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {Object.entries(pricingSettings.base_rates).map(([service, rate]) => (
+            <div key={service}>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {service
+                  .replace('_', ' ')
+                  .replace(/\b\w/g, (l) => l.toUpperCase())}
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                  $
+                </span>
                 <input
-                  type="text"
-                  value={settings.industryContext.companyName}
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={rate}
                   onChange={(e) =>
-                    handleIndustryContextChange('companyName', e.target.value)
+                    setPricingSettings((prev) => ({
+                      ...prev,
+                      base_rates: {
+                        ...prev.base_rates,
+                        [service]: parseFloat(e.target.value) || 0,
+                      },
+                    }))
                   }
-                  className="w-full border border-blue-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter your company name (e.g., Apple, Tesla, OpenAI)"
-                  disabled={isResearching}
+                  className="pl-8 w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 />
               </div>
-              <button
-                onClick={researchCompany}
-                disabled={
-                  isResearching || !settings.industryContext.companyName.trim()
-                }
-                className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-              >
-                {isResearching ? (
-                  <ArrowPathIcon className="h-4 w-4 animate-spin" />
-                ) : (
-                  <MagnifyingGlassIcon className="h-4 w-4" />
-                )}
-                <span>
-                  {isResearching ? 'Deep Research' : 'Research Company'}
-                </span>
-              </button>
             </div>
+          ))}
+        </div>
+      </div>
 
-            {/* Progress Bar */}
-            {isResearching && (
-              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <h5 className="font-medium text-blue-900">
-                    Deep Company Analysis in Progress
-                  </h5>
-                  <span className="text-blue-800 font-semibold">
-                    {researchProgress}%
-                  </span>
-                </div>
-
-                {/* Progress Bar */}
-                <div className="w-full bg-blue-200 rounded-full h-3 mb-3">
-                  <div
-                    className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-300 ease-out"
-                    style={{ width: `${researchProgress}%` }}
-                  ></div>
-                </div>
-
-                {/* Current Stage */}
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                  <p className="text-sm text-blue-800 font-medium">
-                    {researchStage}
-                  </p>
-                </div>
-
-                <p className="text-xs text-blue-600 mt-2">
-                  🔍 Lily is conducting comprehensive research using advanced AI
-                  agents and multiple data sources to provide you with specific,
-                  actionable insights.
-                </p>
-              </div>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Industry
-              </label>
-              <select
-                value={settings.industryContext.industry}
-                onChange={(e) =>
-                  handleIndustryContextChange('industry', e.target.value)
-                }
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <optgroup label="Technology">
-                  <option value="Software Development">
-                    Software Development
-                  </option>
-                  <option value="SaaS & Cloud Computing">
-                    SaaS & Cloud Computing
-                  </option>
-                  <option value="Artificial Intelligence & ML">
-                    Artificial Intelligence & ML
-                  </option>
-                  <option value="Cybersecurity">Cybersecurity</option>
-                  <option value="Mobile App Development">
-                    Mobile App Development
-                  </option>
-                  <option value="Hardware & Electronics">
-                    Hardware & Electronics
-                  </option>
-                  <option value="Fintech">Fintech</option>
-                  <option value="EdTech">EdTech</option>
-                  <option value="HealthTech">HealthTech</option>
-                  <option value="Gaming & Entertainment">
-                    Gaming & Entertainment
-                  </option>
-                </optgroup>
-                <optgroup label="Healthcare & Life Sciences">
-                  <option value="Medical Devices">Medical Devices</option>
-                  <option value="Pharmaceuticals">Pharmaceuticals</option>
-                  <option value="Biotechnology">Biotechnology</option>
-                  <option value="Healthcare Services">
-                    Healthcare Services
-                  </option>
-                  <option value="Mental Health">Mental Health</option>
-                  <option value="Telemedicine">Telemedicine</option>
-                  <option value="Medical Research">Medical Research</option>
-                </optgroup>
-                <optgroup label="Financial Services">
-                  <option value="Banking & Credit">Banking & Credit</option>
-                  <option value="Investment & Wealth Management">
-                    Investment & Wealth Management
-                  </option>
-                  <option value="Insurance">Insurance</option>
-                  <option value="Cryptocurrency & Blockchain">
-                    Cryptocurrency & Blockchain
-                  </option>
-                  <option value="Payment Processing">Payment Processing</option>
-                  <option value="Financial Planning">Financial Planning</option>
-                </optgroup>
-                <optgroup label="E-commerce & Retail">
-                  <option value="Online Marketplace">Online Marketplace</option>
-                  <option value="D2C Brands">D2C Brands</option>
-                  <option value="Fashion & Apparel">Fashion & Apparel</option>
-                  <option value="Beauty & Cosmetics">Beauty & Cosmetics</option>
-                  <option value="Home & Garden">Home & Garden</option>
-                  <option value="Electronics Retail">Electronics Retail</option>
-                  <option value="Grocery & Food Delivery">
-                    Grocery & Food Delivery
-                  </option>
-                </optgroup>
-                <optgroup label="Professional Services">
-                  <option value="Marketing & Advertising">
-                    Marketing & Advertising
-                  </option>
-                  <option value="Business Consulting">
-                    Business Consulting
-                  </option>
-                  <option value="Legal Services">Legal Services</option>
-                  <option value="Accounting & Finance">
-                    Accounting & Finance
-                  </option>
-                  <option value="Human Resources">Human Resources</option>
-                  <option value="Design & Creative">Design & Creative</option>
-                  <option value="PR & Communications">
-                    PR & Communications
-                  </option>
-                </optgroup>
-                <optgroup label="Real Estate & Construction">
-                  <option value="Commercial Real Estate">
-                    Commercial Real Estate
-                  </option>
-                  <option value="Residential Real Estate">
-                    Residential Real Estate
-                  </option>
-                  <option value="Property Management">
-                    Property Management
-                  </option>
-                  <option value="Construction">Construction</option>
-                  <option value="Architecture & Engineering">
-                    Architecture & Engineering
-                  </option>
-                  <option value="Real Estate Technology">
-                    Real Estate Technology
-                  </option>
-                </optgroup>
-                <optgroup label="Food & Beverage">
-                  <option value="Restaurants & Food Service">
-                    Restaurants & Food Service
-                  </option>
-                  <option value="Food Manufacturing">Food Manufacturing</option>
-                  <option value="Beverage Industry">Beverage Industry</option>
-                  <option value="Specialty Foods">Specialty Foods</option>
-                  <option value="Food Technology">Food Technology</option>
-                  <option value="Catering & Events">Catering & Events</option>
-                </optgroup>
-                <optgroup label="Manufacturing & Industrial">
-                  <option value="Automotive">Automotive</option>
-                  <option value="Aerospace & Defense">
-                    Aerospace & Defense
-                  </option>
-                  <option value="Chemical & Materials">
-                    Chemical & Materials
-                  </option>
-                  <option value="Energy & Utilities">Energy & Utilities</option>
-                  <option value="Manufacturing Equipment">
-                    Manufacturing Equipment
-                  </option>
-                  <option value="Logistics & Supply Chain">
-                    Logistics & Supply Chain
-                  </option>
-                </optgroup>
-                <optgroup label="Media & Entertainment">
-                  <option value="Digital Media">Digital Media</option>
-                  <option value="Film & Television">Film & Television</option>
-                  <option value="Music & Audio">Music & Audio</option>
-                  <option value="Publishing">Publishing</option>
-                  <option value="Social Media Platforms">
-                    Social Media Platforms
-                  </option>
-                  <option value="Content Creation">Content Creation</option>
-                </optgroup>
-                <optgroup label="Education & Training">
-                  <option value="K-12 Education">K-12 Education</option>
-                  <option value="Higher Education">Higher Education</option>
-                  <option value="Online Learning">Online Learning</option>
-                  <option value="Corporate Training">Corporate Training</option>
-                  <option value="Vocational Training">
-                    Vocational Training
-                  </option>
-                  <option value="Educational Technology">
-                    Educational Technology
-                  </option>
-                </optgroup>
-                <optgroup label="Fitness & Wellness">
-                  <option value="Fitness & Gyms">Fitness & Gyms</option>
-                  <option value="Wellness & Spa">Wellness & Spa</option>
-                  <option value="Sports & Recreation">
-                    Sports & Recreation
-                  </option>
-                  <option value="Nutrition & Supplements">
-                    Nutrition & Supplements
-                  </option>
-                  <option value="Mental Wellness">Mental Wellness</option>
-                  <option value="Fitness Technology">Fitness Technology</option>
-                </optgroup>
-                <optgroup label="Travel & Hospitality">
-                  <option value="Hotels & Accommodation">
-                    Hotels & Accommodation
-                  </option>
-                  <option value="Travel Agencies">Travel Agencies</option>
-                  <option value="Airlines">Airlines</option>
-                  <option value="Tourism & Experiences">
-                    Tourism & Experiences
-                  </option>
-                  <option value="Travel Technology">Travel Technology</option>
-                  <option value="Event Planning">Event Planning</option>
-                </optgroup>
-                <optgroup label="Other Industries">
-                  <option value="Non-Profit & NGO">Non-Profit & NGO</option>
-                  <option value="Government & Public Sector">
-                    Government & Public Sector
-                  </option>
-                  <option value="Agriculture">Agriculture</option>
-                  <option value="Environmental Services">
-                    Environmental Services
-                  </option>
-                  <option value="Personal Services">Personal Services</option>
-                  <option value="Other">Other</option>
-                </optgroup>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Brand Tone
-              </label>
-              <select
-                value={settings.industryContext.brandTone}
-                onChange={(e) =>
-                  handleIndustryContextChange('brandTone', e.target.value)
-                }
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="Professional">Professional</option>
-                <option value="Friendly">Friendly</option>
-                <option value="Casual">Casual</option>
-                <option value="Witty">Witty</option>
-                <option value="Authoritative">Authoritative</option>
-                <option value="Inspirational">Inspirational</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Company Description
-              <span className="text-xs text-blue-600 ml-2">
-                (Auto-filled by research or manual entry)
-              </span>
-            </label>
-            <textarea
-              value={settings.industryContext.companyDescription}
+      {/* Minimum Job Total */}
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">
+          Minimum Job Total
+        </h3>
+        <div className="max-w-xs">
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+              $
+            </span>
+            <input
+              type="number"
+              min="0"
+              value={pricingSettings.min_job_total}
               onChange={(e) =>
-                handleIndustryContextChange(
-                  'companyDescription',
-                  e.target.value
-                )
-              }
-              rows={3}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Will be auto-filled by company research or enter manually..."
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Target Audience
-              <span className="text-xs text-blue-600 ml-2">
-                (Auto-filled by research or manual entry)
-              </span>
-            </label>
-            <textarea
-              value={settings.industryContext.targetAudience}
-              onChange={(e) =>
-                handleIndustryContextChange('targetAudience', e.target.value)
-              }
-              rows={2}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Will be auto-filled by company research or enter manually..."
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Key Topics & Keywords
-              <span className="text-xs text-blue-600 ml-2">
-                (Auto-filled by research or manual entry)
-              </span>
-            </label>
-            <textarea
-              value={settings.industryContext.keyTopics}
-              onChange={(e) =>
-                handleIndustryContextChange('keyTopics', e.target.value)
-              }
-              rows={2}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Will be auto-filled by company research or enter manually..."
-            />
-          </div>
-
-          <div className="flex justify-end">
-            <button
-              onClick={saveIndustryContext}
-              className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center space-x-2"
-            >
-              <CheckCircleIcon className="h-4 w-4" />
-              <span>Save Context</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Style Vault */}
-      <PlanGate
-        feature="white_label"
-        showUpgradePrompt={true}
-        fallback={
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
-                <CogIcon className="h-5 w-5 mr-2" />
-                Style Vault (Premium)
-              </h3>
-            </div>
-            <div className="p-6 text-center">
-              <div className="mb-4">
-                <CogIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-600 dark:text-gray-400">
-                  Upgrade to access the Style Vault feature for brand asset
-                  management and custom styling.
-                </p>
-              </div>
-              <button
-                onClick={() => (window.location.href = '/billing')}
-                className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
-              >
-                Upgrade Plan
-              </button>
-            </div>
-          </div>
-        }
-      >
-        <StyleVault />
-      </PlanGate>
-
-      {/* System Status */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
-            <CogIcon className="h-5 w-5 mr-2" />
-            System Status
-          </h3>
-        </div>
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <div className="flex items-center space-x-3">
-                {getStatusIcon(connectionStatus)}
-                <div>
-                  <p className="font-medium text-gray-900 dark:text-white">
-                    API Connection
-                  </p>
-                  <p className={`text-sm ${getStatusColor(connectionStatus)}`}>
-                    {connectionStatus}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={checkApiHealth}
-                className="px-3 py-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 rounded-md hover:bg-blue-200 dark:hover:bg-blue-800"
-              >
-                Test
-              </button>
-            </div>
-
-            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <div className="flex items-center space-x-3">
-                <CheckCircleIcon className="h-5 w-5 text-green-500" />
-                <div>
-                  <p className="font-medium text-gray-900 dark:text-white">
-                    Database
-                  </p>
-                  <p className="text-sm text-green-600">Connected</p>
-                </div>
-              </div>
-              <span className="px-2 py-1 text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 rounded-md">
-                Healthy
-              </span>
-            </div>
-          </div>
-
-          {apiHealth && (
-            <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
-              <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">
-                API Health Details
-              </h4>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                <div>
-                  <span className="text-blue-700 dark:text-blue-300">
-                    Version:
-                  </span>
-                  <span className="ml-2 text-blue-900 dark:text-blue-100">
-                    {apiHealth.version || 'Unknown'}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-blue-700 dark:text-blue-300">
-                    Uptime:
-                  </span>
-                  <span className="ml-2 text-blue-900 dark:text-blue-100">
-                    {apiHealth.uptime || 'Unknown'}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-blue-700 dark:text-blue-300">
-                    Memory:
-                  </span>
-                  <span className="ml-2 text-blue-900 dark:text-blue-100">
-                    {apiHealth.memory_usage || 'Unknown'}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-blue-700 dark:text-blue-300">
-                    Load:
-                  </span>
-                  <span className="ml-2 text-blue-900 dark:text-blue-100">
-                    {apiHealth.cpu_usage || 'Unknown'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* System Health */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
-            <ExclamationTriangleIcon className="h-5 w-5 mr-2" />
-            System Health
-          </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Monitor system logs, errors, and performance metrics
-          </p>
-        </div>
-        <div className="p-6">
-          <ErrorLogs />
-        </div>
-      </div>
-
-      {/* Notifications */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
-            <BellIcon className="h-5 w-5 mr-2" />
-            Notifications
-          </h3>
-        </div>
-        <div className="p-6">
-          <div className="space-y-4">
-            {Object.entries(settings.notifications).map(([key, enabled]) => (
-              <div key={key} className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-gray-900 dark:text-white">
-                    {key
-                      .replace(/([A-Z])/g, ' $1')
-                      .replace(/^./, (str) => str.toUpperCase())}
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {key === 'goalMilestones' &&
-                      'Get notified when you reach goal milestones'}
-                    {key === 'contentPublished' &&
-                      'Get notified when content is published'}
-                    {key === 'workflowComplete' &&
-                      'Get notified when workflows complete'}
-                    {key === 'systemAlerts' &&
-                      'Get notified about system issues'}
-                    {key === 'apiErrors' && 'Get notified about API errors'}
-                  </p>
-                </div>
-                <button
-                  onClick={() => handleNotificationChange(key)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                    enabled ? 'bg-blue-600' : 'bg-gray-200'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      enabled ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <button
-              onClick={handleTestNotification}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-            >
-              Test Notifications
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Automation Settings */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900 flex items-center">
-            <CogIcon className="h-5 w-5 mr-2" />
-            Automation
-          </h3>
-        </div>
-        <div className="p-6">
-          <div className="space-y-4">
-            {Object.entries(settings.automation).map(([key, enabled]) => (
-              <div key={key} className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-gray-900">
-                    {key
-                      .replace(/([A-Z])/g, ' $1')
-                      .replace(/^./, (str) => str.toUpperCase())}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    {key === 'dailyWorkflows' &&
-                      'Automatically run daily content workflows'}
-                    {key === 'autoOptimization' &&
-                      'Automatically optimize content based on performance'}
-                    {key === 'smartScheduling' &&
-                      'Use AI to determine optimal posting times'}
-                    {key === 'contentGeneration' &&
-                      'Enable automated content generation'}
-                  </p>
-                </div>
-                <button
-                  onClick={() => handleAutomationChange(key)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                    enabled ? 'bg-blue-600' : 'bg-gray-200'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      enabled ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Social Inbox Settings */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900 flex items-center">
-            <ChatBubbleLeftRightIcon className="h-5 w-5 mr-2" />
-            Social Inbox & Auto-Response
-          </h3>
-          <p className="text-sm text-gray-600 mt-1">
-            Configure how Lily responds to comments, mentions, and messages
-          </p>
-        </div>
-        <div className="p-6 space-y-6">
-          {/* Default Response Personality */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Default Response Personality
-            </label>
-            <select
-              value={settings.socialInbox.defaultResponsePersonality}
-              onChange={(e) =>
-                setSettings((prev) => ({
+                setPricingSettings((prev) => ({
                   ...prev,
-                  socialInbox: {
-                    ...prev.socialInbox,
-                    defaultResponsePersonality: e.target.value,
-                  },
+                  min_job_total: parseFloat(e.target.value) || 0,
                 }))
               }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="professional">
-                Professional - Formal and courteous
-              </option>
-              <option value="friendly">Friendly - Warm and approachable</option>
-              <option value="casual">Casual - Relaxed and informal</option>
-              <option value="technical">
-                Technical - Informative and precise
-              </option>
-            </select>
+              className="pl-8 w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            />
+          </div>
+          <p className="text-sm text-gray-500 mt-1">
+            Minimum charge for any job
+          </p>
+        </div>
+      </div>
+
+      {/* Service Bundles */}
+      <PlanGateTooltip
+        feature="service bundles"
+        disabled={isFieldDisabled('bundles')}
+      >
+        <div
+          className={`bg-white rounded-lg border border-gray-200 p-6 ${isFieldDisabled('bundles') ? 'opacity-50' : ''}`}
+        >
+          <h3 className="text-lg font-medium text-gray-900 mb-4">
+            Service Bundles
+          </h3>
+          <div className="space-y-4">
+            {pricingSettings.bundles.map((bundle, index) => (
+              <div
+                key={index}
+                className="border border-gray-200 rounded-lg p-4"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Bundle Name
+                    </label>
+                    <input
+                      type="text"
+                      value={bundle.name}
+                      onChange={(e) => {
+                        const newBundles = [...pricingSettings.bundles]
+                        newBundles[index].name = e.target.value
+                        setPricingSettings((prev) => ({
+                          ...prev,
+                          bundles: newBundles,
+                        }))
+                      }}
+                      disabled={isFieldDisabled('bundles')}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-50"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Services
+                    </label>
+                    <select
+                      multiple
+                      value={bundle.services}
+                      onChange={(e) => {
+                        const newBundles = [...pricingSettings.bundles]
+                        newBundles[index].services = Array.from(
+                          e.target.selectedOptions,
+                          (option) => option.value
+                        )
+                        setPricingSettings((prev) => ({
+                          ...prev,
+                          bundles: newBundles,
+                        }))
+                      }}
+                      disabled={isFieldDisabled('bundles')}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-50"
+                    >
+                      {Object.keys(pricingSettings.base_rates).map(
+                        (service) => (
+                          <option key={service} value={service}>
+                            {service
+                              .replace('_', ' ')
+                              .replace(/\b\w/g, (l) => l.toUpperCase())}
+                          </option>
+                        )
+                      )}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Discount %
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="50"
+                      value={bundle.discount_percent}
+                      onChange={(e) => {
+                        const newBundles = [...pricingSettings.bundles]
+                        newBundles[index].discount_percent =
+                          parseInt(e.target.value) || 0
+                        setPricingSettings((prev) => ({
+                          ...prev,
+                          bundles: newBundles,
+                        }))
+                      }}
+                      disabled={isFieldDisabled('bundles')}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-50"
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </PlanGateTooltip>
+
+      {/* Seasonal Modifiers */}
+      <PlanGateTooltip
+        feature="seasonal pricing"
+        disabled={isFieldDisabled('seasonal_modifiers')}
+      >
+        <div
+          className={`bg-white rounded-lg border border-gray-200 p-6 ${isFieldDisabled('seasonal_modifiers') ? 'opacity-50' : ''}`}
+        >
+          <h3 className="text-lg font-medium text-gray-900 mb-4">
+            Seasonal Modifiers
+          </h3>
+          <div className="space-y-4">
+            {pricingSettings.seasonal_modifiers.map((modifier, index) => (
+              <div
+                key={index}
+                className="border border-gray-200 rounded-lg p-4"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Season
+                    </label>
+                    <select
+                      value={modifier.season}
+                      onChange={(e) => {
+                        const newModifiers = [
+                          ...pricingSettings.seasonal_modifiers,
+                        ]
+                        newModifiers[index].season = e.target.value
+                        setPricingSettings((prev) => ({
+                          ...prev,
+                          seasonal_modifiers: newModifiers,
+                        }))
+                      }}
+                      disabled={isFieldDisabled('seasonal_modifiers')}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-50"
+                    >
+                      <option value="spring">Spring</option>
+                      <option value="summer">Summer</option>
+                      <option value="fall">Fall</option>
+                      <option value="winter">Winter</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Price Multiplier
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0.5"
+                      max="2.0"
+                      value={modifier.multiplier}
+                      onChange={(e) => {
+                        const newModifiers = [
+                          ...pricingSettings.seasonal_modifiers,
+                        ]
+                        newModifiers[index].multiplier =
+                          parseFloat(e.target.value) || 1.0
+                        setPricingSettings((prev) => ({
+                          ...prev,
+                          seasonal_modifiers: newModifiers,
+                        }))
+                      }}
+                      disabled={isFieldDisabled('seasonal_modifiers')}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-50"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Description
+                    </label>
+                    <input
+                      type="text"
+                      value={modifier.description}
+                      onChange={(e) => {
+                        const newModifiers = [
+                          ...pricingSettings.seasonal_modifiers,
+                        ]
+                        newModifiers[index].description = e.target.value
+                        setPricingSettings((prev) => ({
+                          ...prev,
+                          seasonal_modifiers: newModifiers,
+                        }))
+                      }}
+                      disabled={isFieldDisabled('seasonal_modifiers')}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-50"
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </PlanGateTooltip>
+
+      <div className="flex justify-end">
+        <button
+          onClick={() => saveSettings('pricing')}
+          disabled={saving}
+          className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {saving ? 'Saving...' : 'Save Pricing Settings'}
+        </button>
+      </div>
+    </div>
+  )
+
+  const renderWeatherTab = () => (
+    <div className="space-y-6">
+      {/* Weather Thresholds */}
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">
+          Weather Thresholds
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Rain Probability Threshold
+            </label>
+            <div className="flex items-center space-x-3">
+              <input
+                type="range"
+                min="10"
+                max="90"
+                step="5"
+                value={weatherSettings.rain_probability_threshold}
+                onChange={(e) =>
+                  setWeatherSettings((prev) => ({
+                    ...prev,
+                    rain_probability_threshold: parseInt(e.target.value),
+                  }))
+                }
+                className="flex-1"
+              />
+              <span className="text-sm font-medium text-gray-900 min-w-[3rem]">
+                {weatherSettings.rain_probability_threshold}%
+              </span>
+            </div>
+            <p className="text-sm text-gray-500 mt-1">
+              Cancel/reschedule jobs if rain probability exceeds this threshold
+            </p>
           </div>
 
-          {/* Auto-Response Toggle */}
-          <div className="flex items-center justify-between">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Wind Speed Threshold
+            </label>
+            <div className="flex items-center space-x-3">
+              <input
+                type="range"
+                min="10"
+                max="50"
+                step="5"
+                value={weatherSettings.wind_speed_threshold}
+                onChange={(e) =>
+                  setWeatherSettings((prev) => ({
+                    ...prev,
+                    wind_speed_threshold: parseInt(e.target.value),
+                  }))
+                }
+                className="flex-1"
+              />
+              <span className="text-sm font-medium text-gray-900 min-w-[3rem]">
+                {weatherSettings.wind_speed_threshold} mph
+              </span>
+            </div>
+            <p className="text-sm text-gray-500 mt-1">
+              Cancel jobs if wind speed exceeds this threshold
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Temperature Threshold
+            </label>
+            <div className="flex items-center space-x-3">
+              <input
+                type="range"
+                min="25"
+                max="50"
+                step="5"
+                value={weatherSettings.temperature_threshold}
+                onChange={(e) =>
+                  setWeatherSettings((prev) => ({
+                    ...prev,
+                    temperature_threshold: parseInt(e.target.value),
+                  }))
+                }
+                className="flex-1"
+              />
+              <span className="text-sm font-medium text-gray-900 min-w-[3rem]">
+                {weatherSettings.temperature_threshold}°F
+              </span>
+            </div>
+            <p className="text-sm text-gray-500 mt-1">
+              Cancel jobs if temperature is below this threshold
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Weather Lookahead Days
+            </label>
+            <select
+              value={weatherSettings.lookahead_days}
+              onChange={(e) =>
+                setWeatherSettings((prev) => ({
+                  ...prev,
+                  lookahead_days: parseInt(e.target.value),
+                }))
+              }
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            >
+              <option value={1}>1 day</option>
+              <option value={2}>2 days</option>
+              <option value={3}>3 days</option>
+              <option value={5}>5 days</option>
+              <option value={7}>7 days</option>
+            </select>
+            <p className="text-sm text-gray-500 mt-1">
+              How many days ahead to check weather forecasts
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Auto-Reschedule Settings */}
+      <PlanGateTooltip
+        feature="auto-rescheduling"
+        disabled={isFieldDisabled('auto_reschedule')}
+      >
+        <div
+          className={`bg-white rounded-lg border border-gray-200 p-6 ${isFieldDisabled('auto_reschedule') ? 'opacity-50' : ''}`}
+        >
+          <h3 className="text-lg font-medium text-gray-900 mb-4">
+            Auto-Rescheduling
+          </h3>
+
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="font-medium text-gray-900">Enable Auto-Response</p>
+              <p className="font-medium text-gray-900">
+                Enable Auto-Reschedule
+              </p>
               <p className="text-sm text-gray-600">
-                Automatically respond to interactions based on AI confidence
+                Automatically reschedule jobs when weather conditions are
+                unsuitable
               </p>
             </div>
             <button
               onClick={() =>
-                setSettings((prev) => ({
+                setWeatherSettings((prev) => ({
                   ...prev,
-                  socialInbox: {
-                    ...prev.socialInbox,
-                    autoResponseEnabled: !prev.socialInbox.autoResponseEnabled,
-                  },
+                  auto_reschedule: !prev.auto_reschedule,
                 }))
               }
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                settings.socialInbox.autoResponseEnabled
-                  ? 'bg-blue-600'
+              disabled={isFieldDisabled('auto_reschedule')}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                weatherSettings.auto_reschedule
+                  ? 'bg-indigo-600'
                   : 'bg-gray-200'
-              }`}
+              } disabled:opacity-50`}
             >
               <span
                 className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  settings.socialInbox.autoResponseEnabled
+                  weatherSettings.auto_reschedule
                     ? 'translate-x-6'
                     : 'translate-x-1'
                 }`}
@@ -1211,224 +638,488 @@ export default function Settings() {
             </button>
           </div>
 
-          {/* Auto-Response Configuration (only shown if enabled) */}
-          {settings.socialInbox.autoResponseEnabled && (
-            <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Confidence Threshold (
-                  {Math.round(
-                    settings.socialInbox.autoResponseConfidenceThreshold * 100
-                  )}
-                  %)
-                </label>
-                <input
-                  type="range"
-                  min="0.5"
-                  max="1"
-                  step="0.05"
-                  value={settings.socialInbox.autoResponseConfidenceThreshold}
-                  onChange={(e) =>
-                    setSettings((prev) => ({
-                      ...prev,
-                      socialInbox: {
-                        ...prev.socialInbox,
-                        autoResponseConfidenceThreshold: parseFloat(
-                          e.target.value
-                        ),
-                      },
-                    }))
-                  }
-                  className="w-full"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Only auto-respond when AI confidence is above this threshold
-                </p>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-gray-700">
-                    Business Hours Only
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Only send auto-responses during business hours
-                  </p>
-                </div>
-                <button
-                  onClick={() =>
-                    setSettings((prev) => ({
-                      ...prev,
-                      socialInbox: {
-                        ...prev.socialInbox,
-                        autoResponseBusinessHoursOnly:
-                          !prev.socialInbox.autoResponseBusinessHoursOnly,
-                      },
-                    }))
-                  }
-                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500 ${
-                    settings.socialInbox.autoResponseBusinessHoursOnly
-                      ? 'bg-blue-600'
-                      : 'bg-gray-200'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
-                      settings.socialInbox.autoResponseBusinessHoursOnly
-                        ? 'translate-x-5'
-                        : 'translate-x-1'
-                    }`}
-                  />
-                </button>
-              </div>
-
-              {settings.socialInbox.autoResponseBusinessHoursOnly && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Start Time
-                    </label>
-                    <input
-                      type="time"
-                      value={settings.socialInbox.businessHoursStart}
-                      onChange={(e) =>
-                        setSettings((prev) => ({
-                          ...prev,
-                          socialInbox: {
-                            ...prev.socialInbox,
-                            businessHoursStart: e.target.value,
-                          },
-                        }))
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      End Time
-                    </label>
-                    <input
-                      type="time"
-                      value={settings.socialInbox.businessHoursEnd}
-                      onChange={(e) =>
-                        setSettings((prev) => ({
-                          ...prev,
-                          socialInbox: {
-                            ...prev.socialInbox,
-                            businessHoursEnd: e.target.value,
-                          },
-                        }))
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Response Delay (minutes)
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="60"
-                  value={settings.socialInbox.autoResponseDelayMinutes}
-                  onChange={(e) =>
-                    setSettings((prev) => ({
-                      ...prev,
-                      socialInbox: {
-                        ...prev.socialInbox,
-                        autoResponseDelayMinutes: parseInt(e.target.value),
-                      },
-                    }))
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Wait this many minutes before sending auto-responses
-                </p>
-              </div>
+          {weatherSettings.auto_reschedule && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Notification Hours Ahead
+              </label>
+              <select
+                value={weatherSettings.notification_hours_ahead}
+                onChange={(e) =>
+                  setWeatherSettings((prev) => ({
+                    ...prev,
+                    notification_hours_ahead: parseInt(e.target.value),
+                  }))
+                }
+                disabled={isFieldDisabled('auto_reschedule')}
+                className="w-full max-w-xs border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-50"
+              >
+                <option value={12}>12 hours</option>
+                <option value={24}>24 hours</option>
+                <option value={48}>48 hours</option>
+                <option value={72}>72 hours</option>
+              </select>
+              <p className="text-sm text-gray-500 mt-1">
+                How far in advance to notify customers about weather-related
+                rescheduling
+              </p>
             </div>
           )}
         </div>
+      </PlanGateTooltip>
+
+      <div className="flex justify-end">
+        <button
+          onClick={() => saveSettings('weather')}
+          disabled={saving}
+          className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {saving ? 'Saving...' : 'Save Weather Settings'}
+        </button>
+      </div>
+    </div>
+  )
+
+  const renderBookingTab = () => (
+    <div className="space-y-6">
+      {/* Lead Qualification */}
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">
+          Lead Qualification
+        </h3>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Intent Confidence Threshold
+            </label>
+            <div className="flex items-center space-x-3">
+              <input
+                type="range"
+                min="0.5"
+                max="1.0"
+                step="0.05"
+                value={bookingSettings.intent_threshold}
+                onChange={(e) =>
+                  setBookingSettings((prev) => ({
+                    ...prev,
+                    intent_threshold: parseFloat(e.target.value),
+                  }))
+                }
+                className="flex-1"
+              />
+              <span className="text-sm font-medium text-gray-900 min-w-[3rem]">
+                {Math.round(bookingSettings.intent_threshold * 100)}%
+              </span>
+            </div>
+            <p className="text-sm text-gray-500 mt-1">
+              Minimum AI confidence required to qualify a lead as booking intent
+            </p>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium text-gray-900">Require Photos</p>
+              <p className="text-sm text-gray-600">
+                Require customers to upload photos for accurate quotes
+              </p>
+            </div>
+            <button
+              onClick={() =>
+                setBookingSettings((prev) => ({
+                  ...prev,
+                  require_photos: !prev.require_photos,
+                }))
+              }
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                bookingSettings.require_photos ? 'bg-indigo-600' : 'bg-gray-200'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  bookingSettings.require_photos
+                    ? 'translate-x-6'
+                    : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Required Fields
+            </label>
+            <div className="space-y-2">
+              {[
+                'customer_name',
+                'phone',
+                'email',
+                'address',
+                'service_type',
+                'property_size',
+                'special_instructions',
+              ].map((field) => (
+                <label key={field} className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={bookingSettings.required_fields.includes(field)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setBookingSettings((prev) => ({
+                          ...prev,
+                          required_fields: [...prev.required_fields, field],
+                        }))
+                      } else {
+                        setBookingSettings((prev) => ({
+                          ...prev,
+                          required_fields: prev.required_fields.filter(
+                            (f) => f !== field
+                          ),
+                        }))
+                      }
+                    }}
+                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">
+                    {field
+                      .replace('_', ' ')
+                      .replace(/\b\w/g, (l) => l.toUpperCase())}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Platform Integrations */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900 flex items-center">
-            <LinkIcon className="h-5 w-5 mr-2" />
-            Platform Integrations
-          </h3>
-        </div>
-        <div className="p-6">
-          <SocialPlatformManager />
+      {/* Follow-up Settings */}
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">
+          Follow-up Automation
+        </h3>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Auto Follow-up Hours
+          </label>
+          <select
+            value={bookingSettings.auto_followup_hours}
+            onChange={(e) =>
+              setBookingSettings((prev) => ({
+                ...prev,
+                auto_followup_hours: parseInt(e.target.value),
+              }))
+            }
+            className="w-full max-w-xs border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            <option value={0}>Disabled</option>
+            <option value={2}>2 hours</option>
+            <option value={6}>6 hours</option>
+            <option value={12}>12 hours</option>
+            <option value={24}>24 hours</option>
+            <option value={48}>48 hours</option>
+            <option value={72}>72 hours</option>
+          </select>
+          <p className="text-sm text-gray-500 mt-1">
+            Automatically follow up with leads after this time if no response
+          </p>
         </div>
       </div>
 
-      {/* Advanced Settings */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900 flex items-center">
-            <KeyIcon className="h-5 w-5 mr-2" />
-            Advanced
-          </h3>
-        </div>
-        <div className="p-6">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
+      {/* Business Hours */}
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">
+          Business Hours
+        </h3>
+
+        <div className="space-y-4">
+          {/* Quiet Hours */}
+          <div className="border-b border-gray-200 pb-4">
+            <div className="flex items-center justify-between mb-3">
               <div>
-                <p className="font-medium text-gray-900">Clear Cache</p>
+                <p className="font-medium text-gray-900">Enable Quiet Hours</p>
                 <p className="text-sm text-gray-600">
-                  Clear all cached data to free up space
+                  Don't send notifications during specified hours
                 </p>
               </div>
               <button
-                onClick={handleClearCache}
-                disabled={isLoading}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors disabled:opacity-50"
+                onClick={() =>
+                  setBookingSettings((prev) => ({
+                    ...prev,
+                    quiet_hours: {
+                      ...prev.quiet_hours,
+                      enabled: !prev.quiet_hours.enabled,
+                    },
+                  }))
+                }
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                  bookingSettings.quiet_hours.enabled
+                    ? 'bg-indigo-600'
+                    : 'bg-gray-200'
+                }`}
               >
-                {isLoading ? 'Clearing...' : 'Clear Cache'}
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    bookingSettings.quiet_hours.enabled
+                      ? 'translate-x-6'
+                      : 'translate-x-1'
+                  }`}
+                />
               </button>
             </div>
 
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium text-gray-900">Export Data</p>
-                <p className="text-sm text-gray-600">
-                  Download all your data as JSON or CSV
-                </p>
+            {bookingSettings.quiet_hours.enabled && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Start Time
+                  </label>
+                  <input
+                    type="time"
+                    value={bookingSettings.quiet_hours.start}
+                    onChange={(e) =>
+                      setBookingSettings((prev) => ({
+                        ...prev,
+                        quiet_hours: {
+                          ...prev.quiet_hours,
+                          start: e.target.value,
+                        },
+                      }))
+                    }
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    End Time
+                  </label>
+                  <input
+                    type="time"
+                    value={bookingSettings.quiet_hours.end}
+                    onChange={(e) =>
+                      setBookingSettings((prev) => ({
+                        ...prev,
+                        quiet_hours: {
+                          ...prev.quiet_hours,
+                          end: e.target.value,
+                        },
+                      }))
+                    }
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
               </div>
-              <div className="flex space-x-2">
-                <button
-                  onClick={handleExportCSV}
-                  disabled={isLoading}
-                  className="px-4 py-2 bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors disabled:opacity-50"
-                >
-                  Export CSV
-                </button>
-                <button
-                  onClick={handleExportData}
-                  disabled={isLoading}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors disabled:opacity-50"
-                >
-                  Export JSON
-                </button>
-              </div>
-            </div>
+            )}
+          </div>
 
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium text-gray-900">API Documentation</p>
-                <p className="text-sm text-gray-600">
-                  View API documentation and examples
-                </p>
+          {/* Daily Business Hours */}
+          <div>
+            <h4 className="font-medium text-gray-900 mb-3">
+              Daily Operating Hours
+            </h4>
+            <div className="space-y-3">
+              {Object.entries(bookingSettings.business_hours).map(
+                ([day, hours]) => (
+                  <div key={day} className="flex items-center space-x-4">
+                    <div className="w-20">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={hours.enabled}
+                          onChange={(e) =>
+                            setBookingSettings((prev) => ({
+                              ...prev,
+                              business_hours: {
+                                ...prev.business_hours,
+                                [day]: {
+                                  ...prev.business_hours[day],
+                                  enabled: e.target.checked,
+                                },
+                              },
+                            }))
+                          }
+                          className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <span className="ml-2 text-sm font-medium text-gray-700 capitalize">
+                          {day}
+                        </span>
+                      </label>
+                    </div>
+
+                    {hours.enabled && (
+                      <>
+                        <input
+                          type="time"
+                          value={hours.start}
+                          onChange={(e) =>
+                            setBookingSettings((prev) => ({
+                              ...prev,
+                              business_hours: {
+                                ...prev.business_hours,
+                                [day]: {
+                                  ...prev.business_hours[day],
+                                  start: e.target.value,
+                                },
+                              },
+                            }))
+                          }
+                          className="border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        />
+                        <span className="text-gray-500">to</span>
+                        <input
+                          type="time"
+                          value={hours.end}
+                          onChange={(e) =>
+                            setBookingSettings((prev) => ({
+                              ...prev,
+                              business_hours: {
+                                ...prev.business_hours,
+                                [day]: {
+                                  ...prev.business_hours[day],
+                                  end: e.target.value,
+                                },
+                              },
+                            }))
+                          }
+                          className="border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        />
+                      </>
+                    )}
+                  </div>
+                )
+              )}
+            </div>
+          </div>
+
+          {/* Buffer Minutes */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Booking Buffer Minutes
+            </label>
+            <select
+              value={bookingSettings.buffer_minutes}
+              onChange={(e) =>
+                setBookingSettings((prev) => ({
+                  ...prev,
+                  buffer_minutes: parseInt(e.target.value),
+                }))
+              }
+              className="w-full max-w-xs border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            >
+              <option value={15}>15 minutes</option>
+              <option value={30}>30 minutes</option>
+              <option value={60}>1 hour</option>
+              <option value={120}>2 hours</option>
+            </select>
+            <p className="text-sm text-gray-500 mt-1">
+              Minimum time between consecutive job bookings
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-end">
+        <button
+          onClick={() => saveSettings('booking')}
+          disabled={saving}
+          className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {saving ? 'Saving...' : 'Save Booking Settings'}
+        </button>
+      </div>
+    </div>
+  )
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-gray-900">
+            Business Settings
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Configure pricing, weather policies, and booking requirements for
+            your pressure washing business
+          </p>
+        </div>
+
+        {/* Success Message */}
+        {successMessage && (
+          <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <CheckCircleIcon className="h-5 w-5 text-green-400" />
+              <p className="ml-2 text-green-800">{successMessage}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Error Messages */}
+        {Object.keys(errors).length > 0 && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-start">
+              <ExclamationTriangleIcon className="h-5 w-5 text-red-400 mt-0.5" />
+              <div className="ml-2">
+                {Object.entries(errors).map(([key, error]) => (
+                  <p key={key} className="text-red-800 text-sm">
+                    {error}
+                  </p>
+                ))}
               </div>
-              <button className="px-4 py-2 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors">
-                View Docs
+              <button
+                onClick={() => setErrors({})}
+                className="ml-auto text-red-400 hover:text-red-600"
+              >
+                <XMarkIcon className="h-4 w-4" />
               </button>
             </div>
+          </div>
+        )}
+
+        <div className="flex flex-col lg:flex-row lg:space-x-8">
+          {/* Navigation */}
+          <div className="lg:w-64 mb-6 lg:mb-0">
+            <nav className="space-y-2">
+              {TABS.map((tab) => {
+                const Icon = tab.icon
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
+                      activeTab === tab.id
+                        ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
+                  >
+                    <div className="flex items-center">
+                      <Icon className="h-5 w-5 mr-3" />
+                      <div>
+                        <p className="font-medium">{tab.name}</p>
+                        <p className="text-xs opacity-75 mt-1">
+                          {tab.description}
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                )
+              })}
+            </nav>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1">
+            {activeTab === 'pricing' && renderPricingTab()}
+            {activeTab === 'weather' && renderWeatherTab()}
+            {activeTab === 'booking' && renderBookingTab()}
           </div>
         </div>
       </div>

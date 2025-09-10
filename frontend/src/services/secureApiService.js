@@ -498,9 +498,12 @@ class SecureApiService {
     if (params.to_date) queryParams.append('to_date', params.to_date)
     if (params.group_by) queryParams.append('group_by', params.group_by)
     if (params.platform) queryParams.append('platform', params.platform)
-    if (params.service_type) queryParams.append('service_type', params.service_type)
-    
-    const url = queryParams.toString() ? `/api/analytics/business?${queryParams.toString()}` : '/api/analytics/business'
+    if (params.service_type)
+      queryParams.append('service_type', params.service_type)
+
+    const url = queryParams.toString()
+      ? `/api/analytics/business?${queryParams.toString()}`
+      : '/api/analytics/business'
     return this.request(url)
   }
 
@@ -597,7 +600,7 @@ class SecureApiService {
     return this.request('/api/admin/stats')
   }
 
-  // PW-FE-REPLACE-002: Leads API endpoints  
+  // PW-FE-REPLACE-002: Leads API endpoints
   async getLeads(params = {}) {
     const queryParams = new URLSearchParams()
 
@@ -641,7 +644,7 @@ class SecureApiService {
     })
   }
 
-  // PW-FE-REPLACE-002: Quotes API endpoints  
+  // PW-FE-REPLACE-002: Quotes API endpoints
   async getQuotes(params = {}) {
     const queryParams = new URLSearchParams()
 
@@ -754,6 +757,51 @@ class SecureApiService {
     return this.request('/api/v1/weather/run', {
       method: 'POST',
       body: { force },
+    })
+  }
+
+  // PW-FE-ADD-001: Settings API endpoints
+  async getSettings() {
+    return this.request('/api/v1/settings')
+  }
+
+  async updateSettings(settings) {
+    return this.request('/api/v1/settings', {
+      method: 'PUT',
+      body: settings,
+    })
+  }
+
+  async getPricingSettings() {
+    return this.request('/api/v1/settings/pricing')
+  }
+
+  async updatePricingSettings(settings) {
+    return this.request('/api/v1/settings/pricing', {
+      method: 'PUT',
+      body: settings,
+    })
+  }
+
+  async getWeatherSettings() {
+    return this.request('/api/v1/settings/weather')
+  }
+
+  async updateWeatherSettings(settings) {
+    return this.request('/api/v1/settings/weather', {
+      method: 'PUT',
+      body: settings,
+    })
+  }
+
+  async getBookingSettings() {
+    return this.request('/api/v1/settings/booking')
+  }
+
+  async updateBookingSettings(settings) {
+    return this.request('/api/v1/settings/booking', {
+      method: 'PUT',
+      body: settings,
     })
   }
 }
