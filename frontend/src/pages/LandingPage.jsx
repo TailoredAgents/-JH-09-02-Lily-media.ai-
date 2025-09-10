@@ -174,7 +174,7 @@ const LandingPage = () => {
     {
       icon: ShieldCheckIcon,
       title: "🔗 Ready to Use",
-      description: "Works with Housecall Pro, Jobber, Calendly, and your existing booking tools. Plus Zapier for custom workflows.",
+      description: "Integrates with your existing booking tools and workflows. Direct integrations with field service software coming soon.",
       highlight: "Industry Integrations"
     },
     {
@@ -256,7 +256,7 @@ const LandingPage = () => {
         "AI-powered social inbox responses and chatbots",
         "Advanced analytics with competitor analysis & ROI tracking",
         "CRM integrations (Salesforce, HubSpot, Shopify)",
-        "Third-party tool integrations (Zapier-like automation)",
+        "Third-party tool integrations via webhooks and API",
         "Mobile app for on-the-go management",
         "Enhanced collaboration tools & approval workflows",
         "Up to 5 users and 5 workspaces"
@@ -356,7 +356,7 @@ const LandingPage = () => {
     },
     {
       question: "Will it work with my existing booking system?",
-      answer: "Lily AI integrates with popular field service software including Housecall Pro, Jobber, ServiceTitan, and calendar systems like Google Calendar and Calendly. It can push leads directly to your CRM and sync with your existing workflow."
+      answer: "Lily AI is built to integrate with your existing workflow. We're developing direct integrations with popular field service platforms like Housecall Pro, Jobber, and ServiceTitan (coming soon). Currently, you can export leads and sync with your CRM manually or through webhooks."
     },
     {
       question: "What makes Lily AI different from generic social media tools?",
@@ -1134,10 +1134,10 @@ const LandingPage = () => {
                   🚀 Start Free Trial
                 </button>
                 <button
-                  onClick={() => window.open('https://calendly.com/lily-ai/demo', '_blank')}
+                  onClick={() => window.open('mailto:hello@lily-ai.com?subject=Demo Request', '_blank')}
                   className="w-full text-left px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                 >
-                  📅 Schedule a Demo
+                  📅 Request a Demo
                 </button>
                 <button
                   onClick={() => scrollToSection('case-studies')}
