@@ -47,11 +47,10 @@ async def get_dashboard_summary(db: Session = Depends(get_db)):
             "scheduledPosts": scheduled_posts,
             "engagement": base_engagement,
             "followers": total_followers,
-            "roi": round((base_engagement / max(total_posts, 1)) * 2.5, 1),  # ROI as percentage
+            # TODO: Add revenue-based ROI calculation when payments/revenue tracking is implemented
             "postsGrowth": 12.5,  # Sample growth percentage
             "engagementGrowth": 18.3,
             "followersGrowth": 8.7,
-            "roiGrowth": 15.2,
             "averageEngagementRate": round(base_engagement / max(total_posts, 1) / 100, 3),
             "topPerformingPlatform": "linkedin",
             "lastUpdated": datetime.now(timezone.utc).isoformat()
@@ -66,11 +65,10 @@ async def get_dashboard_summary(db: Session = Depends(get_db)):
             "scheduledPosts": 6,
             "engagement": 1205,
             "followers": 2850,
-            "roi": 52.1,
+            # TODO: Add revenue-based ROI calculation when payments/revenue tracking is implemented
             "postsGrowth": 12.5,
             "engagementGrowth": 18.3,
             "followersGrowth": 8.7,
-            "roiGrowth": 15.2,
             "averageEngagementRate": 0.521,
             "topPerformingPlatform": "linkedin",
             "lastUpdated": datetime.now(timezone.utc).isoformat()

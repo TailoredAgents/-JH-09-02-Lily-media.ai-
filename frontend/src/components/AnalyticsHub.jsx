@@ -212,7 +212,7 @@ const KeyMetrics = ({ darkMode }) => {
 const AnalyticsTable = ({ darkMode }) => {
   const tableData = [
     { post: 'AI Marketing Trends 2025', platform: 'LinkedIn', reach: '12.4K', engagement: '5.2%', clicks: 234 },
-    { post: 'Social Media ROI Guide', platform: 'Twitter', reach: '8.7K', engagement: '4.8%', clicks: 189 },
+    { post: 'Social Media Analytics Guide', platform: 'Twitter', reach: '8.7K', engagement: '4.8%', clicks: 189 },
     { post: 'Content Automation Tips', platform: 'Instagram', reach: '15.2K', engagement: '6.1%', clicks: 312 },
     { post: 'Weekly Industry Update', platform: 'Facebook', reach: '9.3K', engagement: '3.9%', clicks: 156 },
     { post: 'AI Tools Comparison', platform: 'LinkedIn', reach: '18.6K', engagement: '7.3%', clicks: 445 }

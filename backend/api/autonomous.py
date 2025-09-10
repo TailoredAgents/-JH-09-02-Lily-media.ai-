@@ -178,7 +178,7 @@ async def get_latest_research():
                 "insights": [
                     "AI agents are revolutionizing business automation",
                     "Multi-platform social media management is growing rapidly", 
-                    "AI-driven content generation shows high ROI",
+                    "AI-driven content generation improves engagement metrics",
                     "Real-time analytics are crucial for optimization"
                 ],
                 "content_opportunities": [

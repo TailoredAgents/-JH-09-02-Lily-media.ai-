@@ -19,13 +19,13 @@ const mockMemoryData = [
   },
   {
     id: '2',
-    title: 'Social Media ROI Calculator',
+    title: 'Social Media Analytics Calculator',
     type: 'Tool/Resource',
-    content: 'Interactive calculator helping businesses measure their social media return on investment with detailed metrics.',
+    content: 'Interactive calculator helping businesses measure their social media performance with detailed engagement and reach metrics.',
     platform: 'Twitter',
     createdAt: '2025-01-14T15:45:00Z',
     engagement: 890,
-    tags: ['ROI', 'Calculator', 'Metrics', 'Business'],
+    tags: ['Analytics', 'Calculator', 'Metrics', 'Business'],
     similarity: 87,
     status: 'Draft',
     repurposeCount: 1
