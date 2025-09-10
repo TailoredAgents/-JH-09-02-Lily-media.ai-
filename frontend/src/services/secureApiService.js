@@ -491,6 +491,23 @@ class SecureApiService {
     return this.request(`/api/analytics/content/${contentId}`)
   }
 
+  // Business analytics endpoints
+  async getBusinessAnalytics(params = {}) {
+    const queryParams = new URLSearchParams()
+    if (params.from_date) queryParams.append('from_date', params.from_date)
+    if (params.to_date) queryParams.append('to_date', params.to_date)
+    if (params.group_by) queryParams.append('group_by', params.group_by)
+    if (params.platform) queryParams.append('platform', params.platform)
+    if (params.service_type) queryParams.append('service_type', params.service_type)
+    
+    const url = queryParams.toString() ? `/api/analytics/business?${queryParams.toString()}` : '/api/analytics/business'
+    return this.request(url)
+  }
+
+  async getBusinessSummary() {
+    return this.request('/api/analytics/business/summary')
+  }
+
   // Partner OAuth endpoints
   async getPartnerOAuthConfig() {
     return this.request('/api/partner-oauth/config')
@@ -578,6 +595,94 @@ class SecureApiService {
 
   async getSystemStats() {
     return this.request('/api/admin/stats')
+  }
+
+  // PW-FE-REPLACE-002: Leads API endpoints  
+  async getLeads(params = {}) {
+    const queryParams = new URLSearchParams()
+
+    if (params.page) {
+      queryParams.append('page', params.page.toString())
+    }
+    if (params.per_page) {
+      queryParams.append('per_page', params.per_page.toString())
+    }
+    if (params.status) {
+      queryParams.append('status', params.status)
+    }
+    if (params.platform) {
+      queryParams.append('platform', params.platform)
+    }
+    if (params.search) {
+      queryParams.append('search', params.search)
+    }
+    if (params.start_date) {
+      queryParams.append('start_date', params.start_date)
+    }
+    if (params.end_date) {
+      queryParams.append('end_date', params.end_date)
+    }
+
+    const url = queryParams.toString()
+      ? `/api/v1/leads?${queryParams.toString()}`
+      : '/api/v1/leads'
+
+    return this.request(url)
+  }
+
+  async getLead(leadId) {
+    return this.request(`/api/v1/leads/${leadId}`)
+  }
+
+  async updateLead(leadId, data) {
+    return this.request(`/api/v1/leads/${leadId}`, {
+      method: 'PATCH',
+      body: data,
+    })
+  }
+
+  // PW-FE-REPLACE-002: Quotes API endpoints  
+  async getQuotes(params = {}) {
+    const queryParams = new URLSearchParams()
+
+    if (params.page) {
+      queryParams.append('page', params.page.toString())
+    }
+    if (params.per_page) {
+      queryParams.append('per_page', params.per_page.toString())
+    }
+    if (params.status) {
+      queryParams.append('status', params.status)
+    }
+    if (params.service_type) {
+      queryParams.append('service_type', params.service_type)
+    }
+    if (params.search) {
+      queryParams.append('search', params.search)
+    }
+    if (params.start_date) {
+      queryParams.append('start_date', params.start_date)
+    }
+    if (params.end_date) {
+      queryParams.append('end_date', params.end_date)
+    }
+
+    const url = queryParams.toString()
+      ? `/api/v1/quotes?${queryParams.toString()}`
+      : '/api/v1/quotes'
+
+    return this.request(url)
+  }
+
+  async getQuote(quoteId) {
+    return this.request(`/api/v1/quotes/${quoteId}`)
+  }
+
+  async updateQuote(quoteId, data) {
+    return this.request(`/api/v1/quotes/${quoteId}`, {
+      method: 'PATCH',
+      body: data,
+    })
   }
 
   // PW-FE-REPLACE-001: Service Jobs API endpoints
